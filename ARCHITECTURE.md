@@ -20,7 +20,7 @@
 | 상시 Discord Gateway 봇 | 인증을 바로 반영하며 명령어와 삭제를 같은 프로세스에서 처리 | 상시 호스팅·재연결·장애 복구 필요, 삭제도 영속 예약이 있어야 재시작에 안전 |
 | GitHub Actions에서 조회·삭제까지 처리 | 한 실행 환경으로 모을 수 있음 | 실시간 명령어 응답과 5분 삭제를 만족시키기 어려움 |
 
-첫 번째 방식을 제안한다. 수집 주기와 조회 시점을 분리하고, 5분 삭제만 짧은 주기의 별도 작업으로 처리한다. Actions는 정각 혼잡을 피한 **매시 17분(`17 * * * *`)** 실행과 수동 실행을 사용한다. 예약 실행은 지연되거나 누락될 수 있어 정시 반영을 보장하지 않는다. [GitHub 일정 실행 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+첫 번째 방식을 제안한다. 수집 주기와 조회 시점을 분리하고, 5분 삭제만 짧은 주기의 별도 작업으로 처리한다. Actions는 **매시 00분(`0 * * * *`)** 실행과 수동 실행을 사용한다. 예약 실행은 지연되거나 누락될 수 있어 정시 반영을 보장하지 않는다. [GitHub 일정 실행 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
 
 ## 3. 사용자 경험과 날짜 규칙
 

@@ -66,7 +66,7 @@
 
 **Files:** `.github/workflows/{checks,sync,pages}.yml`, `scripts/{publish-pages,check-build}.mjs`, `docs/operations.md`, README/AGENTS/준비 현황.
 
-- [ ] 1. CI에 Python·TypeScript·브라우저·DB 검사를 구성하고 정기 수집은 매시 17분, 동시 실행을 제한한다.
+- [ ] 1. CI에 Python·TypeScript·브라우저·DB 검사를 구성하고 정기 수집은 매시 00분, 동시 실행을 제한한다.
 - [ ] 2. Pages 공개 설정을 전달하여 정적 빌드·검증 후 전용 `gh-pages`에 발행한다. GitHub Pages source를 해당 브랜치 루트로 설정한다.
 - [ ] 3. 실제 HTTPS URL·JS/CSS·공개 API·모바일 화면과 배포 SHA를 확인한다.
 - [ ] 4. 코드 검증 후 가능한 서버 Secrets·Edge·Cron을 연결한다. 인증이 필요한 누락 항목은 배포된 웹과 구분해 명시한다.
