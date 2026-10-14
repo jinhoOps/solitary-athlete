@@ -1,0 +1,35 @@
+name: Checks
+on:
+  push:
+    branches: [main, mukmuk/db-foundation]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_test_fixture
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: '0.11.32'
+          python-version: '3.13'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.7
+      - run: npm ci
+      - run: uv sync --locked
+      - run: npm test && npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: deno check supabase/functions/mukmuk-discord-grass/index.ts supabase/functions/mukmuk-discord-cleanup/index.ts
+      - run: scripts/test-db.sh

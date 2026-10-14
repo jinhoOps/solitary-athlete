@@ -1,0 +1,31 @@
+name: Sync Workout Logs
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mukmuk-discord-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: '0.11.32'
+          python-version: '3.13'
+      - name: Collect proof and edit board
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          MUKMUK_DATABASE_URL: ${{ secrets.MUKMUK_DATABASE_URL }}
+          DISCORD_GUILD_ID: ${{ vars.DISCORD_GUILD_ID }}
+          DISCORD_AUTH_CHANNEL_ID: ${{ vars.DISCORD_AUTH_CHANNEL_ID }}
+          DISCORD_BOARD_CHANNEL_ID: ${{ vars.DISCORD_BOARD_CHANNEL_ID }}
+          DISCORD_GRASS_RECORD_EMOJI_ID: ${{ vars.DISCORD_GRASS_RECORD_EMOJI_ID }}
+          DISCORD_GRASS_PHOTO_EMOJI_ID: ${{ vars.DISCORD_GRASS_PHOTO_EMOJI_ID }}
+          DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
+        run: uv run --locked main.py

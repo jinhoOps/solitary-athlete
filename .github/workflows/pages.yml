@@ -1,0 +1,49 @@
+name: Publish Pages
+on:
+  push:
+    branches: [main, mukmuk/db-foundation]
+    paths:
+      - 'src/**'
+      - 'assets/brand/**'
+      - 'index.html'
+      - 'package*.json'
+      - '*config.ts'
+      - 'scripts/check-build.mjs'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: mukmuk-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test && npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Record deployed source
+        run: node -e 'require("node:fs").writeFileSync("dist/release.json", JSON.stringify({sourceCommit:process.env.GITHUB_SHA,publishedAt:new Date().toISOString()}))'
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
