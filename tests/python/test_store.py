@@ -13,7 +13,7 @@ def store():
     url=os.environ.get('TEST_DATABASE_URL')
     if not url: pytest.skip('Use scripts/test-db.sh for the isolated PostgreSQL integration suite')
     with psycopg.connect(url, autocommit=True) as admin:
-        admin.execute('TRUNCATE solitary_athlete.workout_events, solitary_athlete.workout_logs, solitary_athlete.sync_state, solitary_athlete.sync_status, solitary_athlete.reply_cleanup_jobs')
+        admin.execute('TRUNCATE solitary_athlete.workout_events, solitary_athlete.workout_logs, solitary_athlete.sync_state, solitary_athlete.sync_status, solitary_athlete.reply_cleanup_jobs, solitary_athlete.channel_access_secrets')
     with psycopg.connect(url) as conn:
         conn.execute('SET ROLE mukmuk_worker'); conn.commit()
         yield Store(conn)
@@ -68,3 +68,13 @@ def test_sync_reaction_failure_restarts_without_duplicate_memo_or_cursor_advance
     assert store.logs()[0]['memo']=='운동'
     assert store.state(settings['DISCORD_AUTH_CHANNEL_ID'])['last_message_id']=='100'
     assert api.writes[0][0]=='201' and len(api.writes)==1
+
+
+def test_active_secret_ignores_expired_codes_and_uses_latest_valid_issue(store):
+    with store.conn.transaction():
+        store.conn.execute("""INSERT INTO solitary_athlete.channel_access_secrets(secret_code,issued_at,active_until,expires_at) VALUES
+          ('fixture-old','2026-10-01','2026-10-20','2026-10-21'),
+          ('fixture-current','2026-10-12','2026-10-19','2026-10-20'),
+          ('fixture-expired','2026-10-13','2026-10-13','2026-10-14')""")
+    assert store.active_secret(datetime(2026,10,14,9,tzinfo=timezone.utc))=='fixture-current'
+    assert store.active_secret(datetime(2026,10,22,tzinfo=timezone.utc)) is None

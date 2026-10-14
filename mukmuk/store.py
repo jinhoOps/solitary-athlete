@@ -32,6 +32,11 @@ class Store:
                     count(*)::integer,bool_or(has_photo)
                     FROM solitary_athlete.workout_events WHERE user_id=%s AND log_date=%s GROUP BY user_id,log_date''', (user_id, log_date))
 
+    def active_secret(self, now):
+        with self.conn.transaction():
+            row = self.conn.execute('SELECT secret_code FROM solitary_athlete.channel_access_secrets WHERE expires_at>%s ORDER BY issued_at DESC LIMIT 1', (now,)).fetchone()
+            return row['secret_code'] if row else None
+
     def logs(self):
         with self.conn.transaction():
             with self.conn.cursor() as cur:

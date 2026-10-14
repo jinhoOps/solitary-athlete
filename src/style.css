@@ -107,3 +107,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
   .date-detail { margin-top: 16px; }
   .metrics { gap: 8px; }
 }
+
+.grass-cell[data-today="true"]:not(:focus-visible):not([aria-expanded="true"]) { outline: 1px solid var(--primary); outline-offset: 2px; }
+.today-action { min-height: 44px; }
+.date-detail { scroll-margin-top: 16px; }

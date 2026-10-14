@@ -1,3 +1,4 @@
+import { dashboardLink } from './dashboard-link.ts';
 export interface WeeklySecret {code:string;activeUntil:Date;expiresAt:Date}
 export interface SecretDB {
   reserveSecret?(code:string,now:Date,activeUntil:Date,expiresAt:Date):Promise<WeeklySecret>;
@@ -17,7 +18,7 @@ export function generateSecretCode(): string {
 }
 
 export function formatWeeklyNotice(code: string, dashboardUrl: string): string {
-  const url = dashboardUrl.replace(/\/+$/, '');
+  const url = dashboardLink(dashboardUrl, code);
   return [
     '## 🔑 이번 주 웹보드 시크릿 코드',
     '매주 월요일 새로운 코드가 발급됩니다. (기존 코드는 24시간 동안 함께 유지돼요)',
@@ -26,7 +27,7 @@ export function formatWeeklyNotice(code: string, dashboardUrl: string): string {
     code,
     '```',
     '',
-    `👉 [**웹보드 바로 접속하기**](${url}?code=${code})`
+    `👉 [**웹보드 바로 접속하기**](${url})`
   ].join('\n');
 }
 
@@ -68,6 +69,7 @@ export async function rotateWeeklySecret(deps: RotateDeps): Promise<{
   // Discover only our notices; do not touch another author's matching text.
   const existingIds:string[]=[];
   let matchingId:string|undefined;
+  let matchingContent:string|undefined;
   let before='';
   for (;;) {
     const listRes=await deps.discord('GET', `/channels/${deps.noticeChannelId}/messages?limit=100${before?`&before=${before}`:''}`);
@@ -75,7 +77,7 @@ export async function rotateWeeklySecret(deps: RotateDeps): Promise<{
     const messages=await listRes.json() as Array<{id:string;content?:string;author?:{id:string}}>;
     for(const message of messages) {
       if(message.author?.id===deps.botUserId && message.content?.includes('🔑 이번 주 웹보드 시크릿 코드')) {
-        if(!matchingId && message.content.includes(`\n${code}\n`)) matchingId=message.id;
+        if(!matchingId && message.content.includes(`\n${code}\n`)) {matchingId=message.id;matchingContent=message.content;}
         else existingIds.push(message.id);
       }
     }
@@ -84,6 +86,10 @@ export async function rotateWeeklySecret(deps: RotateDeps): Promise<{
   }
   // Publish first: an outage must leave the previous announcement visible.
   let messageId=matchingId;
+  if(messageId && matchingContent!==content) {
+    const updated=await deps.discord('PATCH', `/channels/${deps.noticeChannelId}/messages/${messageId}`, {content,allowed_mentions:{parse:[]}});
+    if(!updated.ok)throw new Error(`Discord notice update failed: ${updated.status}`);
+  }
   if(!messageId) {
     const postRes=await deps.discord('POST', `/channels/${deps.noticeChannelId}/messages`, {content,allowed_mentions:{parse:[]},nonce:code,enforce_nonce:true});
     if(!postRes.ok)throw new Error(`Discord notice publish failed: ${postRes.status}`);

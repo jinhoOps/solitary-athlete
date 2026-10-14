@@ -8,6 +8,11 @@ export function createDB(url:string, testOnlyNoTLS=false) {
   const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,idle_timeout:20,max_lifetime:60,
     ssl:testOnlyNoTLS?false:{rejectUnauthorized:true},onnotice:()=>{}});
   const db:ReplyDB & CleanupDB & SecretDB={
+    async activeSecret(now) {
+      const rows=await sql`SELECT secret_code FROM solitary_athlete.channel_access_secrets
+        WHERE expires_at>${now} ORDER BY issued_at DESC LIMIT 1`;
+      return rows[0]?.secret_code ?? null;
+    },
     async reserveSecret(code,now,activeUntil,expiresAt) {
       return await sql.begin(async tx=>{
         await tx`SELECT pg_advisory_xact_lock(hashtext('solitary_athlete.weekly-secret'))`;

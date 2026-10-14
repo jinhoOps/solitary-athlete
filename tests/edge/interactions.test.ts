@@ -88,3 +88,13 @@ it('retries transient publication failures under a renewed ownership lease',asyn
     discord:async()=>{requests++;return requests===1?Response.json({retry_after:0.01},{status:429}):requests===2?new Response(null,{status:503}):Response.json({});}});
   expect(scheduled).toBe(true);expect(requests).toBe(3);expect(leases).toBe(3);expect(sleeps[0]).toBe(10);
 });
+
+it('publishes a direct-entry dashboard link using the currently valid code',async()=>{
+  let content='';
+  await publishReply({...body,targetId:'10',targetName:'하루'}, {
+    key,now:()=>new Date('2026-10-14T09:00:00Z'),dashboardUrl:'https://example.com/board/?from=discord#grass',
+    db:{prepare:async()=>true,reservePublish:async()=>0,daily:async()=>[],lastSuccess:async()=>null,schedule:async()=>{},activeSecret:async()=> 'mukmuk-fixture'},
+    discord:async(_method,_path,payload)=>{content=String(payload?.content);return Response.json({});},
+  });
+  expect(content).toContain('https://example.com/board/?from=discord&code=mukmuk-fixture#grass');
+});

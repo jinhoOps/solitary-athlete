@@ -1,3 +1,4 @@
+import { dashboardLink } from './dashboard-link.ts';
 import { encryptToken } from './crypto.ts';
 import { formatGrass } from './grass.ts';
 import { dayAt } from '../../../src/dates.ts';
@@ -8,6 +9,7 @@ export interface Reply {
 }
 export type DiscordCall = (method: string, path: string, payload?: Record<string, unknown>) => Promise<Response>;
 export interface ReplyDB {
+  activeSecret?: (now:Date) => Promise<string|null>;
   prepare: (body: Reply, cipher: Uint8Array, expiresAt: Date) => Promise<boolean>;
   reservePublish: (id:string, now:Date, attempt?:number) => Promise<number|null>;
   daily: (userId: string) => Promise<WorkoutLog[]>;
@@ -57,8 +59,9 @@ export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;d
   }
   let content: string;
   try {
-    const [rows,lastSuccess]=await Promise.all([deps.db.daily(body.targetId),deps.db.lastSuccess()]);
-    content=formatGrass(body.targetName,rows,dayAt(deps.now()),lastSuccess,deps.dashboardUrl,deps.emojis);
+    const [rows,lastSuccess,code]=await Promise.all([deps.db.daily(body.targetId),deps.db.lastSuccess(),
+      deps.dashboardUrl ? deps.db.activeSecret?.(deps.now()) ?? null : null]);
+    content=formatGrass(body.targetName,rows,dayAt(deps.now()),lastSuccess,dashboardLink(deps.dashboardUrl,code),deps.emojis);
   } catch {
     content='기록을 불러오지 못했어요. 잠시 뒤 다시 조회해 주세요.\n이 메시지는 5분 뒤 사라져요.';
     console.error('mukmuk_query_failed');

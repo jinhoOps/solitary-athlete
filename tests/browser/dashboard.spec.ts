@@ -124,11 +124,13 @@ test('URL code parameter automatically stores code and cleans URL', async ({ pag
     }
     await route.fulfill({ json: [] });
   });
-  await page.goto('./?code=mukmuk-query');
+  await page.goto('./?code=mukmuk-query&from=discord#grass');
   await expect(page.locator('.workout-card')).toHaveCount(2);
   const stored = await page.evaluate(() => localStorage.getItem('mukmuk_secret_code'));
   expect(stored).toBe('mukmuk-query');
   expect(page.url()).not.toContain('code=');
+  expect(page.url()).toContain('from=discord');
+  expect(page.url()).toContain('#grass');
 });
 
 test('invalid secret code shows error message in modal', async ({ page }) => {
@@ -222,4 +224,23 @@ test('ignores a slower response for a previously selected year',async({page})=>{
   release();await settled;
   await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
   await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+});
+
+test('reveals today automatically without stealing focus, then reveals selected date and detail',async({page})=>{
+  await page.setViewportSize({width:360,height:600});await fixture(page);
+  const card=page.locator('.workout-card').filter({hasText:'하루'});
+  const cell=card.locator(`[data-date="${today}"]`),scroll=card.locator('.grass-scroll');
+  await expect(async()=>{
+    const a=await cell.boundingBox(),b=await scroll.boundingBox();
+    expect(a!.x).toBeGreaterThanOrEqual(b!.x);expect(a!.x+a!.width).toBeLessThanOrEqual(b!.x+b!.width);
+  }).toPass();
+  await expect(cell).not.toBeFocused();
+  await cell.click();
+  const title=card.locator('.date-detail h4');
+  await expect(title).toBeFocused();await expect(title).toBeInViewport();
+  await page.getByRole('button',{name:'날짜 상세 닫기'}).click();await expect(cell).toBeFocused();
+  await scroll.evaluate(e=>{e.scrollLeft=0;});
+  await card.getByRole('button',{name:'오늘 날짜로 이동'}).click();
+  await expect(cell).toBeFocused();
+  const a=await cell.boundingBox(),b=await scroll.boundingBox();expect(a!.x).toBeGreaterThanOrEqual(b!.x);
 });

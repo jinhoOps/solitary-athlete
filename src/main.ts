@@ -17,6 +17,7 @@ let selected: string | null = null;
 let timeline: WorkoutLog[] = [];
 let more = false;
 let generation = 0;
+const cardReveals = new Map<string, () => void>();
 const cardOpeners = new Map<string, (date: string, log?: WorkoutLog) => void>();
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text?: string): HTMLElementTagNameMap[K] {
@@ -72,7 +73,10 @@ const yearBar = el('div', 'year-bar');
 yearBar.hidden = true;
 const yearFilters = el('nav', 'year-filter');
 yearFilters.setAttribute('aria-label', '잔디 연도 선택');
-yearBar.append(el('h2', '', '연도별 운동 잔디'), yearFilters);
+const yearTitle = el('div');
+const todayCaption = el('p', 'caption');
+yearTitle.append(el('h2', '', '연도별 운동 잔디'), todayCaption);
+yearBar.append(yearTitle, yearFilters);
 
 const heading = el('div', 'section-heading');
 heading.append(el('h2', '', '남겨 둔 운동'), el('span', 'caption', '날짜별 기록 · 최신순'));
@@ -180,7 +184,12 @@ function workoutCard(member: Member): HTMLElement {
     openedLog = undefined;
     details.hidden = true;
     for (const cell of dayButtons.values()) cell.setAttribute('aria-expanded', 'false');
-    if (date) dayButtons.get(date)?.focus();
+    if (date) {
+      const cell = dayButtons.get(date);
+      cell?.focus({preventScroll:true});
+      revealDate(date);
+      cell?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+    }
   }
 
   function open(date: string, log?: WorkoutLog) {
@@ -193,15 +202,22 @@ function workoutCard(member: Member): HTMLElement {
     const title = el('div', 'detail-heading');
     const closeButton = button('×', close, 'button icon-button');
     closeButton.setAttribute('aria-label', '날짜 상세 닫기');
-    title.append(el('h4', '', `${date} · ${['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}`), closeButton);
+    const detailHeading = el('h4', '', `${date} · ${['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}`);
+    detailHeading.tabIndex = -1;
+    title.append(detailHeading, closeButton);
     details.replaceChildren(title, el('p', 'memo', memoFor(date)?.memo || (levelFor(date) ? '사진 인증' : '기록 없음')));
     details.hidden = false;
     for (const [d, cell] of dayButtons) cell.setAttribute('aria-expanded', String(d === date));
+    requestAnimationFrame(() => {
+      if (opened !== date || !card.isConnected) return;
+      revealDate(date);
+      details.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+      detailHeading.focus({preventScroll:true});
+    });
   }
 
   cardOpeners.set(member.id, (date, log) => {
     open(date, log);
-    details.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   });
 
   let previousMonth = '';
@@ -228,6 +244,7 @@ function workoutCard(member: Member): HTMLElement {
     }
     const cell = button('', () => open(date), 'grass-cell');
     cell.dataset.date = date;
+    cell.dataset.today = String(date === today);
     cell.dataset.level = String(levelFor(date));
     cell.disabled = date > today;
     cell.tabIndex = date === entryDate ? 0 : -1;
@@ -236,6 +253,7 @@ function workoutCard(member: Member): HTMLElement {
     cell.onfocus = () => {
       for (const [d, b] of dayButtons) b.tabIndex = d === date ? 0 : -1;
       preview.textContent = description(date);
+      revealDate(date);
     };
     cell.onmouseenter = () => {
       preview.textContent = description(date);
@@ -267,6 +285,18 @@ function workoutCard(member: Member): HTMLElement {
   const grassScroll = el('div', 'grass-scroll');
   grassScroll.append(months, gridWrap);
 
+  function revealDate(date: string) {
+    if (!card.isConnected) return;
+    const cell = dayButtons.get(date);
+    if (!cell) return;
+    const target = cell.getBoundingClientRect(), viewport = grassScroll.getBoundingClientRect();
+    grassScroll.scrollLeft += target.left - viewport.left - (viewport.width - target.width) / 2;
+  }
+  cardReveals.set(member.id, () => {
+    const date = opened ?? (selectedYear === currentYear ? today : null);
+    if (date) revealDate(date);
+  });
+
   const legend = el('div', 'legend');
   for (const [level, text] of ['기록 없음', '텍스트 인증', '사진 포함'].entries()) {
     const item = el('span');
@@ -276,6 +306,15 @@ function workoutCard(member: Member): HTMLElement {
     legend.append(item);
   }
 
+  if (selectedYear === currentYear) {
+    const goToday = button(`오늘 · ${shortDate(today)}`, () => {
+      focusDate(today);
+      revealDate(today);
+      dayButtons.get(today)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+    }, 'button secondary today-action');
+    goToday.setAttribute('aria-label','오늘 날짜로 이동');
+    legend.append(goToday);
+  }
   visual.append(grassScroll, legend, preview);
   content.append(visual, details);
   card.append(top, metrics, content);
@@ -283,7 +322,9 @@ function workoutCard(member: Member): HTMLElement {
 }
 
 function renderCards() {
+  todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();
+  cardReveals.clear();
   cards.replaceChildren();
   const members = data.members.filter(m => !selected || m.id === selected);
   if (selected && !members.length && knownMembers.has(selected)) {
@@ -298,6 +339,7 @@ function renderCards() {
     cards.append(empty);
   } else {
     members.forEach(m => cards.append(workoutCard(m)));
+    requestAnimationFrame(() => cardReveals.forEach(reveal => reveal()));
   }
 }
 
@@ -429,7 +471,9 @@ async function init(preserveSelection = false) {
   const queryCode = urlParams.get('code');
   if (queryCode) {
     localStorage.setItem('mukmuk_secret_code', queryCode.trim().toLowerCase());
-    window.history.replaceState({}, '', window.location.pathname);
+    urlParams.delete('code');
+    const remaining = urlParams.toString();
+    window.history.replaceState({}, '', window.location.pathname + (remaining ? `?${remaining}` : '') + window.location.hash);
   }
 
   const code = (localStorage.getItem('mukmuk_secret_code') || '').trim().toLowerCase();
@@ -485,4 +529,5 @@ async function init(preserveSelection = false) {
   }
 }
 
+window.addEventListener('resize', () => requestAnimationFrame(() => cardReveals.forEach(reveal => reveal())));
 void init();
