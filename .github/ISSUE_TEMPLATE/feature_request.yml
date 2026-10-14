@@ -1,0 +1,23 @@
+name: 개선 제안
+description: 꾸준한 기록에 도움이 될 아이디어를 남겨 주세요.
+title: "[제안] "
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 해결하고 싶은 상황
+      description: 누구에게, 언제, 어떤 도움이 필요한가요?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안하는 동작
+      description: 사용할 때의 흐름이나 문구를 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위와 대안
+      description: 더 단순하게 해결할 방법이나 기존 설계와 달라지는 부분이 있나요?

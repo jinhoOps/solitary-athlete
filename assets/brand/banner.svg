@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">고독한 운동가 — 오늘도 묵묵히, 잔디 한 칸.</title>
+  <desc id="desc">밝은 종이색 바탕, 작은 새싹 마크, 오른쪽에 조용히 쌓이는 운동 잔디. 기록을 챙기는 봇 묵묵.</desc>
+  <rect width="1280" height="640" rx="24" fill="#F7F8F2"/>
+  <g transform="translate(76 64)">
+    <rect width="54" height="54" rx="13" fill="#326C43"/>
+    <path d="M27 40V27" fill="none" stroke="#F7F8F2" stroke-width="3" stroke-linecap="round"/>
+    <path d="M27 30C18 30 13 25 13 17C22 17 28 22 27 30Z" fill="#D9E9D9"/>
+    <path d="M27 26C27 18 32 13 41 13C41 21 36 27 27 26Z" fill="#F7F8F2"/>
+    <path d="M18 42H36" fill="none" stroke="#D9E9D9" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif">
+    <text x="148" y="101" font-size="27" font-weight="700" fill="#18271E">고독한 운동가</text>
+    <text x="76" y="266" font-size="68" font-weight="700" fill="#18271E">오늘도 묵묵히,</text>
+    <text x="76" y="354" font-size="68" font-weight="700" fill="#326C43">잔디 한 칸.</text>
+    <text x="80" y="422" font-size="23" fill="#57665B">당신의 속도로 쌓아가는 운동 기록.</text>
+    <rect x="76" y="506" width="208" height="48" rx="12" fill="#D9E9D9"/>
+    <text x="99" y="538" font-size="21" font-weight="600" fill="#326C43">묵묵 · mukmuk</text>
+    <text x="1204" y="550" text-anchor="end" font-size="17" fill="#57665B">SOLITARY ATHLETE</text>
+  </g>
+  <g fill="#E8EDE4">
+    <rect x="818" y="126" width="30" height="30" rx="5"/>
+    <rect x="818" y="168" width="30" height="30" rx="5"/>
+    <rect x="818" y="210" width="30" height="30" rx="5"/>
+    <rect x="818" y="252" width="30" height="30" rx="5"/>
+    <rect x="818" y="294" width="30" height="30" rx="5"/>
+    <rect x="818" y="336" width="30" height="30" rx="5"/>
+    <rect x="818" y="378" width="30" height="30" rx="5"/>
+    <rect x="818" y="420" width="30" height="30" rx="5"/>
+    <rect x="860" y="126" width="30" height="30" rx="5"/>
+    <rect x="860" y="168" width="30" height="30" rx="5"/>
+    <rect x="860" y="210" width="30" height="30" rx="5"/>
+    <rect x="860" y="252" width="30" height="30" rx="5"/>
+    <rect x="860" y="294" width="30" height="30" rx="5"/>
+    <rect x="860" y="336" width="30" height="30" rx="5"/>
+    <rect x="860" y="378" width="30" height="30" rx="5"/>
+    <rect x="860" y="420" width="30" height="30" rx="5"/>
+    <rect x="902" y="126" width="30" height="30" rx="5"/>
+    <rect x="902" y="168" width="30" height="30" rx="5"/>
+    <rect x="902" y="210" width="30" height="30" rx="5"/>
+    <rect x="902" y="252" width="30" height="30" rx="5"/>
+    <rect x="902" y="294" width="30" height="30" rx="5"/>
+    <rect x="902" y="336" width="30" height="30" rx="5"/>
+    <rect x="902" y="378" width="30" height="30" rx="5"/>
+    <rect x="902" y="420" width="30" height="30" rx="5"/>
+    <rect x="944" y="126" width="30" height="30" rx="5"/>
+    <rect x="944" y="168" width="30" height="30" rx="5"/>
+    <rect x="944" y="210" width="30" height="30" rx="5"/>
+    <rect x="944" y="252" width="30" height="30" rx="5"/>
+    <rect x="944" y="294" width="30" height="30" rx="5"/>
+    <rect x="944" y="336" width="30" height="30" rx="5"/>
+    <rect x="944" y="378" width="30" height="30" rx="5"/>
+    <rect x="944" y="420" width="30" height="30" rx="5"/>
+    <rect x="986" y="126" width="30" height="30" rx="5"/>
+    <rect x="986" y="168" width="30" height="30" rx="5"/>
+    <rect x="986" y="210" width="30" height="30" rx="5"/>
+    <rect x="986" y="252" width="30" height="30" rx="5"/>
+    <rect x="986" y="294" width="30" height="30" rx="5"/>
+    <rect x="986" y="336" width="30" height="30" rx="5"/>
+    <rect x="986" y="378" width="30" height="30" rx="5"/>
+    <rect x="986" y="420" width="30" height="30" rx="5"/>
+    <rect x="1028" y="126" width="30" height="30" rx="5"/>
+    <rect x="1028" y="168" width="30" height="30" rx="5"/>
+    <rect x="1028" y="210" width="30" height="30" rx="5"/>
+    <rect x="1028" y="252" width="30" height="30" rx="5"/>
+    <rect x="1028" y="294" width="30" height="30" rx="5"/>
+    <rect x="1028" y="336" width="30" height="30" rx="5"/>
+    <rect x="1028" y="378" width="30" height="30" rx="5"/>
+    <rect x="1028" y="420" width="30" height="30" rx="5"/>
+    <rect x="1070" y="126" width="30" height="30" rx="5"/>
+    <rect x="1070" y="168" width="30" height="30" rx="5"/>
+    <rect x="1070" y="210" width="30" height="30" rx="5"/>
+    <rect x="1070" y="252" width="30" height="30" rx="5"/>
+    <rect x="1070" y="294" width="30" height="30" rx="5"/>
+    <rect x="1070" y="336" width="30" height="30" rx="5"/>
+    <rect x="1070" y="378" width="30" height="30" rx="5"/>
+    <rect x="1070" y="420" width="30" height="30" rx="5"/>
+    <rect x="1112" y="126" width="30" height="30" rx="5"/>
+    <rect x="1112" y="168" width="30" height="30" rx="5"/>
+    <rect x="1112" y="210" width="30" height="30" rx="5"/>
+    <rect x="1112" y="252" width="30" height="30" rx="5"/>
+    <rect x="1112" y="294" width="30" height="30" rx="5"/>
+    <rect x="1112" y="336" width="30" height="30" rx="5"/>
+    <rect x="1112" y="378" width="30" height="30" rx="5"/>
+    <rect x="1112" y="420" width="30" height="30" rx="5"/>
+  </g>
+  <g fill="#D9E9D9">
+    <rect x="860" y="126" width="30" height="30" rx="5"/>
+    <rect x="902" y="210" width="30" height="30" rx="5"/>
+    <rect x="818" y="294" width="30" height="30" rx="5"/>
+    <rect x="944" y="336" width="30" height="30" rx="5"/>
+    <rect x="1028" y="168" width="30" height="30" rx="5"/>
+    <rect x="1070" y="252" width="30" height="30" rx="5"/>
+    <rect x="1112" y="126" width="30" height="30" rx="5"/>
+  </g>
+  <g fill="#326C43">
+    <rect x="902" y="126" width="30" height="30" rx="5"/>
+    <rect x="944" y="168" width="30" height="30" rx="5"/>
+    <rect x="860" y="252" width="30" height="30" rx="5"/>
+    <rect x="986" y="252" width="30" height="30" rx="5"/>
+    <rect x="1028" y="294" width="30" height="30" rx="5"/>
+    <rect x="1070" y="336" width="30" height="30" rx="5"/>
+    <rect x="1112" y="378" width="30" height="30" rx="5"/>
+    <rect x="986" y="420" width="30" height="30" rx="5"/>
+  </g>
+</svg>

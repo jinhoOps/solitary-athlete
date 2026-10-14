@@ -1,0 +1,66 @@
+from dataclasses import asdict
+from psycopg.rows import dict_row
+
+class Store:
+    def __init__(self, connection):
+        self.conn = connection
+        self.conn.prepare_threshold = None  # Supavisor transaction pooler compatibility.
+        self.conn.row_factory = dict_row
+
+    def save(self, message_id, event):
+        with self.conn.transaction():
+            self.conn.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
+            previous = self.conn.execute('SELECT user_id, log_date FROM solitary_athlete.workout_events WHERE message_id=%s', (message_id,)).fetchone()
+            affected = set()
+            if previous: affected.add((previous['user_id'], previous['log_date']))
+            if event is None:
+                self.conn.execute('DELETE FROM solitary_athlete.workout_events WHERE message_id=%s', (message_id,))
+            else:
+                row = self.conn.execute('''INSERT INTO solitary_athlete.workout_events
+                    (message_id,guild_id,channel_id,user_id,username,created_at,edited_at,memo,has_photo)
+                    VALUES (%(message_id)s,%(guild_id)s,%(channel_id)s,%(user_id)s,%(username)s,%(created_at)s,%(edited_at)s,%(memo)s,%(has_photo)s)
+                    ON CONFLICT (message_id) DO UPDATE SET username=EXCLUDED.username,
+                    edited_at=EXCLUDED.edited_at,memo=EXCLUDED.memo,has_photo=EXCLUDED.has_photo,updated_at=now()
+                    RETURNING user_id, log_date''', asdict(event)).fetchone()
+                affected.add((row['user_id'], row['log_date']))
+            for user_id, log_date in affected:
+                self.conn.execute('DELETE FROM solitary_athlete.workout_logs WHERE user_id=%s AND log_date=%s', (user_id, log_date))
+                self.conn.execute('''INSERT INTO solitary_athlete.workout_logs
+                    (user_id,log_date,username,memo,verification_count,has_photo)
+                    SELECT user_id,log_date,(array_agg(username ORDER BY created_at DESC,message_id::numeric DESC))[1],
+                    string_agg(CASE WHEN memo='' THEN '사진 인증' ELSE memo END, E'\\n' ORDER BY created_at,message_id::numeric),
+                    count(*)::integer,bool_or(has_photo)
+                    FROM solitary_athlete.workout_events WHERE user_id=%s AND log_date=%s GROUP BY user_id,log_date''', (user_id, log_date))
+
+    def logs(self):
+        with self.conn.transaction():
+            with self.conn.cursor() as cur:
+                cur.execute('SELECT * FROM solitary_athlete.workout_logs ORDER BY log_date DESC,updated_at DESC,user_id')
+                result = []
+                while page := cur.fetchmany(1000): result.extend(page)
+                return result
+
+    def state(self, channel):
+        with self.conn.transaction():
+            return self.conn.execute('SELECT * FROM solitary_athlete.sync_state WHERE channel_id=%s', (channel,)).fetchone() or {
+                'last_message_id': None, 'last_success_at': None, 'board_message_ids': []}
+
+    def board_ids(self, channel, ids):
+        with self.conn.transaction():
+            self.conn.execute('''INSERT INTO solitary_athlete.sync_state(channel_id,board_message_ids) VALUES(%s,%s)
+                ON CONFLICT(channel_id) DO UPDATE SET board_message_ids=EXCLUDED.board_message_ids''', (channel, ids))
+
+    def pending_reactions(self):
+        with self.conn.transaction():
+            return self.conn.execute('SELECT message_id,channel_id FROM solitary_athlete.workout_events WHERE reacted_at IS NULL ORDER BY message_id::numeric').fetchall()
+
+    def reacted(self, mid):
+        with self.conn.transaction():
+            self.conn.execute('UPDATE solitary_athlete.workout_events SET reacted_at=now() WHERE message_id=%s', (mid,))
+
+    def success(self, channel, cursor, now):
+        with self.conn.transaction():
+            self.conn.execute('''INSERT INTO solitary_athlete.sync_state(channel_id,last_message_id,last_success_at) VALUES(%s,%s,%s)
+                ON CONFLICT(channel_id) DO UPDATE SET last_message_id=COALESCE(EXCLUDED.last_message_id,solitary_athlete.sync_state.last_message_id),last_success_at=EXCLUDED.last_success_at''', (channel, cursor, now))
+            self.conn.execute('''INSERT INTO solitary_athlete.sync_status(singleton,last_success_at) VALUES(true,%s)
+                ON CONFLICT(singleton) DO UPDATE SET last_success_at=EXCLUDED.last_success_at''', (now,))

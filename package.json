@@ -1,0 +1,24 @@
+{
+  "name": "mukmuk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && vite build && node scripts/check-build.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:browser": "playwright test",
+    "publish:pages": "node scripts/publish-pages.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "postgres": "^3.4.9",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  }
+}

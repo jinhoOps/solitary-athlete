@@ -1,0 +1,283 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1140" viewBox="0 0 1440 1140" role="img" aria-labelledby="title desc">
+<title id="title">고독한 운동가 대시보드 · 데스크톱과 모바일 설계 시안</title>
+<desc id="desc">가상 멤버 하루의 최근 84일 운동 잔디와 날짜별 메모. 이번 주 3일, 연속 4일, 누적 32일. 텍스트 인증은 기본 녹색, 사진 포함 인증은 진한 녹색. 밝은 바탕과 짙은 녹색을 사용한 정적 디자인 시안.</desc>
+<rect width="1440" height="1140" fill="#E8EDE4"/>
+<g font-family="-apple-system, BlinkMacSystemFont, &apos;Apple SD Gothic Neo&apos;, &apos;Noto Sans KR&apos;, &apos;Malgun Gothic&apos;, sans-serif">
+<text x="28" y="36" font-size="14" font-weight="600" fill="#57665B">DESKTOP · 화면 구성 시안</text>
+<rect x="28" y="64" width="970" height="1018" rx="20" fill="#F7F8F2"/>
+<g transform="translate(76 104) scale(0.28125)">
+<rect x="0" y="0" width="128" height="128" rx="28" fill="#326C43"/>
+<path d="M64 92V62" fill="none" stroke="#F7F8F2" stroke-width="7" stroke-linecap="round"/><path d="M64 70C43 71 32 59 32 41C52 40 66 51 64 70Z" fill="#D9E9D9"/><path d="M64 61C63 42 75 30 96 30C96 49 84 62 64 61Z" fill="#F7F8F2"/><path d="M43 96H85" fill="none" stroke="#D9E9D9" stroke-width="5" stroke-linecap="round"/>
+</g>
+<text x="126" y="130" font-size="18" font-weight="600" fill="#18271E">고독한 운동가</text>
+<text x="950" y="128" font-size="14" font-weight="400" fill="#57665B" text-anchor="end">묵묵 · 운동 기록</text>
+<path d="M76 160H950" stroke="#D3DBD0"/>
+<text x="76" y="223" font-size="40" font-weight="700" fill="#18271E">오늘도 묵묵히, 잔디 한 칸.</text>
+<text x="78" y="263" font-size="16" font-weight="400" fill="#57665B">당신의 속도로 쌓아가는 운동 기록.</text>
+<text x="78" y="301" font-size="13" font-weight="400" fill="#57665B">한국 시간 기준 · 마지막 수집 10월 14일 19:17 KST</text>
+<rect x="76" y="325" width="114" height="44" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="133.0" y="353" font-size="14" font-weight="600" fill="#57665B" text-anchor="middle">전체 멤버</text>
+<rect x="198" y="325" width="76" height="44" rx="10" fill="#326C43"/>
+<text x="236.0" y="353" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">하루</text>
+<rect x="282" y="325" width="76" height="44" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="320.0" y="353" font-size="14" font-weight="600" fill="#57665B" text-anchor="middle">산책</text>
+<rect x="76" y="393" width="874" height="356" rx="16" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="104" y="434" font-size="18" font-weight="600" fill="#18271E">하루님의 운동 잔디</text>
+<text x="922" y="433" font-size="13" font-weight="400" fill="#57665B" text-anchor="end">최근 84일</text>
+<text x="104" y="473" font-size="13" font-weight="400" fill="#57665B">이번 주</text>
+<text x="104" y="505" font-size="24" font-weight="700" fill="#18271E">3일</text>
+<text x="238" y="473" font-size="13" font-weight="400" fill="#57665B">연속</text>
+<text x="238" y="505" font-size="24" font-weight="700" fill="#18271E">4일</text>
+<text x="372" y="473" font-size="13" font-weight="400" fill="#57665B">누적</text>
+<text x="372" y="505" font-size="24" font-weight="700" fill="#18271E">32일</text>
+<text x="105" y="561" font-size="12" font-weight="400" fill="#57665B">월</text>
+<text x="105" y="597" font-size="12" font-weight="400" fill="#57665B">수</text>
+<text x="105" y="633" font-size="12" font-weight="400" fill="#57665B">금</text>
+<text x="105" y="669" font-size="12" font-weight="400" fill="#57665B">일</text>
+<rect x="128" y="602" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="128" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="128" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="128" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="146" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="146" y="566" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="146" y="584" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="146" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="146" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="146" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="146" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="164" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="164" y="566" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="164" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="164" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="164" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="164" y="638" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="164" y="656" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="182" y="548" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="182" y="566" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="182" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="182" y="602" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="182" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="182" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="182" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="200" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="200" y="566" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="200" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="200" y="602" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="200" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="200" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="200" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="218" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="218" y="566" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="218" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="218" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="218" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="218" y="638" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="218" y="656" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="236" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="236" y="566" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="236" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="236" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="236" y="620" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="236" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="236" y="656" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="254" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="254" y="566" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="254" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="254" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="254" y="620" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="254" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="254" y="656" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="272" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="272" y="566" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="272" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="272" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="272" y="620" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="272" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="272" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="290" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="290" y="566" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="290" y="584" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="290" y="602" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="290" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="290" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="290" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="308" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="308" y="566" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="308" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="308" y="602" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="308" y="620" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="308" y="638" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="308" y="656" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="326" y="548" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="326" y="566" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="326" y="584" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="326" y="602" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="326" y="620" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="326" y="638" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="326" y="656" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="344" y="548" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="344" y="566" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="344" y="584" width="14" height="14" rx="3" fill="#216E39"/>
+<text x="128" y="533" font-size="12" font-weight="400" fill="#57665B">7월</text>
+<text x="164" y="533" font-size="12" font-weight="400" fill="#57665B">8월</text>
+<text x="236" y="533" font-size="12" font-weight="400" fill="#57665B">9월</text>
+<text x="326" y="533" font-size="12" font-weight="400" fill="#57665B">10월</text>
+<text x="128" y="699" font-size="12" font-weight="400" fill="#57665B">2026.07.23 — 2026.10.14</text>
+<rect x="128" y="719" width="12" height="12" rx="3" fill="#E8EDE4"/>
+<text x="146" y="730" font-size="12" font-weight="400" fill="#57665B">기록 없음</text>
+<rect x="226" y="719" width="12" height="12" rx="3" fill="#4B8F52"/>
+<text x="244" y="730" font-size="12" font-weight="400" fill="#57665B">텍스트</text>
+<rect x="302" y="719" width="12" height="12" rx="3" fill="#216E39"/>
+<text x="320" y="730" font-size="12" font-weight="400" fill="#57665B">사진 포함</text>
+<rect x="475" y="531" width="447" height="166" rx="12" fill="#F7F8F2"/>
+<text x="499" y="565" font-size="15" font-weight="600" fill="#326C43">10월 14일 · 사진 포함 인증</text>
+<text x="499" y="603" font-size="18" font-weight="600" fill="#18271E">가볍게 30분 걷기 · 사진 인증</text>
+<text x="499" y="645" font-size="14" font-weight="400" fill="#57665B">하루의 기록이 한 칸으로 모였어요.</text>
+<text x="499" y="675" font-size="13" font-weight="400" fill="#57665B">날짜를 선택하면 메모를 볼 수 있어요.</text>
+<text x="76" y="779" font-size="20" font-weight="700" fill="#18271E">상세 운동 메모</text>
+<text x="950" y="779" font-size="13" font-weight="400" fill="#57665B" text-anchor="end">최신 기록부터</text>
+<rect x="76" y="801" width="874" height="86" rx="12" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="100" y="830" font-size="13" font-weight="400" fill="#57665B">10월 14일 · 하루</text>
+<text x="100" y="862" font-size="16" font-weight="400" fill="#18271E">가볍게 30분 걷기 · 사진 인증</text>
+<rect x="76" y="903" width="874" height="86" rx="12" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="100" y="932" font-size="13" font-weight="400" fill="#57665B">10월 13일 · 하루</text>
+<text x="100" y="964" font-size="16" font-weight="400" fill="#18271E">하체 운동 40분</text>
+<rect x="442" y="1001" width="140" height="44" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="512.0" y="1029" font-size="14" font-weight="600" fill="#57665B" text-anchor="middle">더 보기</text>
+<text x="1044" y="36" font-size="14" font-weight="600" fill="#57665B">MOBILE · 360px</text>
+<rect x="1044" y="64" width="360" height="1018" rx="20" fill="#F7F8F2"/>
+<g transform="translate(1060 88) scale(0.234375)">
+<rect x="0" y="0" width="128" height="128" rx="28" fill="#326C43"/>
+<path d="M64 92V62" fill="none" stroke="#F7F8F2" stroke-width="7" stroke-linecap="round"/><path d="M64 70C43 71 32 59 32 41C52 40 66 51 64 70Z" fill="#D9E9D9"/><path d="M64 61C63 42 75 30 96 30C96 49 84 62 64 61Z" fill="#F7F8F2"/><path d="M43 96H85" fill="none" stroke="#D9E9D9" stroke-width="5" stroke-linecap="round"/>
+</g>
+<text x="1102" y="110" font-size="17" font-weight="700" fill="#18271E">고독한 운동가</text>
+<text x="1060" y="182" font-size="28" font-weight="700" fill="#18271E">오늘도 묵묵히,</text>
+<text x="1060" y="220" font-size="28" font-weight="700" fill="#326C43">잔디 한 칸.</text>
+<text x="1060" y="257" font-size="14" font-weight="400" fill="#57665B">당신의 속도로 쌓아가는 운동 기록.</text>
+<text x="1060" y="286" font-size="12" font-weight="400" fill="#57665B">마지막 수집 · 10.14 19:17 KST</text>
+<rect x="1060" y="310" width="108" height="44" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1114.0" y="338" font-size="14" font-weight="600" fill="#57665B" text-anchor="middle">전체 멤버</text>
+<rect x="1176" y="310" width="72" height="44" rx="10" fill="#326C43"/>
+<text x="1212.0" y="338" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">하루</text>
+<rect x="1256" y="310" width="72" height="44" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1292.0" y="338" font-size="14" font-weight="600" fill="#57665B" text-anchor="middle">산책</text>
+<rect x="1060" y="378" width="328" height="389" rx="16" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1076" y="412" font-size="17" font-weight="700" fill="#18271E">하루님의 운동 잔디</text>
+<text x="1076" y="438" font-size="12" font-weight="400" fill="#57665B">최근 84일 · 한국 시간 기준</text>
+<text x="1076" y="470" font-size="12" font-weight="400" fill="#57665B">이번 주</text>
+<text x="1076" y="500" font-size="23" font-weight="700" fill="#18271E">3일</text>
+<text x="1176" y="470" font-size="12" font-weight="400" fill="#57665B">연속</text>
+<text x="1176" y="500" font-size="23" font-weight="700" fill="#18271E">4일</text>
+<text x="1276" y="470" font-size="12" font-weight="400" fill="#57665B">누적</text>
+<text x="1276" y="500" font-size="23" font-weight="700" fill="#18271E">32일</text>
+<text x="1080" y="552" font-size="12" font-weight="400" fill="#57665B">월</text>
+<text x="1080" y="588" font-size="12" font-weight="400" fill="#57665B">수</text>
+<text x="1080" y="624" font-size="12" font-weight="400" fill="#57665B">금</text>
+<text x="1080" y="660" font-size="12" font-weight="400" fill="#57665B">일</text>
+<rect x="1103" y="593" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1103" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1103" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1103" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1121" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1121" y="557" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1121" y="575" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1121" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1121" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1121" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1121" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1139" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1139" y="557" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1139" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1139" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1139" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1139" y="629" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1139" y="647" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1157" y="539" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1157" y="557" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1157" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1157" y="593" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1157" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1157" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1157" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1175" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1175" y="557" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1175" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1175" y="593" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1175" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1175" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1175" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1193" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1193" y="557" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1193" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1193" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1193" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1193" y="629" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1193" y="647" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1211" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1211" y="557" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1211" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1211" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1211" y="611" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1211" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1211" y="647" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1229" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1229" y="557" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1229" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1229" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1229" y="611" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1229" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1229" y="647" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1247" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1247" y="557" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1247" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1247" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1247" y="611" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1247" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1247" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1265" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1265" y="557" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1265" y="575" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1265" y="593" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1265" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1265" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1265" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1283" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1283" y="557" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1283" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1283" y="593" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1283" y="611" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1283" y="629" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1283" y="647" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1301" y="539" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1301" y="557" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1301" y="575" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1301" y="593" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1301" y="611" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1301" y="629" width="14" height="14" rx="3" fill="#E8EDE4"/>
+<rect x="1301" y="647" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1319" y="539" width="14" height="14" rx="3" fill="#216E39"/>
+<rect x="1319" y="557" width="14" height="14" rx="3" fill="#4B8F52"/>
+<rect x="1319" y="575" width="14" height="14" rx="3" fill="#216E39"/>
+<text x="1103" y="524" font-size="12" font-weight="400" fill="#57665B">7월</text>
+<text x="1139" y="524" font-size="12" font-weight="400" fill="#57665B">8월</text>
+<text x="1211" y="524" font-size="12" font-weight="400" fill="#57665B">9월</text>
+<text x="1301" y="524" font-size="12" font-weight="400" fill="#57665B">10월</text>
+<text x="1103" y="690" font-size="12" font-weight="400" fill="#57665B">2026.07.23 — 2026.10.14</text>
+<rect x="1103" y="710" width="12" height="12" rx="3" fill="#E8EDE4"/>
+<text x="1121" y="721" font-size="12" font-weight="400" fill="#57665B">기록 없음</text>
+<rect x="1197" y="710" width="12" height="12" rx="3" fill="#4B8F52"/>
+<text x="1215" y="721" font-size="12" font-weight="400" fill="#57665B">텍스트</text>
+<rect x="1271" y="710" width="12" height="12" rx="3" fill="#216E39"/>
+<text x="1289" y="721" font-size="12" font-weight="400" fill="#57665B">사진 포함</text>
+<rect x="1076" y="735" width="296" height="1" rx="0" fill="#D3DBD0"/>
+<text x="1076" y="756" font-size="12" font-weight="400" fill="#57665B">날짜를 탭해 기록을 확인해요.</text>
+<text x="1060" y="809" font-size="18" font-weight="600" fill="#18271E">상세 운동 메모</text>
+<rect x="1060" y="831" width="328" height="86" rx="12" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1076" y="860" font-size="12" font-weight="400" fill="#57665B">10월 14일 · 하루</text>
+<text x="1076" y="892" font-size="15" font-weight="400" fill="#18271E">가볍게 30분 걷기 · 사진 인증</text>
+<rect x="1060" y="933" width="328" height="86" rx="12" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1076" y="962" font-size="12" font-weight="400" fill="#57665B">10월 13일 · 하루</text>
+<text x="1076" y="994" font-size="15" font-weight="400" fill="#18271E">하체 운동 40분</text>
+<text x="1224" y="1053" font-size="13" font-weight="400" fill="#57665B" text-anchor="middle">오늘도 묵묵히, 잔디 한 칸.</text>
+<text x="28" y="1121" font-size="14" font-weight="400" fill="#57665B">초기 디자인 제안 · 가상 멤버와 기록을 사용한 정적 시안입니다.</text>
+</g></svg>
