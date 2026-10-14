@@ -1,6 +1,6 @@
 # 묵묵 · 공용 Supabase 연결 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 병렬 위임은 사용자가 별도로 요청한 경우에만 선택한다.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. 병렬 위임은 사용자가 별도로 요청한 경우에만 선택한다.
 
 **Goal:** 재생성된 서울 리전 공용 프로젝트의 `solitary_athlete`에 묵묵용 데이터 기반과 제한된 서버 연결을 준비한다.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [루트 DESIGN.md §5·§18](../../../DESIGN.md#18-공용-supabase-통합-설계). 공용 기반의 완료 기록은 [공용 전환 기록](../specs/2026-10-14-shared-supabase-multischema-design.md).
 
-**상태:** 계획 작성 완료, 묵묵용 원격 변경은 미실행. 공용 통합 대기는 해소됐다. 실제 DB 적용은 계획 검토 후 기능 구현 단계에서 진행한다. 이 계획은 수집기·슬래시 처리·삭제 워커·웹 구현을 포함하지 않는다.
+**상태:** 2026-10-14 실행 완료. 테이블·전용 역할·RLS를 원격 적용했고 로컬 SQL·공개 API·TLS 연결을 검증했다. 적용 근거와 공용 이력 제한은 DESIGN.md §18에 기록한다. 이 계획은 수집기·슬래시 처리·삭제 워커·웹 구현을 포함하지 않는다.
 
 ## Global Constraints
 
@@ -22,7 +22,7 @@
 - 공개 SELECT만 익명 허용한다. 원본·커서·큐의 익명·일반 로그인 읽기와 모든 익명 쓰기를 거부한다.
 - 앱별 이름의 service-role 키도 프로젝트 권한을 가진다. 서버에는 전용 `MUKMUK_DATABASE_URL`을 사용한다.
 - 공용 마이그레이션 이력을 한 곳에서 관리한다. 연결 없이 개별 레포에서 `supabase db push`를 실행하지 않는다.
-- 이 계획의 파일 경로는 구현 예정 경로다. 아직 존재하지 않는 SQL 파일·테스트를 통과했다고 보고하지 않는다. 커밋·푸시는 요청받은 경우에만 한다.
+- SQL 변경안·테스트 파일은 구현됐다. 사용자의 추가 요청에 따라 기능·마일스톤 단위 검증 후 커밋·푸시한다.
 
 ## Review Focus
 
@@ -50,8 +50,8 @@
 
 **Interfaces:** 입력은 새 프로젝트와 공용 배포 이력, 출력은 정확한 적용 대상·다음 마이그레이션 번호·현재 ACL 목록이다.
 
-- [ ] **1. 대시보드 General과 Connect에서 대상 확인.** 이름 `github-jinhoOps`, ref `olqdftjssrzqvcindekh`, Seoul을 확인한다. Connect에 표시된 transaction pooler 호스트·포트를 사용한다. 리전 문자열로 호스트를 추측하지 않는다. 비밀번호·관리 연결은 로그·문서에 복사하지 않는다.
-- [ ] **2. 아래 읽기 전용 SQL로 기존 객체와 역할을 조사한다.** `solitary_athlete`는 존재하고 묵묵 테이블·역할은 없어야 한다. 같은 이름 객체가 이미 있으면 삭제·CREATE OR REPLACE하지 말고 그 정의와 이번 변경안의 차이를 확인한다.
+- [x] **1. 대시보드 General과 Connect에서 대상 확인.** 이름 `github-jinhoOps`, ref `olqdftjssrzqvcindekh`, Seoul을 확인한다. Connect에 표시된 transaction pooler 호스트·포트를 사용한다. 리전 문자열로 호스트를 추측하지 않는다. 비밀번호·관리 연결은 로그·문서에 복사하지 않는다.
+- [x] **2. 아래 읽기 전용 SQL로 기존 객체와 역할을 조사한다.** `solitary_athlete`는 존재하고 묵묵 테이블·역할은 없어야 한다. 같은 이름 객체가 이미 있으면 삭제·CREATE OR REPLACE하지 말고 그 정의와 이번 변경안의 차이를 확인한다.
 
 ```sql
 SELECT schema_name FROM information_schema.schemata
@@ -74,7 +74,7 @@ SELECT table_schema, table_name FROM information_schema.tables
 WHERE table_schema = 'supabase_migrations';
 ```
 
-- [ ] **3. 공용 변경 이력의 관리 위치와 다음 번호를 확인한다.** 현재 레포에 공용 초기 변경이 있다. 클라우드 적용 이력과 저장소 파일을 대조하며 기존 마이그레이션을 재실행하지 않는다. Cron·함수는 이 기반 계획에서 설치하지 않는다.
+- [x] **3. 공용 변경 이력의 관리 위치와 다음 번호를 확인한다.** 현재 레포에 공용 초기 변경이 있다. 클라우드 적용 이력과 저장소 파일을 대조하며 기존 마이그레이션을 재실행하지 않는다. Cron·함수는 이 기반 계획에서 설치하지 않는다.
 
 ### Task 2: 앱 기반 변경안 작성
 
@@ -82,8 +82,8 @@ WHERE table_schema = 'supabase_migrations';
 
 **Interfaces:** 출력은 아래 5개 테이블과 `mukmuk_owner`·`mukmuk_worker`다. 수집기는 이벤트·일별 집계를 같은 트랜잭션에서 갱신하고, 후속 워커는 큐의 `status`, `lease_until`, `next_attempt_at`을 이용한다. 집계·선점 코드는 후속 기능 작업의 책임이다.
 
-- [ ] **1. Task 3의 SQL 검증 파일을 먼저 작성하고 비운영 DB에서 실행한다.** 기반이 없으면 역할 또는 테이블 미존재로 실패해야 한다. 외부 Supabase의 다른 앱 데이터로 실패 테스트를 하지 않는다.
-- [ ] **2. 아래 SQL을 변경안에 저장한다.** 역할은 충돌 시 명시적으로 실패한다. `mukmuk_worker`는 연결 계약 확인과 비밀번호 설정 전까지 NOLOGIN이다. 객체 생성과 최종 권한을 하나의 트랜잭션으로 처리한다.
+- [x] **1. Task 3의 SQL 검증 파일을 먼저 작성하고 비운영 DB에서 실행한다.** 기반이 없으면 역할 또는 테이블 미존재로 실패해야 한다. 외부 Supabase의 다른 앱 데이터로 실패 테스트를 하지 않는다.
+- [x] **2. 아래 SQL을 변경안에 저장한다.** 역할은 충돌 시 명시적으로 실패한다. `mukmuk_worker`는 연결 계약 확인과 비밀번호 설정 전까지 NOLOGIN이다. 객체 생성과 최종 권한을 하나의 트랜잭션으로 처리한다.
 
 ```sql
 BEGIN;
@@ -184,7 +184,7 @@ COMMIT;
 
 `anon`의 스키마 USAGE는 공용 초기 변경이 제공한다. worker에는 소유 역할 멤버십이나 스키마 CREATE를 주지 않는다. 비밀번호·함수 배포·Cron·공용 기본 권한 변경은 위 SQL에 넣지 않는다.
 
-- [ ] **3. 변경안을 비운영 DB에 적용한 뒤 Task 3 검증을 실행한다.** SQL 문법, 자동 노출에 따른 최종 ACL, KST 생성 날짜와 동일 날짜 PK를 확인한다. 다른 앱이 있는 클라우드에는 검증된 변경안을 공용 배포 담당 경로로 적용한다.
+- [x] **3. 변경안을 비운영 DB에 적용한 뒤 Task 3 검증을 실행한다.** SQL 문법, 자동 노출에 따른 최종 ACL, KST 생성 날짜와 동일 날짜 PK를 확인한다. 다른 앱이 있는 클라우드에는 검증된 변경안을 공용 배포 담당 경로로 적용한다.
 
 ### Task 3: 권한과 저장 계약 검증
 
@@ -192,7 +192,7 @@ COMMIT;
 
 **Interfaces:** 입력은 Task 2 기반, 출력은 재사용 가능한 SQL 검증 결과다. 테스트 픽스처는 가상 ID·텍스트만 쓰며 트랜잭션을 ROLLBACK한다.
 
-- [ ] **1. 아래 검증을 저장·실행한다.** 익명 쓰기와 원본·커서·큐 SELECT가 실제로 permission denied를 내는지 확인한다. 오류가 없는 경우 의도적으로 실패시킨다.
+- [x] **1. 아래 검증을 저장·실행한다.** 익명 쓰기와 원본·커서·큐 SELECT가 실제로 permission denied를 내는지 확인한다. 오류가 없는 경우 의도적으로 실패시킨다.
 
 ```sql
 BEGIN;
@@ -265,7 +265,7 @@ psql -X -v ON_ERROR_STOP=1 -f supabase/tests/mukmuk_foundation.sql
 
 Supply connection through the execution environment or an ignored service file; no password on the command line. Expected: all blocks succeed, final ROLLBACK, no fixture remains. This test checks the storage contract; actual OR aggregation and retry logic require collector tests in the next feature plan.
 
-- [ ] **2. 공용 프로젝트에서 다른 앱의 접근 경계를 읽기 전용으로 검사한다.** 다음 SQL이 반환한 테이블·함수는 개별 검토한다. 접근 허용이 있으면 전용 역할만으로 격리됐다고 보고하지 않는다. `PUBLIC` 권한의 일괄 회수 대신 공용 담당 경로에서 기존 앱 동작을 보존하는 변경을 먼저 준비한다.
+- [x] **2. 공용 프로젝트에서 다른 앱의 접근 경계를 읽기 전용으로 검사한다.** 다음 SQL이 반환한 테이블·함수는 개별 검토한다. 접근 허용이 있으면 전용 역할만으로 격리됐다고 보고하지 않는다. `PUBLIC` 권한의 일괄 회수 대신 공용 담당 경로에서 기존 앱 동작을 보존하는 변경을 먼저 준비한다.
 
 ```sql
 SELECT n.nspname, c.relname
@@ -279,7 +279,7 @@ WHERE n.nspname IN ('player_one','individualsavingflow','public')
   AND p.prosecdef AND has_function_privilege('mukmuk_worker',p.oid,'EXECUTE');
 ```
 
-- [ ] **3. 원격 적용 전후 기존 앱의 공개 API·조회 건수를 비교한다.** 가상 테스트는 운영 데이터가 없는 별도 환경에서 수행한다. 클라우드 검증에는 위 권한 카탈로그와 기존 앱의 읽기 요청을 사용하고 데이터를 변경하지 않는다.
+- [x] **3. 원격 적용 전후 기존 앱의 공개 API·조회 건수를 비교한다.** 가상 테스트는 운영 데이터가 없는 별도 환경에서 수행한다. 클라우드 검증에는 위 권한 카탈로그와 기존 앱의 읽기 요청을 사용하고 데이터를 변경하지 않는다.
 
 ### Task 4: 연결 계약과 실제 API 확인
 
@@ -287,8 +287,8 @@ WHERE n.nspname IN ('player_one','individualsavingflow','public')
 
 **Interfaces:** 브라우저는 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY`·schema `solitary_athlete`, 서버는 `MUKMUK_DATABASE_URL`. 원격 Secrets는 `MUKMUK_` 접두사를 유지한다.
 
-- [ ] **1. 공용 배포 경로로 변경안을 적용하고 테이블별 API 노출을 확인한다.** 공개 대상은 `workout_logs`, `sync_status`다. 현재 UI가 제공하는 테이블별 선택에서는 서버 전용 세 테이블만 숨긴다. 기존 스키마 목록·다른 테이블·프로젝트 전체 자동 노출 설정을 변경하지 않는다. 최종 테이블 ACL·RLS를 다시 확인한다.
-- [ ] **2. worker의 로그인 비밀번호를 안전하게 설정한다.** 관리자 세션에서 `\password mukmuk_worker`로 입력한 다음 다음 SQL을 실행한다. 비밀번호는 SQL 파일이나 콘솔 출력에 넣지 않는다.
+- [x] **1. 공용 배포 경로로 변경안을 적용하고 테이블별 API 노출을 확인한다.** 공개 대상은 `workout_logs`, `sync_status`다. 현재 UI가 제공하는 테이블별 선택에서는 서버 전용 세 테이블만 숨긴다. 기존 스키마 목록·다른 테이블·프로젝트 전체 자동 노출 설정을 변경하지 않는다. 최종 테이블 ACL·RLS를 다시 확인한다.
+- [x] **2. worker의 로그인 비밀번호를 안전하게 설정한다.** 관리자 세션에서 `\password mukmuk_worker`로 입력한 다음 다음 SQL을 실행한다. 비밀번호는 SQL 파일이나 콘솔 출력에 넣지 않는다.
 
 ```sql
 ALTER ROLE mukmuk_worker LOGIN;
@@ -296,7 +296,7 @@ ALTER ROLE mukmuk_worker LOGIN;
 
 Connect에서 확인한 transaction pooler 호스트·포트와 사용자 `mukmuk_worker.olqdftjssrzqvcindekh`를 사용한다. 풀 최대 크기는 클라이언트당 1, SSL 필수, 짧은 트랜잭션, 세션 상태·서버 prepared statements 없이 연결한다. DB 역할 연결을 검증한 뒤 제한된 비밀값만 서버 실행 환경에 보관한다.
 
-- [ ] **3. 새 publishable key로 공개 API를 읽고 권한 경계를 확인한다.** 환경변수는 실행 환경에 주입하고 verbose HTTP 로그는 사용하지 않는다.
+- [x] **3. 새 publishable key로 공개 API를 읽고 권한 경계를 확인한다.** 환경변수는 실행 환경에 주입하고 verbose HTTP 로그는 사용하지 않는다.
 
 ```python
 import json, os, urllib.request, urllib.error
@@ -321,12 +321,12 @@ print('public reads succeed; private reads denied')
 
 publishable key를 JWT로 취급해 Authorization에 넣지 않는다. SQL의 쓰기 거부 검사와 HTTP의 읽기 검사는 모두 필요하다. HTTP의 404만으로 RLS가 정상이라고 판단하지 않는다.
 
-- [ ] **4. 적용 상태와 제한을 DESIGN.md에 기록한다.** 적용된 마이그레이션 번호, 역할·권한 검사 결과, 읽기 확인 결과만 남긴다. 수집기·명령어·5분 삭제가 아직 없다는 상태를 유지한다. 함수 `mukmuk-discord-grass`, `mukmuk-discord-cleanup`과 Cron `mukmuk-cleanup-due`는 별도 기능 계획에서 배포한다.
+- [x] **4. 적용 상태와 제한을 DESIGN.md에 기록한다.** 적용된 마이그레이션 번호, 역할·권한 검사 결과, 읽기 확인 결과만 남긴다. 수집기·명령어·5분 삭제가 아직 없다는 상태를 유지한다. 함수 `mukmuk-discord-grass`, `mukmuk-discord-cleanup`과 Cron `mukmuk-cleanup-due`는 별도 기능 계획에서 배포한다.
 
 ## 되돌림과 자체 검토
 
 적용 오류는 미커밋 트랜잭션을 ROLLBACK한다. 적용 뒤 연결을 중지해야 하면 묵묵 작업을 중단하고 worker만 NOLOGIN으로 변경한다. 인증 데이터를 삭제하거나 공용 프로젝트 키를 회전하지 않는다. 다른 앱의 스키마·공용 초기 이력을 되돌리지 않는다.
 
-작성 시 검토: 새 ref·기존 스키마 반영, 기존 앱 변경 금지, 공개/서버 테이블 계약, 자동 노출 최종 권한, PUBLIC 상속 검사, 일별 PK·KST·사진 필드, 단일 마이그레이션 이력, 비밀값 보관 경계를 확인했다. SQL·HTTP 코드는 실행 단계에서 검증할 코드이며 현재 통과 결과가 아니다.
+작성 시 검토: 새 ref·기존 스키마 반영, 기존 앱 변경 금지, 공개/서버 테이블 계약, 자동 노출 최종 권한, PUBLIC 상속 검사, 일별 PK·KST·사진 필드, 단일 마이그레이션 이력, 비밀값 보관 경계를 확인했다. 실행 결과: 로컬 SQL 검증·원격 카탈로그·공개/전용 API·전용 TLS 연결 통과. 실제 적용 SQL·테스트는 supabase/ 하위 파일이 기준이며, 이 문서의 코드 블록은 계획 작성 당시 변경안이다. 관리자 DB 연결 없이 전용 비밀번호를 설정하는 과정에서는 libpq의 SCRAM verifier를 Dashboard로 제출했다.
 
 참고: [커스텀 스키마](https://supabase.com/docs/guides/api/using-custom-schemas), [DB 연결](https://supabase.com/docs/guides/database/connecting-to-postgres), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [PUBLIC 상속 권한](https://supabase.com/docs/guides/troubleshooting/custom-role-inherits-privileges-that-were-not-explicitly-granted-ddaa1c).

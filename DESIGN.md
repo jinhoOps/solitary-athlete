@@ -1,6 +1,6 @@
 # 고독한 운동가 · DESIGN
 
-작성·갱신: 2026-10-14 · 상태: **구현 전 설계안**
+작성·갱신: 2026-10-14 · 상태: **Discord 설정·DB 기반 적용 완료, 수집·슬래시·웹 구현 예정**
 
 제품·시스템·브랜드·화면 설계의 기준 문서는 루트 `DESIGN.md`다. 요구사항과 화면이 바뀌면 이 문서와 관련 시안을 함께 갱신한다. 설계를 별도 경로에 중복 관리하지 않는다.
 
@@ -10,7 +10,7 @@
 
 사용자가 제시한 `/잔디` 실시간 조회, 현황판 자동 수정, Discord 28일·웹 84일 구성을 유지한다. 추가 요구인 **슬래시 결과 표시기간 5분**은 공개 응답을 자동 삭제하는 수명으로 해석한다. 조회할 기록의 기간을 5분으로 줄이는 의미가 아니다.
 
-초기 산출물은 에이전트 지침, 브랜드·화면 설계, 기술 설계, 레포 소개다. Discord 설정은 별도로 진행하며, Supabase 공용 통합과 서울 리전 재생성이 완료됐으며, 기존 `solitary_athlete` 스키마를 기준으로 묵묵의 설계·연결 계획을 준비한다. 연결 정책은 [공용 Supabase 통합](#18-공용-supabase-통합-설계)을 따른다.
+초기 산출물은 에이전트 지침, 브랜드·화면 설계, 기술 설계, 레포 소개다. Discord 설정은 별도로 진행하며, Supabase 공용 통합과 서울 리전 재생성이 완료됐으며, 기존 `solitary_athlete` 스키마에 묵묵의 데이터 기반을 적용했다. 연결 정책은 [공용 Supabase 통합](#18-공용-supabase-통합-설계)을 따른다.
 
 초기 버전은 한 Discord 서버, 인증 채널 하나, 현황판 채널 하나를 대상으로 한다. 공개 웹보드를 사용하며 인증 텍스트가 웹에 공개됨을 참여 전에 알린다. 사진 파일은 Discord에 남기고 웹에는 사진 인증 여부만 기록한다. 회원 로그인, 여러 서버 운영, 랭킹, 알림, 운동 계획 추천은 초기 범위에 포함하지 않는다.
 
@@ -403,11 +403,11 @@ Discord 앱·봇 ID는 `1559809751603216444`다. 개발자 포털에서 브랜�
 - 사용자 운영 이름: `jinhoOps`, 대시보드 프로젝트 이름: **`github-jinhoOps`**.
 - 프로젝트 ref: **`olqdftjssrzqvcindekh`**, 리전 **Northeast Asia (Seoul), `ap-northeast-2`**.
 - 프로젝트 URL: `https://olqdftjssrzqvcindekh.supabase.co`.
-- 앱별 스키마: `individualsavingflow`, `player_one`, **`solitary_athlete`**. 묵묵 스키마는 현재 빈 상태다.
+- 앱별 스키마: `individualsavingflow`, `player_one`, **`solitary_athlete`**. 묵묵 스키마에는 아래 5개 테이블이 적용됐다. 운동·운영 데이터는 아직 없다.
 - 공용 초기 변경: `supabase/migrations/20261014000001_init_multischema.sql`. 재생성 결과는 [공용 전환 기록](docs/superpowers/specs/2026-10-14-shared-supabase-multischema-design.md)에 남아 있다.
 - Data API는 새 테이블 자동 노출 설정이 켜져 있다. 묵묵 마이그레이션은 생성 직후 테이블별 권한을 명시적으로 회수·부여하고 RLS를 활성화해야 한다.
 
-재생성 이전 프로젝트 ref·키·pooler 연결·함수 URL을 재사용하지 않는다. 이 작업은 공용 프로젝트 설정을 읽기만 했으며 묵묵 테이블·역할·함수·Cron은 적용하지 않았다. 현재 요청의 설계·설정 범위와 이후 기능 구현을 구분한다.
+재생성 이전 프로젝트 ref·키·pooler 연결·함수 URL을 재사용하지 않는다. 사용자의 진행 요청에 따라 묵묵 테이블·역할·RLS와 전용 연결을 적용했다. 수집기·함수·Cron·웹은 아직 구현·배포 전이다.
 
 독립적으로 진행할 수 있는 Discord 앱·봇 설정, 잔디 이모지, 순수 날짜·잔디 계산, 가상 데이터를 쓰는 TypeScript 웹 화면을 먼저 준비한다. 웹을 가상 데이터로 제공할 때는 `예시 기록`임을 명시한다. 실제 수집·5분 삭제가 되는 것처럼 안내하지 않는다.
 
@@ -445,8 +445,23 @@ transaction pooler의 호스트는 통합 프로젝트 Connect 화면에서 전�
 
 공용 Supabase 프로젝트의 마이그레이션 배포 이력은 한 곳에서 관리한다. 이 레포는 `mukmuk` 이름으로 한정된 변경안을 제공하고 공용 운영 담당자가 전체 이력에 통합한다. 개별 앱 레포가 각각 `supabase db push`를 실행해 공용 이력을 수정하지 않는다.
 
-새 프로젝트 URL은 로컬 설정에 반영했다. publishable key·앱 전용 DB 연결·배포 이력 관리 위치·Cron 지원 여부는 구현 시작 전 새 프로젝트 기준으로 확인한다. 비밀번호를 포함한 연결 문자열이나 비밀값은 설계 문서에 복사하지 않는다.
+새 프로젝트 URL은 로컬 설정에 반영했다. publishable key·앱 전용 DB 연결을 새 프로젝트 기준으로 검증했다. 이 프로젝트에는 현재 `supabase_migrations` 테이블이 없고 공용 초기 변경은 SQL Editor로 적용된 상태다. `supabase_vault`는 설치돼 있지만 `pg_cron`·`pg_net`은 아직 설치되지 않았다. 비밀번호를 포함한 연결 문자열이나 비밀값은 설계 문서에 복사하지 않는다.
 
 완료 기준은 공개 집계 읽기, 익명 쓰기 거부, 원본·큐 접근 거부, 전용 역할의 다른 앱 데이터 접근 거부, 기존 앱의 API·작업 정상 유지다. 묵묵 자체의 수집·명령어·삭제 검증은 이 기반 위에서 별도로 진행한다.
 
-실행 순서와 검증 SQL은 [공용 Supabase 연결 계획](docs/superpowers/plans/2026-10-14-shared-supabase-integration.md)에 기록한다. 공용 통합 대기는 해소됐다. 묵묵의 원격 적용은 이 계획을 검토한 뒤 기능 구현 단계에서 진행한다.
+실행 순서와 검증 SQL은 [공용 Supabase 연결 계획](docs/superpowers/plans/2026-10-14-shared-supabase-integration.md)에 기록한다. 공용 통합 대기는 해소됐다. 묵묵 DB 기반의 원격 적용과 연결 검증은 완료됐다.
+
+### 2026-10-14 DB 기반 적용 결과
+
+- 적용 파일: [`20261014000002_mukmuk_foundation.sql`](supabase/migrations/20261014000002_mukmuk_foundation.sql). 기존 공용 초기 변경을 재실행하지 않고 로그인된 SQL Editor에서 한 번 적용했다. 번호는 레포의 변경안 번호이며, Supabase CLI 전역 이력에 등록됐다는 뜻은 아니다. 향후 공용 배포 담당 경로에서 수동 적용 이력을 조정한 뒤 CLI 배포한다.
+- 원본 `workout_events`, 일별 `workout_logs`, 커서 `sync_state`, 공개 성공 시각 `sync_status`, 삭제 큐 `reply_cleanup_jobs` 5개 모두 RLS가 활성화됐다. 소유자는 NOLOGIN `mukmuk_owner`다.
+- `anon`은 `workout_logs`·`sync_status` SELECT만 가능하다. 서버 전용 세 테이블의 익명·일반 로그인·service-role 권한은 없다. worker만 테이블 CRUD를 수행한다. 기존 앱의 권한이나 프로젝트 전체 기본 권한을 바꾸지 않았다.
+- Data API 선택 화면에서 서버 전용 세 테이블은 노출되지 않았다. 공개 두 테이블은 **custom grants**로 표시된다. 이를 선택하면 `anon`, `authenticated`, `service_role`의 표준 권한으로 덮어쓴다는 UI 안내가 있으므로 그대로 유지했다. UI의 완전 노출 건수는 4/9이며 공개 두 테이블의 실제 익명 SELECT는 HTTP 200이다. 전용 세 테이블은 HTTP 401·Postgres `42501`로 거부됐다. 익명 쓰기 거부는 실제 로컬 SQL과 원격 ACL로 확인했다.
+- `mukmuk_worker`의 LOGIN·연결 제한 3을 적용했다. 관리자·DB/역할 생성·RLS 우회·소유 역할 멤버십·스키마 CREATE 권한이 없다. `player_one`·`individualsavingflow`·`public`의 테이블·보안 정의 함수 접근 권한도 없음을 원격 카탈로그로 확인했다.
+- Connect에서 확인한 `aws-0-ap-northeast-2.pooler.supabase.com:6543`으로 전용 계정 연결을 검증했다. `psql`의 클라이언트 연결 정보에서 TLS 1.3을 확인했다. pooler 뒤 DB 세션의 `pg_stat_ssl` 값은 클라이언트 TLS 검사로 사용하지 않는다.
+- 관리자 DB 비밀번호를 가져오거나 변경하지 않았다. 전용 비밀번호는 로컬 libpq의 SCRAM-SHA-256 verifier로 바꾸어 서버에 제출했다. 평문은 SQL·공개 문서에 넣지 않고 Git 제외·권한 0600의 `.env`에만 저장했다. [PostgreSQL libpq 비밀번호 처리](https://www.postgresql.org/docs/current/libpq-misc.html#LIBPQ-PQENCRYPTPASSWORDCONN)
+- 기존 앱의 `auth.users`, `player_one.profiles`, `public.profiles` 건수는 적용 전후 3/3/3으로 같았다. 사용자 행 내용은 출력하지 않았다. 적용 후 `player_one.profiles`·호환 `public.profiles`의 익명 API도 각각 HTTP 206·전체 건수 3으로 조회됐다.
+- 검증: [로컬 SQL 안내](supabase/tests/README.md)의 KST 자정 전후, 사진만 있는 인증, 메시지·운동일 중복, 빈 인증·다른 서버 거부, 300초 삭제 시각, 종료 작업 토큰 제거, 실제 익명 조회·쓰기 거부와 역할 권한이 통과했다. 다른 앱 SELECT를 가상으로 잘못 부여하면 검증이 실패하는 것도 확인했다. 운영 DB에 가상 운동 기록은 넣지 않았다.
+- 작업은 기존 Orca checkout을 유지한 `mukmuk/db-foundation` 브랜치에서 진행했다. 로컬 Docker가 응답하지 않아 native PostgreSQL 17 임시 클러스터로 검증했다. Docker 테스트 컨테이너의 제거는 backend 응답이 없어 확인되지 않았다. 계획·에이전트 지침의 위임 제한에 따라 별도 자체 검토를 수행했다. 독립 리뷰·기존 앱의 모든 사용자 시나리오를 실행한 결과는 아니다.
+
+수집기·슬래시 응답·실제 5분 삭제·대시보드는 아직 구현 전이다. DB의 큐 제약 검증을 메시지 삭제 동작 검증으로 보고하지 않는다. GitHub Actions·Edge Secrets에는 비밀값을 아직 등록하지 않았다.

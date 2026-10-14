@@ -21,7 +21,7 @@
 
 순위를 매기기보다 자신의 리듬을 지키는 작은 운동 기록 공간을 만듭니다.
 
-**현재는 설계·초기 설정 단계입니다.** 지침, 설계 문서, 브랜드 시안과 협업 템플릿을 준비했습니다. Discord 채널 4개와 묵묵 앱·봇 설치, 역할 연결, 아이콘·잔디 이모지를 구성했습니다. 공용 Supabase는 서울 리전 `github-jinhoOps`의 기존 `solitary_athlete` 스키마를 사용합니다. 아래 봇 기능과 웹보드는 구현·배포 예정입니다.
+**DB 기반까지 구현·적용했습니다.** Discord 채널 4개, 묵묵 앱·봇 설치와 역할, 아이콘·잔디 이모지를 구성했습니다. 공용 Supabase 서울 리전 `github-jinhoOps`의 `solitary_athlete`에 테이블 5개와 전용 DB 역할·RLS를 적용하고 공개 API·전용 연결을 검증했습니다. 아래 수집·명령어·웹보드 기능은 구현·배포 예정입니다.
 
 ## 묵묵이 할 일
 
@@ -63,12 +63,12 @@
 | [환경변수 예시](.env.example) | 구현에 사용할 공개 설정과 서버 비밀값의 구분 |
 | [공용 Supabase 연결 계획](docs/superpowers/plans/2026-10-14-shared-supabase-integration.md) | 재생성된 프로젝트의 연결·권한·마이그레이션 검증 순서 |
 
-## 구현 예정 구성
+## 기술 구성
 
 | 구성 | 선택한 방향 |
 | --- | --- |
 | 인증 수집·현황판 갱신 | Python · uv · GitHub Actions |
-| 기록 저장 | Supabase Postgres |
+| 기록 저장 | Supabase Postgres · 테이블·권한 적용 완료 |
 | 슬래시 응답 | Supabase Edge Functions · TypeScript |
 | 5분 삭제 | 비공개 예약 큐 · Supabase Cron · 삭제 함수 |
 | 상세 웹보드 | 바닐라 TypeScript · 정적 빌드 · GitHub Pages, 복잡해지면 React + TypeScript |
@@ -85,3 +85,7 @@
 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고해 변경 목적과 확인 결과를 남겨 주세요. 기능 제안과 문제 보고는 [Issues](https://github.com/jinhoOps/solitary-athlete/issues)에서 받습니다.
 
 [Apache-2.0](LICENSE) 라이선스.
+
+## DB 기반 검증
+
+[SQL 검증 안내](supabase/tests/README.md)에 따라 별도 임시 PostgreSQL 17 클러스터에서 실행합니다. KST 날짜, 사진 인증, 중복, 5분 삭제 큐 제약과 역할별 접근을 실제 SQL로 확인하고 가상 기록은 롤백합니다. 운영 DB의 현재 적용 상태는 [DESIGN.md](DESIGN.md#18-공용-supabase-통합-설계)에 기록합니다.
