@@ -1,12 +1,18 @@
 import postgres from 'npm:postgres@3.4.9';
 import type { Reply, ReplyDB } from './interactions.ts';
 import type { CleanupDB, CleanupJob } from './cleanup.ts';
+import type { SecretDB } from './weekly_code.ts';
 import type { WorkoutLog } from '../../../src/types.ts';
 
 export function createDB(url:string, testOnlyNoTLS=false) {
   const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,idle_timeout:20,max_lifetime:60,
     ssl:testOnlyNoTLS?false:{rejectUnauthorized:true},onnotice:()=>{}});
-  const db:ReplyDB & CleanupDB={
+  const db:ReplyDB & CleanupDB & SecretDB={
+    async insertSecret(code:string,issuedAt:Date,activeUntil:Date,expiresAt:Date) {
+      await sql`INSERT INTO solitary_athlete.channel_access_secrets
+        (secret_code,issued_at,active_until,expires_at)
+        VALUES(${code},${issuedAt},${activeUntil},${expiresAt})`;
+    },
     async prepare(body:Reply,cipher:Uint8Array,expiresAt:Date) {
       const result=await sql`INSERT INTO solitary_athlete.reply_cleanup_jobs
         (interaction_id,application_id,token_ciphertext,token_expires_at)
