@@ -66,8 +66,13 @@
 
 **Files:** `.github/workflows/{checks,sync,pages}.yml`, `scripts/{publish-pages,check-build}.mjs`, `docs/operations.md`, README/AGENTS/준비 현황.
 
-- [ ] 1. CI에 Python·TypeScript·브라우저·DB 검사를 구성하고 정기 수집은 매시 59분, 동시 실행을 제한한다.
-- [ ] 2. Pages 공개 설정을 전달하여 정적 빌드·검증 후 전용 `gh-pages`에 발행한다. GitHub Pages source를 해당 브랜치 루트로 설정한다.
-- [ ] 3. 실제 HTTPS URL·JS/CSS·공개 API·모바일 화면과 배포 SHA를 확인한다.
-- [ ] 4. 코드 검증 후 가능한 서버 Secrets·Edge·Cron을 연결한다. 인증이 필요한 누락 항목은 배포된 웹과 구분해 명시한다.
-- [ ] 5. 전체 검증·별도 자체 코드 리뷰·문서 상태 갱신 후 커밋·푸시. 실제 확인한 배포 URL과 제한을 보고한다.
+- [x] 1. CI에 Python·TypeScript·브라우저·DB 검사를 구성하고 정기 수집은 매시 59분, 동시 실행을 제한한다.
+- [x] 2. Pages 공개 설정을 전달하여 정적 빌드·검증 후 전용 `gh-pages`에 발행한다. GitHub Pages source를 해당 브랜치 루트로 설정한다.
+- [x] 3. 실제 HTTPS URL·JS/CSS·공개 API·모바일 화면과 배포 SHA를 확인한다.
+- [x] 4. 코드 검증 후 가능한 서버 Secrets·Edge·Cron을 연결한다. 인증이 필요한 누락 항목은 배포된 웹과 구분해 명시한다.
+- [x] 5. 전체 검증·별도 자체 코드 리뷰·문서 상태 갱신 후 커밋·푸시. 실제 확인한 배포 URL과 제한을 보고한다.
+
+
+## 실행 결과·후속 준비
+
+PR #1은 사용자가 main에 병합했다. 설정은 매시 59분으로 변경돼 이를 유지한다. Pages는 초기 gh-pages 발행 후 Actions artifact 배포로 전환했다. 코드 리뷰의 게시/복구 경합·게시 재시도·burst 삭제 처리량을 실패 회귀 테스트로 보완했고 전체 검증이 통과했다. 실제 사용자 `/잔디` 호출의 300초 예약·삭제 완료·토큰 제거·현황판 보존도 확인했다. 자세한 결과는 [구현 현황](../../implementation-readiness.md)을 따른다.

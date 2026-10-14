@@ -20,7 +20,7 @@
 | 상시 Discord Gateway 봇 | 인증을 바로 반영하며 명령어와 삭제를 같은 프로세스에서 처리 | 상시 호스팅·재연결·장애 복구 필요, 삭제도 영속 예약이 있어야 재시작에 안전 |
 | GitHub Actions에서 조회·삭제까지 처리 | 한 실행 환경으로 모을 수 있음 | 실시간 명령어 응답과 5분 삭제를 만족시키기 어려움 |
 
-첫 번째 방식을 제안한다. 수집 주기와 조회 시점을 분리하고, 5분 삭제만 짧은 주기의 별도 작업으로 처리한다. Actions는 **매시 59분(`59 * * * *`)** 실행과 수동 실행을 사용한다. 예약 실행은 지연되거나 누락될 수 있어 정시 반영을 보장하지 않는다. [GitHub 일정 실행 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+첫 번째 방식을 사용한다. 수집 주기와 조회 시점을 분리하고, 5분 삭제만 짧은 주기의 별도 작업으로 처리한다. Actions는 **매시 59분(`59 * * * *`)** 실행과 수동 실행을 사용한다. 예약 실행은 지연되거나 누락될 수 있어 정시 반영을 보장하지 않는다. [GitHub 일정 실행 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
 
 ## 3. 사용자 경험과 날짜 규칙
 
@@ -69,7 +69,7 @@ flowchart LR
     D --> W[GitHub Pages 웹보드]
 ```
 
-| 경계 | 책임 | 구현 예정 위치 |
+| 경계 | 책임 | 구현 위치 |
 | --- | --- | --- |
 | 수집기 | 페이지 조회, 원본 저장, 일별 집계, ✅, 현황판 갱신 | `main.py`와 필요한 소규모 모듈 |
 | 명령어 등록 | 지정 서버에 `/잔디`와 선택 `유저` 옵션 등록 | `register_cmd.py` |
@@ -78,7 +78,7 @@ flowchart LR
 | DB 계약 | 앱 전용 테이블·역할·권한·Cron의 검토된 변경안 | `mukmuk` 전용 마이그레이션, 공용 프로젝트의 단일 배포 이력 |
 | 웹 | 공개 읽기, 필터, 잔디, 통계, 메모 탐색 | 루트 `index.html` + `src/`의 TypeScript·CSS, 빌드한 정적 자산 |
 
-위 경로는 아직 생성되지 않은 구현 예정 경로다. 하나의 파일로 모든 책임을 몰아넣지 않되, 사용하지 않는 추상화나 공통 서비스 계층은 만들지 않는다.
+위 경로는 구현됐다. 실행 방법은 [운영 안내](docs/operations.md)를 따른다. 하나의 파일로 모든 책임을 몰아넣지 않되, 사용하지 않는 추상화나 공통 서비스 계층은 만들지 않는다.
 
 ## 5. 데이터 계약
 
@@ -250,7 +250,7 @@ Supabase Cron은 **10초마다** 만료 작업의 존재를 확인하고, 있을
 | **회원님** | Member | `1559838647975673987` | 일반 회원 기본 역할, 에메랄드 그린 (`#2ecc71`) |
 | **묵묵** | Integration / Bot | - | Discord 애플리케이션 설치 시 자동 생성된 전용 통합 역할 (View Channel, Send Messages, Read Message History, Add Reactions). 수동 생성되었던 중복 `묵묵 기록봇` 역할은 삭제 완료. |
 
-Discord 앱·봇 ID는 `1559809751603216444`다. 개발자 포털에서 브랜드 설명과 마크 아바타를 저장하고 **Message Content Intent를 활성화**했다. Presence·Server Members Intent는 사용하지 않는다. `bot`·`applications.commands` 범위로 서버에 설치하고 View Channel·Send Messages·Read Message History·Add Reactions 권한을 허용했다. 실제 실행 프로세스는 아직 없다.
+Discord 앱·봇 ID는 `1559809751603216444`다. 개발자 포털에서 브랜드 설명과 마크 아바타를 저장하고 **Message Content Intent를 활성화**했다. Presence·Server Members Intent는 사용하지 않는다. `bot`·`applications.commands` 범위로 서버에 설치하고 View Channel·Send Messages·Read Message History·Add Reactions 권한을 허용했다. Python 수집기·Edge 함수가 구현됐고 실제 수집 실행을 확인했다.
 
 서버에도 [마크 PNG](assets/brand/mark.png)를 아이콘으로 적용하고 슬로건을 포함한 소개를 저장했다. 다음 정적 이모지를 등록한 후 설정을 다시 열어 이름·이미지 ID를 확인했다.
 
@@ -261,7 +261,7 @@ Discord 앱·봇 ID는 `1559809751603216444`다. 개발자 포털에서 브랜�
 
 로컬 `.env`에 서버·채널·포럼·앱·공개 서명 키·이모지 ID를 기록했다. `.env.example`은 빈 템플릿으로 유지한다. 봇 토큰은 생성·재설정하지 않았고 Interactions Endpoint는 백엔드가 준비되기 전까지 비워 둔다.
 
-완료 범위는 **Discord 채널·포럼·카테고리·역할·서버 설정(커뮤니티/알림/보안/시스템 메시지)·앱 설치·브랜딩**이다. 묵묵 DB 기반은 아래 통합 적용 결과를 따른다. 인증 수집, 슬래시 명령어와 실제 5분 삭제, 웹보드 배포는 아직 진행하지 않았다.
+완료 범위는 **Discord 채널·포럼·카테고리·역할·서버 설정(커뮤니티/알림/보안/시스템 메시지)·앱 설치·브랜딩**이다. 묵묵 DB 기반은 아래 통합 적용 결과를 따른다. 인증 수집·슬래시·웹보드는 후속 구현·배포됐다. 최신 상태는 아래 릴리스 이력을 따른다.
 
 ## 18. 공용 Supabase 통합 설계
 
@@ -276,7 +276,7 @@ Discord 앱·봇 ID는 `1559809751603216444`다. 개발자 포털에서 브랜�
 - 공용 초기 변경: `supabase/migrations/20261014000001_init_multischema.sql`. 재생성 결과는 [공용 전환 기록](docs/superpowers/specs/2026-10-14-shared-supabase-multischema-design.md)에 남아 있다.
 - Data API는 새 테이블 자동 노출 설정이 켜져 있다. 묵묵 마이그레이션은 생성 직후 테이블별 권한을 명시적으로 회수·부여하고 RLS를 활성화해야 한다.
 
-재생성 이전 프로젝트 ref·키·pooler 연결·함수 URL을 재사용하지 않는다. 사용자의 진행 요청에 따라 묵묵 테이블·역할·RLS와 전용 연결을 적용했다. 수집기·함수·Cron·웹은 아직 구현·배포 전이다.
+재생성 이전 프로젝트 ref·키·pooler 연결·함수 URL을 재사용하지 않는다. 사용자의 진행 요청에 따라 묵묵 테이블·역할·RLS와 전용 연결을 적용했다. 수집기·함수·Cron·웹은 후속 구현·배포됐다.
 
 독립적으로 진행할 수 있는 Discord 앱·봇 설정, 잔디 이모지, 순수 날짜·잔디 계산, 가상 데이터를 쓰는 TypeScript 웹 화면을 먼저 준비한다. 웹을 가상 데이터로 제공할 때는 `예시 기록`임을 명시한다. 실제 수집·5분 삭제가 되는 것처럼 안내하지 않는다.
 
@@ -333,4 +333,18 @@ transaction pooler의 호스트는 통합 프로젝트 Connect 화면에서 전�
 - 검증: [로컬 SQL 안내](supabase/tests/README.md)의 KST 자정 전후, 사진만 있는 인증, 메시지·운동일 중복, 빈 인증·다른 서버 거부, 300초 삭제 시각, 종료 작업 토큰 제거, 실제 익명 조회·쓰기 거부와 역할 권한이 통과했다. 다른 앱 SELECT를 가상으로 잘못 부여하면 검증이 실패하는 것도 확인했다. 운영 DB에 가상 운동 기록은 넣지 않았다.
 - 작업은 기존 Orca checkout을 유지한 `mukmuk/db-foundation` 브랜치에서 진행했다. 로컬 Docker가 응답하지 않아 native PostgreSQL 17 임시 클러스터로 검증했다. 당시 Docker 테스트 컨테이너의 제거는 backend 응답이 없어 확인되지 않았다. 이후 사용자가 Docker를 재실행했고 이번 디자인 정리 마일스톤에서 서버 29.8.2 정상 응답·PostgreSQL 17 전체 회귀 검사 통과와 이전/새 테스트 컨테이너 제거를 확인했다. 계획·에이전트 지침의 위임 제한에 따라 별도 자체 검토를 수행했다. 독립 리뷰·기존 앱의 모든 사용자 시나리오를 실행한 결과는 아니다.
 
-수집기·슬래시 응답·실제 5분 삭제·대시보드는 아직 구현 전이다. DB의 큐 제약 검증을 메시지 삭제 동작 검증으로 보고하지 않는다. GitHub Actions·Edge Secrets에는 비밀값을 아직 등록하지 않았다.
+이 DB 기반 검증 이후 수집기·슬래시·삭제 워커·대시보드를 구현하고 GitHub/Edge/Vault 설정을 등록했다. 실제 채팅의 5분 삭제 측정과 자동 테스트 결과는 구분한다.
+
+
+## 19. 기능 릴리스·main 병합 후 상태
+
+2026-10-14에 [PR #1](https://github.com/jinhoOps/solitary-athlete/pull/1)이 main에 병합됐다. 이후 기준 main은 `3784894`다. 사용자가 변경한 수집 주기는 **매시 59분**이며 최초 설계의 17분으로 되돌리지 않는다.
+
+- [GitHub Pages](https://jinhoops.github.io/solitary-athlete/) 실제 HTTP 200·공개 DB·모바일 화면·배포 SHA를 확인했다. Actions의 Pages artifact 배포를 사용한다.
+- Vitest 18개·Chromium 브라우저 10개·Python 9개·SQL 역할/제약·Deno 실제 SQL 큐 검증이 통과했다. main Checks·Pages·수집 수동 실행도 성공했다.
+- 수집기·현황판·명령어 등록을 실제 연결로 확인했다. 운영 DB에 가상 운동 인증은 넣지 않았다.
+- 기존 관리형 묵묵 역할 `1559812373869760525`에 현황판 View/History/Send만 명시적으로 연결했다. 일반 멤버 읽기 전용을 유지하며 관리자 권한은 추가하지 않았다.
+- Edge 두 함수는 플랫폼 JWT 대신 Ed25519/앱 비밀값으로 인증한다. 삭제 함수는 비인증 401·앱 인증 200과 실제 전용 DB 연결을 확인했다.
+- `pg_cron`·`pg_net`을 활성화하고 앱 전용 Vault 두 개와 [Cron 마이그레이션](supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql)을 적용했다. 앱 dispatch 함수는 SECURITY INVOKER이며 worker/anon 실행을 허용하지 않는다. 10초 due 점검과 앱 Cron 이력만 7일 보존하는 작업이 활성화됐다.
+- 별도 코드 리뷰의 게시/복구 경합·transient 게시 재시도·삭제 처리량 지적을 보완했다. 45초 게시 임대, 세 번의 제한된 게시 재시도, 30초 삭제 임대와 attempts fencing, 실행당 50건/약 20초 큐 처리를 적용했다. 함수 내부의 5분 대기는 없다.
+- 실제 `/잔디` 결과는 사용자 호출로 게시됐다. 20:55:35→21:00:35의 300초 예약과 기한 전 공개 메시지 유지를 확인했다. 21:00:44에 삭제 완료·토큰 제거를 관측하고 Discord 메시지 부재·현황판 보존을 확인했다. 운영·검증 상세는 [운영 안내](docs/operations.md)와 [구현 현황](docs/implementation-readiness.md)을 따른다.
