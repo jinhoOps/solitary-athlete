@@ -1,4 +1,6 @@
+export interface WeeklySecret {code:string;activeUntil:Date;expiresAt:Date}
 export interface SecretDB {
+  reserveSecret?(code:string,now:Date,activeUntil:Date,expiresAt:Date):Promise<WeeklySecret>;
   insertSecret(code: string, issuedAt: Date, activeUntil: Date, expiresAt: Date): Promise<void>;
 }
 
@@ -24,14 +26,21 @@ export function formatWeeklyNotice(code: string, dashboardUrl: string): string {
     code,
     '```',
     '',
-    `👉 **[웹보드 바로 접속하기](${url}?code=${code})**`
+    `👉 [**웹보드 바로 접속하기**](${url}?code=${code})`
   ].join('\n');
 }
 
+export type DiscordApiCall = (
+  method: string,
+  path: string,
+  payload?: Record<string, unknown>
+) => Promise<Response>;
+
 export interface RotateDeps {
   db: SecretDB;
-  discord: (path: string, payload: Record<string, unknown>) => Promise<Response>;
+  discord: DiscordApiCall;
   noticeChannelId: string;
+  botUserId: string;
   dashboardUrl: string;
   now?: () => Date;
   codeGenerator?: () => string;
@@ -44,24 +53,51 @@ export async function rotateWeeklySecret(deps: RotateDeps): Promise<{
   expiresAt: Date;
 }> {
   const now = deps.now ? deps.now() : new Date();
-  const code = deps.codeGenerator ? deps.codeGenerator() : generateSecretCode();
+  let code = deps.codeGenerator ? deps.codeGenerator() : generateSecretCode();
 
-  const activeUntil = new Date(now.getTime() + 7 * 86_400_000);
-  const expiresAt = new Date(now.getTime() + 8 * 86_400_000); // 7 days + 24 hours grace
-
-  await deps.db.insertSecret(code, now, activeUntil, expiresAt);
+  const kst=new Date(now.getTime()+9*3_600_000);
+  const daysToMonday=(8-kst.getUTCDay())%7 || 7;
+  let activeUntil=new Date(Date.UTC(kst.getUTCFullYear(),kst.getUTCMonth(),kst.getUTCDate()+daysToMonday)-9*3_600_000);
+  let expiresAt=new Date(activeUntil.getTime()+86_400_000);
+  if(deps.db.reserveSecret) {
+    ({code,activeUntil,expiresAt}=await deps.db.reserveSecret(code,now,activeUntil,expiresAt));
+  } else await deps.db.insertSecret(code, now, activeUntil, expiresAt);
 
   const content = formatWeeklyNotice(code, deps.dashboardUrl);
-  const res = await deps.discord(`/channels/${deps.noticeChannelId}/messages`, { content });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Discord message failed: ${res.status} ${errText}`);
+
+  // Discover only our notices; do not touch another author's matching text.
+  const existingIds:string[]=[];
+  let matchingId:string|undefined;
+  let before='';
+  for (;;) {
+    const listRes=await deps.discord('GET', `/channels/${deps.noticeChannelId}/messages?limit=100${before?`&before=${before}`:''}`);
+    if (!listRes.ok) throw new Error(`Discord notice history failed: ${listRes.status}`);
+    const messages=await listRes.json() as Array<{id:string;content?:string;author?:{id:string}}>;
+    for(const message of messages) {
+      if(message.author?.id===deps.botUserId && message.content?.includes('🔑 이번 주 웹보드 시크릿 코드')) {
+        if(!matchingId && message.content.includes(`\n${code}\n`)) matchingId=message.id;
+        else existingIds.push(message.id);
+      }
+    }
+    if(messages.length<100)break;
+    before=messages[messages.length-1].id;
+  }
+  // Publish first: an outage must leave the previous announcement visible.
+  let messageId=matchingId;
+  if(!messageId) {
+    const postRes=await deps.discord('POST', `/channels/${deps.noticeChannelId}/messages`, {content,allowed_mentions:{parse:[]},nonce:code,enforce_nonce:true});
+    if(!postRes.ok)throw new Error(`Discord notice publish failed: ${postRes.status}`);
+    messageId=(await postRes.json() as {id:string}).id;
+    if(!messageId)throw new Error('Discord notice missing message ID');
+  }
+  for(const id of existingIds) {
+    const deleted=await deps.discord('DELETE', `/channels/${deps.noticeChannelId}/messages/${id}`);
+    if(!deleted.ok && deleted.status!==404)throw new Error(`Discord old notice deletion failed: ${deleted.status}`);
   }
 
-  const data = await res.json();
   return {
     code,
-    messageId: data.id,
+    messageId,
     activeUntil,
     expiresAt
   };

@@ -8,6 +8,17 @@ export function createDB(url:string, testOnlyNoTLS=false) {
   const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,idle_timeout:20,max_lifetime:60,
     ssl:testOnlyNoTLS?false:{rejectUnauthorized:true},onnotice:()=>{}});
   const db:ReplyDB & CleanupDB & SecretDB={
+    async reserveSecret(code,now,activeUntil,expiresAt) {
+      return await sql.begin(async tx=>{
+        await tx`SELECT pg_advisory_xact_lock(hashtext('solitary_athlete.weekly-secret'))`;
+        const rows=await tx`SELECT secret_code,active_until,expires_at FROM solitary_athlete.channel_access_secrets
+          WHERE active_until>${now} ORDER BY issued_at DESC LIMIT 1`;
+        if(rows.length)return {code:rows[0].secret_code,activeUntil:new Date(rows[0].active_until),expiresAt:new Date(rows[0].expires_at)};
+        await tx`INSERT INTO solitary_athlete.channel_access_secrets(secret_code,issued_at,active_until,expires_at)
+          VALUES(${code},${now},${activeUntil},${expiresAt})`;
+        return {code,activeUntil,expiresAt};
+      });
+    },
     async insertSecret(code:string,issuedAt:Date,activeUntil:Date,expiresAt:Date) {
       await sql`INSERT INTO solitary_athlete.channel_access_secrets
         (secret_code,issued_at,active_until,expires_at)
