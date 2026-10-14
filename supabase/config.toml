@@ -7,3 +7,7 @@ verify_jwt = false
 [functions.mukmuk-discord-cleanup]
 # Authenticated by an app-specific secret stored in Vault and Edge Secrets.
 verify_jwt = false
+
+[functions.mukmuk-weekly-code]
+# Authenticated by the purpose-bound weekly-code HMAC, never public JWT bypass alone.
+verify_jwt = false

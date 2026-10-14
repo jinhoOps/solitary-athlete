@@ -76,8 +76,8 @@ Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP
 ## 주간 시크릿 코드 및 대시보드 v2
 
 - **발급 주기**: 매주 월요일 00:00 KST (`pg_cron`: `0 15 * * 0` UTC).
-- **유예 기간**: 정규 7일 + 24시간(`expires_at = now() + 8 days`). 새 코드가 발급되어도 기존 코드는 24시간 동안 유효하다.
-- **Discord 공지**: `#공지` 채널에 코드블록(`mukmuk-xxxx`)과 바로가기 링크(`?code=mukmuk-xxxx`)를 자동 게시한다.
+- **유예 기간**: 다음 KST 월요일 00시까지 정규 사용, 이후 24시간 유예(`expires_at = active_until + 1 day`). 최초 발급이 주중이어도 월요일 경계로 맞춘다. 새 코드가 발급되어도 기존 코드는 24시간 동안 유효하다.
+- **Discord 공지**: `#공지` 채널에 코드블록과 접속 링크를 게시한다. 다음 발급 때 새 안내 전송에 성공한 뒤 이전 묵묵 안내를 삭제한다. 전송 실패 시 이전 안내를 유지하며, 재실행은 현재 코드·안내를 재사용한다. 다른 작성자의 메시지는 삭제하지 않는다.
 - **RPC 보안**: `solitary_athlete.workout_logs`의 직접 `anon` 조회를 회수하고, `solitary_athlete.get_workout_logs(p_secret_code, p_year)` RPC를 통해서만 유효한 시크릿 코드로 1년 데이터를 조회한다.
 - **대시보드 UI**:
   - 컴팩트 단일 라인 헤더 및 높이가 줄어든 탭 버튼.
@@ -102,3 +102,11 @@ CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref ol
 정확히 300초의 밀리초 단위 삭제를 보장하지 않는다. Cron 점검·네트워크·429 때문에 늦어질 수 있다. 장시간 장애로 15분 interaction token이 만료되면 운영자가 남은 메시지를 확인해 정리한다.
 
 내부 서명은 호출 목적도 구분한다. 삭제 요청의 서명 원문은 `mukmuk-cleanup-v1:<timestamp>:<nonce>`, 주간 코드 요청은 `mukmuk-weekly-code-v1:<timestamp>:<nonce>`다. 삭제 큐에서 관측한 서명으로 주간 코드를 발급할 수 없다. 주간 코드 호출자는 해당 목적의 서명을 생성해야 한다.
+
+### 주간 발급 실서비스 확인 (2026-10-14)
+
+누락된 발급 함수 배포·봇/공지 채널 Secrets·주간 Cron을 연결했다. [주간 예약](../supabase/migrations/20261014000006_mukmuk_weekly_code_cron.sql)과 [앱 역할 접근 정책·시퀀스 권한](../supabase/migrations/20261014000007_mukmuk_weekly_code_worker_access.sql)을 적용했다. 공지 채널의 묵묵 역할에 View Channel, Send Messages, Read Message History만 허용했다.
+
+최초 발급은 HTTP 200, Discord 안내 메시지 존재와 발급 코드의 웹 조회 RPC 200을 확인했다. Vault 서명을 사용하는 `pg_net` 예약 호출 경로도 200이며, 재실행 후 코드 한 개·안내 한 개를 유지했다. HTTP 응답에는 코드를 반환하지 않는다. 다음 실제 정기 발급 시점은 2026-10-19 00:00 KST다. 자동 정기 실행 자체는 그 시점 이후 Cron 실행 이력으로 확인한다.
+
+동시 게시에는 코드별 고정 `nonce`와 `enforce_nonce`를 사용한다. Discord가 짧은 시간 내 같은 작성자의 nonce를 중복 판정하며, 이후 재시도는 공지 조회로 기존 안내를 재사용한다. [Discord 공식 Create Message 문서](https://github.com/discord/discord-api-docs/blob/main/developers/resources/message.mdx#create-message) 참고.

@@ -104,3 +104,26 @@ Deno.test('secrets & RPC: active code, grace period, expiration, and anon access
     await anonSql.end();
   }
 });
+
+Deno.test('worker reserves one weekly code under concurrent calls', async()=>{
+  const url=Deno.env.get('TEST_DATABASE_URL')!;
+  const {createDB}=await import('../functions/_shared/db.ts');
+  const first=createDB(url.replace('postgres@','mukmuk_worker@'),true);
+  const second=createDB(url.replace('postgres@','mukmuk_worker@'),true);
+  const admin=postgres(url,{max:1,prepare:false,ssl:false});
+  const now=new Date('2040-10-15T00:00:00Z'),activeUntil=new Date('2040-10-21T15:00:00Z'),expiresAt=new Date('2040-10-22T15:00:00Z');
+  try {
+    const firstReserved=await first.db.reserveSecret!('mukmuk-test-reserve-later-clock',new Date(now.getTime()+1000),activeUntil,expiresAt);
+    const rows=await Promise.all([
+      first.db.reserveSecret!('mukmuk-test-reserve-a',now,activeUntil,expiresAt),
+      second.db.reserveSecret!('mukmuk-test-reserve-b',now,activeUntil,expiresAt),
+    ]);
+    assert(rows[0].code===rows[1].code && rows[0].code===firstReserved.code,'callers with older captured clocks must reuse the reserved code');
+    const count=await admin`SELECT count(*)::integer n FROM solitary_athlete.channel_access_secrets WHERE secret_code LIKE 'mukmuk-test-reserve-%'`;
+    assert(count[0].n===1,'only one code inserted');
+  } finally {
+    await first.sql.end();await second.sql.end();
+    await admin`DELETE FROM solitary_athlete.channel_access_secrets WHERE secret_code LIKE 'mukmuk-test-reserve-%'`;
+    await admin.end();
+  }
+});

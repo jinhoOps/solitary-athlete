@@ -15,11 +15,12 @@ Deno.serve(async req => {
       db,
       discord: discordBot(setting('DISCORD_BOT_TOKEN')),
       noticeChannelId: setting('DISCORD_NOTICE_CHANNEL_ID'),
+      botUserId: setting('MUKMUK_DISCORD_APP_ID'),
       dashboardUrl: setting('MUKMUK_DASHBOARD_URL'),
     });
-    return Response.json(result);
+    return Response.json({messageId:result.messageId,activeUntil:result.activeUntil,expiresAt:result.expiresAt});
   } catch (err) {
-    console.error('mukmuk_weekly_code_failed', err);
+    console.error('mukmuk_weekly_code_failed');
     return new Response('Weekly code rotation failed', { status: 500 });
   }
 });
