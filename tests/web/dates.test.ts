@@ -12,11 +12,15 @@ describe('KST calendar and exercise days', () => {
     expect(stats(new Set(['2026-10-14', '2026-10-15']), '2026-10-14'))
       .toEqual({ week: 1, streak: 1, total: 1 });
   });
-  it('aligns exactly 84 dates to Monday rows with non-date padding', () => {
+  it('aligns 365 dates to Monday rows with non-date padding by default', () => {
     const cells = calendar('2026-10-14');
-    expect(cells.filter(Boolean)).toHaveLength(84);
-    expect(cells.slice(0, 5)).toEqual([null, null, null, '2026-07-23', '2026-07-24']);
+    expect(cells.filter(Boolean)).toHaveLength(365);
     expect(cells.filter(Boolean).at(-1)).toBe('2026-10-14');
     expect(cells.length % 7).toBe(0);
+
+    const cells84 = calendar('2026-10-14', 84);
+    expect(cells84.filter(Boolean)).toHaveLength(84);
+    expect(cells84.slice(0, 5)).toEqual([null, null, null, '2026-07-23', '2026-07-24']);
+    expect(cells84.length % 7).toBe(0);
   });
 });

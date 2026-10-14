@@ -2,12 +2,15 @@ import os
 from pathlib import Path
 import psycopg
 import pytest
+import hmac
+import hashlib
 
 def test_dispatch_calls_http_only_for_due_jobs_and_is_not_worker_callable():
     url=os.environ.get('TEST_DATABASE_URL')
     if not url:pytest.skip('isolated PostgreSQL required')
     with psycopg.connect(url) as conn:
         conn.execute('CREATE SCHEMA net; CREATE SCHEMA vault')
+        conn.execute('CREATE SCHEMA extensions; CREATE EXTENSION pgcrypto WITH SCHEMA extensions')
         conn.execute('''CREATE VIEW vault.decrypted_secrets AS SELECT * FROM
             (VALUES ('mukmuk_project_url','https://example.supabase.co'),
             ('mukmuk_cleanup_secret','fixture-secret')) AS s(name,decrypted_secret)''')
@@ -28,7 +31,9 @@ def test_dispatch_calls_http_only_for_due_jobs_and_is_not_worker_callable():
         assert conn.execute('SELECT solitary_athlete.mukmuk_dispatch_cleanup()').fetchone()[0]==42
         row=conn.execute('SELECT * FROM net.requests').fetchone()
         assert row[0]=='https://example.supabase.co/functions/v1/mukmuk-discord-cleanup'
-        assert row[1]['X-Mukmuk-Cleanup-Secret']=='fixture-secret' and row[2]==10000
+        assert 'fixture-secret' not in str(row[1]) and row[2]==10000
+        payload='mukmuk-cleanup-v1:'+row[1]['X-Mukmuk-Timestamp']+':'+row[1]['X-Mukmuk-Nonce']
+        assert row[1]['X-Mukmuk-Signature']==hmac.new(b'fixture-secret',payload.encode(),hashlib.sha256).hexdigest()
         conn.commit()
         conn.execute('SET ROLE mukmuk_worker')
         with pytest.raises(psycopg.errors.InsufficientPrivilege):conn.execute('SELECT solitary_athlete.mukmuk_dispatch_cleanup()')

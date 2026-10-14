@@ -55,24 +55,37 @@ GitHub 환경 `github-pages`는 main·릴리스 브랜치 배포를 허용한다
 
 채널·서버·이모지 ID와 `DASHBOARD_URL`은 `.env.example`과 같은 이름의 Repository Variables를 사용한다. 현재 필요한 Secrets/Variables는 등록됐다. 등록 스크립트는 서버 `/잔디` 한 개를 upsert하며 다른 명령어를 일괄 삭제하지 않는다.
 
-## Edge Functions·삭제 Cron
+## Edge Functions·삭제 Cron·주간 시크릿 발급
 
 | 대상 | 설정 |
 | --- | --- |
 | `mukmuk-discord-grass` | 원문 Ed25519 서명, 서버·앱 검사 후 공개 defer |
-| `mukmuk-discord-cleanup` | POST, `X-Mukmuk-Cleanup-Secret` 확인 |
+| `mukmuk-discord-cleanup` | POST, 타임스탬프·nonce·HMAC-SHA256 서명 확인 |
+| `mukmuk-weekly-code` | 매주 월요일 00:00 KST, 새 시크릿 코드 발급 및 Discord `#공지` 메시지 전송 |
 | `mukmuk-cleanup-due` | 10초마다 due 여부 확인, 있을 때만 함수 호출 |
 | `mukmuk-cleanup-history` | 앱 Cron 이력만 7일 보존, 다른 앱 이력 유지 |
 
-두 함수의 플랫폼 JWT 검사는 꺼져 있고 각 함수가 위 인증을 수행한다. Discord 개발자 포털의 인터랙션 엔드포인트는 다음 주소다.
+세 함수의 플랫폼 JWT 검사는 꺼져 있고 각 함수가 인증을 수행한다. Discord 개발자 포털의 인터랙션 엔드포인트는 다음 주소다.
 
 ```text
 https://olqdftjssrzqvcindekh.supabase.co/functions/v1/mukmuk-discord-grass
 ```
 
-Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP_SECRET`, `MUKMUK_DISCORD_PUBLIC_KEY`, `MUKMUK_DISCORD_GUILD_ID`, `MUKMUK_DISCORD_APP_ID`, `MUKMUK_DASHBOARD_URL`, `MUKMUK_GRASS_RECORD_EMOJI_ID`, `MUKMUK_GRASS_PHOTO_EMOJI_ID`다. 값은 문서에 남기지 않는다.
+Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP_SECRET`, `MUKMUK_DISCORD_PUBLIC_KEY`, `MUKMUK_DISCORD_GUILD_ID`, `MUKMUK_DISCORD_APP_ID`, `MUKMUK_DASHBOARD_URL`, `MUKMUK_GRASS_RECORD_EMOJI_ID`, `MUKMUK_GRASS_PHOTO_EMOJI_ID`, `DISCORD_BOT_TOKEN`, `DISCORD_NOTICE_CHANNEL_ID`다. 값은 문서에 남기지 않는다. `pg_net` 전송 큐를 다른 역할도 읽을 수 있어 장기 비밀값을 HTTP 요청에 넣지 않는다. Vault 키로 계산한 `X-Mukmuk-Timestamp`·`X-Mukmuk-Nonce`·`X-Mukmuk-Signature`만 전송한다. 서명은 30초 유효하며 미래 시각 오차는 최대 5초 허용한다.
 
-Vault 이름은 `mukmuk_project_url`, `mukmuk_cleanup_secret`이다. 운영 관리자만 Vault를 읽으며 앱 worker에는 권한을 추가하지 않는다. 공용 프로젝트에서 `pg_cron`, `pg_net`을 활성화한 뒤 [Cron 마이그레이션](../supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql)을 적용한다. 공용 초기화 SQL을 다시 실행하거나 다른 앱의 키·스키마·권한을 바꾸지 않는다. 이 프로젝트는 콘솔에서 마이그레이션을 적용했으므로 향후 CLI history 통합은 공용 배포 담당자가 별도로 조정한다.
+## 주간 시크릿 코드 및 대시보드 v2
+
+- **발급 주기**: 매주 월요일 00:00 KST (`pg_cron`: `0 15 * * 0` UTC).
+- **유예 기간**: 정규 7일 + 24시간(`expires_at = now() + 8 days`). 새 코드가 발급되어도 기존 코드는 24시간 동안 유효하다.
+- **Discord 공지**: `#공지` 채널에 코드블록(`mukmuk-xxxx`)과 바로가기 링크(`?code=mukmuk-xxxx`)를 자동 게시한다.
+- **RPC 보안**: `solitary_athlete.workout_logs`의 직접 `anon` 조회를 회수하고, `solitary_athlete.get_workout_logs(p_secret_code, p_year)` RPC를 통해서만 유효한 시크릿 코드로 1년 데이터를 조회한다.
+- **대시보드 UI**:
+  - 컴팩트 단일 라인 헤더 및 높이가 줄어든 탭 버튼.
+  - 기본 `전체 멤버` 뷰: 상단 4대 월간 KPI (1. 이번 달 고운, 2. 총 운동 일수, 3. 가장 푸른 요일, 4. 1인당 평균 일수), 하단 타임라인 숨김.
+  - 개별 유저 뷰: 1년(365일) 잔디 그리드 및 `#남겨둔운동` 메모 타임라인 노출.
+  - 시크릿 코드 미입력/만료 시 모달 팝업으로 재입력 유도, URL `?code=...` 진입 시 `localStorage` 자동 저장 후 주소창 쿼리 정리.
+
+Vault 이름은 `mukmuk_project_url`, `mukmuk_cleanup_secret`이다. 운영 관리자만 Vault를 읽으며 앱 worker에는 권한을 추가하지 않는다. 공용 프로젝트에서 `pg_cron`, `pg_net`을 활성화한 뒤 [Cron 마이그레이션](../supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql)과 [서명 호출 마이그레이션](../supabase/migrations/20261014000004_mukmuk_signed_cleanup.sql)을 순서대로 적용한다. 공용 초기화 SQL을 다시 실행하거나 다른 앱의 키·스키마·권한을 바꾸지 않는다. 이 프로젝트는 콘솔에서 마이그레이션을 적용했으므로 향후 CLI history 통합은 공용 배포 담당자가 별도로 조정한다.
 
 CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref olqdftjssrzqvcindekh`로 배포한다. 이번에는 로그인된 Dashboard Editor를 사용했다. `node scripts/bundle-edge.mjs`로 타입 검사된 소스를 단일 배포 번들로 만들고 해당 함수의 Code 편집기에 넣는다. 생성된 `.edge-dist`는 Git 제외이며 타입이 제거된 번들이다. 원본 TypeScript와 Deno 검사가 기준이다.
 
@@ -87,3 +100,5 @@ CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref ol
 - 오류 로그는 이름·실패 종류만 남기고 토큰·URL·메모·DB 자격 증명을 출력하지 않는다. 오래 남은 `preparing`, 기한을 넘긴 `scheduled/processing`, `failed` 개수와 `sync_status.last_success_at`, Cron history를 관측한다.
 
 정확히 300초의 밀리초 단위 삭제를 보장하지 않는다. Cron 점검·네트워크·429 때문에 늦어질 수 있다. 장시간 장애로 15분 interaction token이 만료되면 운영자가 남은 메시지를 확인해 정리한다.
+
+내부 서명은 호출 목적도 구분한다. 삭제 요청의 서명 원문은 `mukmuk-cleanup-v1:<timestamp>:<nonce>`, 주간 코드 요청은 `mukmuk-weekly-code-v1:<timestamp>:<nonce>`다. 삭제 큐에서 관측한 서명으로 주간 코드를 발급할 수 없다. 주간 코드 호출자는 해당 목적의 서명을 생성해야 한다.
