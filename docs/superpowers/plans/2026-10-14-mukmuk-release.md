@@ -47,9 +47,9 @@
 
 **Interfaces:** `Discord.messages(channel,before=None)` 페이지 조회; `Store.save(event)` 원자적 원본·일별 재집계; `run_sync(discord,store,settings,now)` 전체 실행.
 
-- [ ] 1. 중복 재처리·KST 자정·사진 추가/제거·빈 인증으로 수정·리액션 실패 후 재시도·100건 초과·커서 실패·현황판 표식 복구/분할·429 테스트를 작성한다.
-- [ ] 2. `uv run pytest`의 실패를 확인한 후 HTTP 재시도·원자적 저장·수집·현황판과 서버 명령어 등록을 구현한다.
-- [ ] 3. `scripts/test-db.sh`와 `uv run pytest`에서 실제 PostgreSQL 트랜잭션·역할과 수집 경계 테스트 통과 확인.
+- [x] 1. 중복 재처리·KST 자정·사진 추가/제거·빈 인증으로 수정·리액션 실패 후 재시도·100건 초과·커서 실패·현황판 표식 복구/분할·429 테스트를 작성한다.
+- [x] 2. `uv run pytest`의 실패를 확인한 후 HTTP 재시도·원자적 저장·수집·현황판과 서버 명령어 등록을 구현한다.
+- [x] 3. `scripts/test-db.sh`와 `uv run pytest`에서 실제 PostgreSQL 트랜잭션·역할과 수집 경계 테스트 통과 확인.
 - [ ] 4. 실제 봇 토큰이 있으면 운영 연결·읽기·명령어 등록을 확인하고, 없으면 설정 누락을 운영 상태에 명시한다. 커밋·푸시.
 
 ### Task 3: 슬래시·5분 삭제

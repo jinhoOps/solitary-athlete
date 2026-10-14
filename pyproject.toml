@@ -1,0 +1,13 @@
+[project]
+name = "mukmuk"
+version = "0.1.0"
+description = "고독한 운동가의 Discord 운동 인증 수집기"
+requires-python = ">=3.12"
+dependencies = ["httpx>=0.28,<1", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+pythonpath = ["."]
