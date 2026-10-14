@@ -15,7 +15,7 @@ port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).
 docker exec "$container" psql -X -U postgres -v ON_ERROR_STOP=1 -c 'ALTER ROLE mukmuk_worker LOGIN' >/dev/null
 python3 - <<'PY' | docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 >/dev/null
 from pathlib import Path
-source=Path('supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql').read_text()
+source=Path('supabase/migrations/20261014000004_mukmuk_signed_cleanup.sql').read_text()
 start=source.index('SET LOCAL ROLE mukmuk_owner;')
 end=source.index('RESET ROLE;')+len('RESET ROLE;')
 print('BEGIN;\n'+source[start:end]+'\nCOMMIT;')
