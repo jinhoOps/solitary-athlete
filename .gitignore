@@ -225,3 +225,11 @@ __marimo__/
 .DS_Store
 supabase/.temp/
 supabase/.branches/
+.vite/
+node_modules/
+dist/
+playwright-report/
+test-results/
+.venv/
+__pycache__/
+.pytest_cache/
