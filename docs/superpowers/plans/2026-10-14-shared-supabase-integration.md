@@ -8,9 +8,9 @@
 
 **Tech Stack:** Supabase Postgres, SQL migrations, psql, Supavisor transaction pooler, PostgREST.
 
-**Spec:** [루트 DESIGN.md §5·§18](../../../DESIGN.md#18-공용-supabase-통합-설계). 공용 기반의 완료 기록은 [공용 전환 기록](../specs/2026-10-14-shared-supabase-multischema-design.md).
+**Spec:** [루트 ARCHITECTURE.md §5·§18](../../../ARCHITECTURE.md#18-공용-supabase-통합-설계). 공용 기반의 완료 기록은 [공용 전환 기록](../specs/2026-10-14-shared-supabase-multischema-design.md).
 
-**상태:** 2026-10-14 실행 완료. 테이블·전용 역할·RLS를 원격 적용했고 로컬 SQL·공개 API·TLS 연결을 검증했다. 적용 근거와 공용 이력 제한은 DESIGN.md §18에 기록한다. 이 계획은 수집기·슬래시 처리·삭제 워커·웹 구현을 포함하지 않는다.
+**상태:** 2026-10-14 실행 완료. 테이블·전용 역할·RLS를 원격 적용했고 로컬 SQL·공개 API·TLS 연결을 검증했다. 적용 근거와 공용 이력 제한은 ARCHITECTURE.md §18에 기록한다. 이 계획은 수집기·슬래시 처리·삭제 워커·웹 구현을 포함하지 않는다.
 
 ## Global Constraints
 
@@ -42,11 +42,11 @@
 | `supabase/tests/mukmuk_foundation.sql` | 권한·RLS·가상 일별 기록 회귀 검사, 데이터는 ROLLBACK |
 | `.env.example` | 빈 설정 이름 계약 유지 |
 | `.env` | 새 ref의 로컬 설정·전용 연결 비밀값, Git 제외 |
-| `DESIGN.md` | 확인된 적용 상태·선택 이유의 단일 기준 |
+| `ARCHITECTURE.md` | 확인된 적용 상태·선택 이유의 단일 기준 |
 
 ### Task 1: 새 프로젝트와 공용 이력 확인
 
-**Files:** 기존 `supabase/migrations/20261014000001_init_multischema.sql` 읽기, `DESIGN.md` 갱신.
+**Files:** 기존 `supabase/migrations/20261014000001_init_multischema.sql` 읽기, `ARCHITECTURE.md` 갱신.
 
 **Interfaces:** 입력은 새 프로젝트와 공용 배포 이력, 출력은 정확한 적용 대상·다음 마이그레이션 번호·현재 ACL 목록이다.
 
@@ -283,7 +283,7 @@ WHERE n.nspname IN ('player_one','individualsavingflow','public')
 
 ### Task 4: 연결 계약과 실제 API 확인
 
-**Files:** Modify `.env.example`·`DESIGN.md`, ignored `.env` 업데이트. 공용 마이그레이션 이력에 검토된 변경안을 한 번 통합.
+**Files:** Modify `.env.example`·`ARCHITECTURE.md`, ignored `.env` 업데이트. 공용 마이그레이션 이력에 검토된 변경안을 한 번 통합.
 
 **Interfaces:** 브라우저는 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY`·schema `solitary_athlete`, 서버는 `MUKMUK_DATABASE_URL`. 원격 Secrets는 `MUKMUK_` 접두사를 유지한다.
 
@@ -321,7 +321,7 @@ print('public reads succeed; private reads denied')
 
 publishable key를 JWT로 취급해 Authorization에 넣지 않는다. SQL의 쓰기 거부 검사와 HTTP의 읽기 검사는 모두 필요하다. HTTP의 404만으로 RLS가 정상이라고 판단하지 않는다.
 
-- [x] **4. 적용 상태와 제한을 DESIGN.md에 기록한다.** 적용된 마이그레이션 번호, 역할·권한 검사 결과, 읽기 확인 결과만 남긴다. 수집기·명령어·5분 삭제가 아직 없다는 상태를 유지한다. 함수 `mukmuk-discord-grass`, `mukmuk-discord-cleanup`과 Cron `mukmuk-cleanup-due`는 별도 기능 계획에서 배포한다.
+- [x] **4. 적용 상태와 제한을 ARCHITECTURE.md에 기록한다.** 적용된 마이그레이션 번호, 역할·권한 검사 결과, 읽기 확인 결과만 남긴다. 수집기·명령어·5분 삭제가 아직 없다는 상태를 유지한다. 함수 `mukmuk-discord-grass`, `mukmuk-discord-cleanup`과 Cron `mukmuk-cleanup-due`는 별도 기능 계획에서 배포한다.
 
 ## 되돌림과 자체 검토
 

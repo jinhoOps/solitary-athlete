@@ -21,14 +21,15 @@ README에는 지금 구현된 범위와 예정된 기능을 구분해 적습니�
 - [텍스트 잔디](../assets/brand/grass-record.svg) · [사진 잔디](../assets/brand/grass-photo.svg): Discord에 등록할 기본·진한 녹색 단계의 벡터 원본.
 - [대시보드 시안](design/dashboard-preview.svg): 화면 설계를 검토하는 정적 예시. 실제 사용자 데이터나 배포 화면이 아님.
 
-SVG는 외부 이미지·폰트·스크립트를 불러오지 않습니다. 글꼴은 운영체제의 한국어 산세리프를 사용합니다. 디자인 원칙과 색상은 루트 [DESIGN.md](../DESIGN.md#11-브랜드-방향)를 따릅니다.
+SVG는 외부 이미지·폰트·스크립트를 불러오지 않습니다. 글꼴은 운영체제의 한국어 산세리프를 사용합니다. 디자인 원칙과 색상은 루트 [DESIGN.md](../DESIGN.md#overview)를 따릅니다.
 
-GitHub Social preview 업로드가 필요하면 배너를 PNG로 내보내 사용합니다. Discord 앱·서버 아이콘에는 [마크 PNG](../assets/brand/mark.png)를 적용했습니다. [기본 잔디 PNG](../assets/brand/grass-record.png)와 [사진 잔디 PNG](../assets/brand/grass-photo.png)는 각각 `mukmuk_grass`, `mukmuk_photo`로 서버에 등록했습니다. SVG는 수정용 원본으로 보존합니다. 실제 등록 ID는 [DESIGN.md](../DESIGN.md#17-discord-초기-설정-현황)를 따릅니다.
+GitHub Social preview 업로드가 필요하면 배너를 PNG로 내보내 사용합니다. Discord 앱·서버 아이콘에는 [마크 PNG](../assets/brand/mark.png)를 적용했습니다. [기본 잔디 PNG](../assets/brand/grass-record.png)와 [사진 잔디 PNG](../assets/brand/grass-photo.png)는 각각 `mukmuk_grass`, `mukmuk_photo`로 서버에 등록했습니다. SVG는 수정용 원본으로 보존합니다. 실제 등록 ID는 [ARCHITECTURE.md](../ARCHITECTURE.md#17-discord-초기-설정-현황)를 따릅니다.
 
 ## 협업 파일
 
 - `AGENTS.md`: 에이전트 작업 기준과 CodeGraph 지침.
-- `DESIGN.md`: 제품·시스템·브랜드·화면 설계의 단일 기준 문서.
+- `DESIGN.md`: 색상·타이포그래피·레이아웃·컴포넌트·반응형 디자인 시스템.
+- `ARCHITECTURE.md`: 제품·시스템 계약, DB·서비스 설정, 적용 이력.
 - `CONTRIBUTING.md`: 변경 목적, 검증, 기여 안내.
 - `.github/ISSUE_TEMPLATE/`: 문제 보고·개선 제안 폼.
 - `.github/PULL_REQUEST_TEMPLATE.md`: 변경 결과·검증 근거 기록.

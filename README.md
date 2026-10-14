@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="DESIGN.md">제품·시스템 설계</a> ·
-  <a href="DESIGN.md#11-브랜드-방향">브랜드·화면 설계</a> ·
+  <a href="ARCHITECTURE.md">제품·시스템 설계</a> ·
+  <a href="DESIGN.md#overview">브랜드·화면 설계</a> ·
   <a href="AGENTS.md">에이전트 지침</a> ·
   <a href="CONTRIBUTING.md">기여 안내</a>
 </p>
@@ -50,14 +50,16 @@
 
 웹보드는 공개 페이지를 기본 설계로 합니다. 참여자의 표시명, 운동 날짜와 텍스트 메모가 공개되며, 사진 원본과 첨부 URL은 웹에 옮기지 않습니다. 이 범위는 참여 안내에 명시합니다.
 
-[고독한 운동가 서버 열기](https://discord.com/channels/1559802401802952706/1559802402893340744) · 공지·현황판은 멤버 읽기 전용, 인증·자유수다는 쓰기 가능으로 설정했습니다. 설치한 묵묵에게 현황판 쓰기 역할을 연결했습니다. 실제 ID와 초기 설정 상태는 [DESIGN.md](DESIGN.md#17-discord-초기-설정-현황)에 기록합니다.
+[고독한 운동가 서버 열기](https://discord.com/channels/1559802401802952706/1559802402893340744) · 공지·현황판은 멤버 읽기 전용, 인증·자유수다는 쓰기 가능으로 설정했습니다. 설치한 묵묵에게 현황판 쓰기 역할을 연결했습니다. 실제 ID와 초기 설정 상태는 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)에 기록합니다.
 
 ## 설계 둘러보기
 
 | 문서 | 내용 |
 | --- | --- |
+| [제품·시스템 계약](ARCHITECTURE.md) | 제품 동작·데이터·운영 설정·적용 이력 |
+| [후속 구현 준비](docs/implementation-readiness.md) | 다음 마일스톤과 구현·실서비스 검증에 필요한 설정 |
 | [에이전트 지침](AGENTS.md) | 브랜드 표기, 제품 계약, 개발·검증 원칙 |
-| [DESIGN.md](DESIGN.md) | 제품·시스템·브랜드·화면 설계를 한 문서에서 관리 |
+| [DESIGN.md](DESIGN.md) | 색상·타이포그래피·컴포넌트·반응형 디자인 시스템 |
 | [대시보드 시안](docs/design/dashboard-preview.svg) | 화면 구성과 시각적 방향을 확인하는 정적 시안 |
 | [레포 소개 설정](docs/repository.md) | GitHub 설명, Topics, 브랜드 자산 사용 |
 | [환경변수 예시](.env.example) | 구현에 사용할 공개 설정과 서버 비밀값의 구분 |
@@ -78,7 +80,7 @@
 3. `/잔디` 조회와 5분 삭제.
 4. 정기 실행과 상세 웹보드 배포.
 
-각 단계의 검증 기준은 [DESIGN.md](DESIGN.md#9-개발-단계와-완료-기준)에 있습니다. 구현을 시작한 뒤 실행법과 배포 주소를 추가합니다.
+각 단계의 검증 기준은 [ARCHITECTURE.md](ARCHITECTURE.md#9-개발-단계와-완료-기준)에 있습니다. 구현을 시작한 뒤 실행법과 배포 주소를 추가합니다.
 
 ## 함께 만들기
 
@@ -88,4 +90,4 @@
 
 ## DB 기반 검증
 
-[SQL 검증 안내](supabase/tests/README.md)에 따라 별도 임시 PostgreSQL 17 클러스터에서 실행합니다. KST 날짜, 사진 인증, 중복, 5분 삭제 큐 제약과 역할별 접근을 실제 SQL로 확인하고 가상 기록은 롤백합니다. 운영 DB의 현재 적용 상태는 [DESIGN.md](DESIGN.md#18-공용-supabase-통합-설계)에 기록합니다.
+[SQL 검증 안내](supabase/tests/README.md)에 따라 별도 임시 PostgreSQL 17 클러스터에서 실행합니다. KST 날짜, 사진 인증, 중복, 5분 삭제 큐 제약과 역할별 접근을 실제 SQL로 확인하고 가상 기록은 롤백합니다. 운영 DB의 현재 적용 상태는 [ARCHITECTURE.md](ARCHITECTURE.md#18-공용-supabase-통합-설계)에 기록합니다.
