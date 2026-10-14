@@ -42,7 +42,7 @@ def test_board_splits_whole_members_disables_markdown_in_names_and_four_rows():
     rows=[{'user_id':str(i),'username':'하루'*30+'@everyone','log_date':'2026-10-14','memo':'걷기','has_photo':i%2==0} for i in range(25)]
     pages=build_board(rows,datetime(2026,10,14,tzinfo=timezone.utc),'https://example.com')
     assert len(pages)>1 and all(len(p.encode('utf-16-le'))//2<=2000 for p in pages)
-    assert all('묵묵 · 운동 잔디 현황' in p for p in pages)
+    assert all('고운 잔디밭' in p for p in pages)
     assert sum(p.count('이번 주') for p in pages)==25
     assert '@everyone' not in '\n'.join(pages)
     assert '🌲' in '\n'.join(pages)
