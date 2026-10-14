@@ -6,4 +6,15 @@ export interface Member {
   id: string; name: string; dates: Set<string>; photos: Set<string>;
 }
 export interface PublicConfig { url: string; key: string }
-export interface DashboardData { members: Member[]; logs: WorkoutLog[]; lastSuccess: string | null }
+export interface MonthlyKPIs {
+  activeMembers: number;
+  totalWorkoutDays: number;
+  mostActiveWeekday: string;
+  averageDaysPerMember: number;
+}
+export interface DashboardData {
+  members: Member[];
+  logs: WorkoutLog[];
+  lastSuccess: string | null;
+  kpis: MonthlyKPIs;
+}
