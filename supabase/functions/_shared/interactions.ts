@@ -9,9 +9,10 @@ export interface Reply {
 export type DiscordCall = (method: string, path: string, payload?: Record<string, unknown>) => Promise<Response>;
 export interface ReplyDB {
   prepare: (body: Reply, cipher: Uint8Array, expiresAt: Date) => Promise<boolean>;
+  reservePublish: (id:string, now:Date, attempt?:number) => Promise<number|null>;
   daily: (userId: string) => Promise<WorkoutLog[]>;
   lastSuccess: () => Promise<string | null>;
-  schedule: (id: string, publishedAt: Date) => Promise<void>;
+  schedule: (id: string, publishedAt: Date, attempt?:number) => Promise<void>;
 }
 function unhex(hex: string, size: number): Uint8Array<ArrayBuffer> | null {
   if (hex.length !== size*2 || !/^[0-9a-f]+$/i.test(hex)) return null;
@@ -45,7 +46,7 @@ export async function handleInteraction(req: Request, deps: { publicKey:string; 
   deps.waitUntil(deps.publish(reply).catch(()=>console.error('mukmuk_publish_failed')));
   return Response.json({type:5});
 }
-export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;dashboardUrl:string;db:ReplyDB;discord:DiscordCall;emojis?:[string|undefined,string|undefined]}) {
+export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;dashboardUrl:string;db:ReplyDB;discord:DiscordCall;emojis?:[string|undefined,string|undefined];sleep?:(ms:number)=>Promise<void>}) {
   const path=`/webhooks/${body.application_id}/${body.token}/messages/@original`;
   try {
     const cipher=await encryptToken(body.token,deps.key,body.id);
@@ -62,8 +63,22 @@ export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;d
     content='기록을 불러오지 못했어요. 잠시 뒤 다시 조회해 주세요.\n이 메시지는 5분 뒤 사라져요.';
     console.error('mukmuk_query_failed');
   }
-  // A preparing row survives PATCH or final scheduling failure for cleanup recovery.
-  const res=await deps.discord('PATCH',path,{content,allowed_mentions:{parse:[]}});
-  if (!res.ok) throw new Error('Discord publish failed');
-  await deps.db.schedule(body.id,deps.now());
+  // Publication and recovery compete for the same row. A recovered claim prevents PATCH.
+  const sleep=deps.sleep??((ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms)));
+  let ticket:number|undefined;
+  for(let attempt=0;attempt<3;attempt++) {
+    const lease=await deps.db.reservePublish(body.id,deps.now(),ticket);
+    if(lease===null)return; // Recovery owns the loading response.
+    ticket=lease;
+    let res:Response|undefined;
+    try {res=await deps.discord('PATCH',path,{content,allowed_mentions:{parse:[]}});}
+    catch { /* Retry transport failures without logging token-bearing request URLs. */ }
+    if(res?.ok) {await deps.db.schedule(body.id,deps.now(),ticket);return;}
+    if(res && res.status!==429 && res.status<500)throw new Error('Discord publish rejected');
+    if(attempt===2)break;
+    const delay=res?.status===429?Number((await res.json()).retry_after)*1000:2**attempt*1000;
+    if(!Number.isFinite(delay)||delay<0||delay>20_000)break;
+    await sleep(delay);
+  }
+  throw new Error('Discord publish retries exhausted');
 }

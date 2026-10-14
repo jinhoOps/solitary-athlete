@@ -11,7 +11,7 @@
 
 ## 현재 단계와 읽는 순서
 
-현재는 **DB 기반 구현 단계**다. Discord 서버와 채널 4개, 묵묵 앱·봇 설치와 역할 연결, 브랜드 아이콘·잔디 이모지는 구성됐다. 실제 ID와 권한은 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)를 따른다. Supabase 묵묵 테이블 5개·전용 역할·RLS와 로컬 SQL 검증이 구현·적용됐다. 실행 가능한 수집기·슬래시·웹·배포 워크플로우는 아직 없다. 문서에 등장하는 예정 경로를 구현된 파일처럼 설명하지 않는다.
+현재는 **기능 구현·배포 검증 단계**다. Python 수집기, 서명 검증 슬래시·삭제 워커, 바닐라 TypeScript 웹보드와 CI/배포 워크플로우가 구현됐다. Pages·Edge·삭제 Cron은 배포됐고 로컬 수집·명령어 등록은 확인됐다. 정기 수집은 기본 브랜치 병합 이후 활성화된다. 실행·상태는 [운영 안내](docs/operations.md), 실제 ID·권한·이력은 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)를 따른다.
 
 1. [README](README.md): 목적, 범위, 진행 상태.
 2. [DESIGN.md](DESIGN.md): YAML 디자인 토큰, 브랜드·타이포그래피·레이아웃·컴포넌트·반응형의 단일 기준.

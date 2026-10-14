@@ -4,6 +4,7 @@ from psycopg.rows import dict_row
 class Store:
     def __init__(self, connection):
         self.conn = connection
+        self.conn.prepare_threshold = None  # Supavisor transaction pooler compatibility.
         self.conn.row_factory = dict_row
 
     def save(self, message_id, event):

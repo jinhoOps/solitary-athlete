@@ -12,8 +12,13 @@ export interface CleanupDB {
   schedule:(id:string,publishedAt:Date,attempt?:number)=>Promise<void>;
 }
 export async function cleanupDue(deps:{key:string;now:()=>Date;db:CleanupDB;discord:DiscordCall}) {
-  const now=deps.now(); const jobs=await deps.db.claim(now);
-  for (const job of jobs) {
+  const started=deps.now().getTime();let claimed=0;
+  // Fresh one-row claims keep each lease useful and drain bursts before token expiry.
+  for(let round=0;round<50;round++) {
+    const now=deps.now();
+    if(round>0&&now.getTime()-started>=20_000)break;
+    const jobs=await deps.db.claim(now);if(!jobs.length)break;claimed+=jobs.length;
+    for (const job of jobs) {
     const ownedDB:CleanupDB={...deps.db,
       finish:(id,status,code)=>deps.db.finish(id,status,code,job.attempts),
       retry:(id,at,code)=>deps.db.retry(id,at,code,job.attempts),
@@ -54,7 +59,8 @@ export async function cleanupDue(deps:{key:string;now:()=>Date;db:CleanupDB;disc
       await ownedDB.retry(id,new Date(now.getTime()+Math.min(60,2**Math.min(job.attempts,6))*1000),'network_or_storage');
     }
   }
-  return {claimed:jobs.length};
+  }
+  return {claimed};
 }
 async function retryResponse(res:Response,job:CleanupJob,deps:{db:CleanupDB},now:Date) {
   if (res.status===429 || res.status>=500) {

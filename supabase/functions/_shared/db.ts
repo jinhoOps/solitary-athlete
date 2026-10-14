@@ -24,6 +24,15 @@ export function createDB(url:string, testOnlyNoTLS=false) {
         if(page.length<1000)return rows;
       }
     },
+    async reservePublish(id:string,now:Date,attempt?:number) {
+      const rows=await sql`UPDATE solitary_athlete.reply_cleanup_jobs
+        SET lease_until=${now}::timestamptz+interval '45 seconds'
+        WHERE interaction_id=${id} AND status='preparing' AND published_at IS NULL
+        AND token_expires_at>${now}
+        AND ((${attempt??null}::integer IS NULL AND (lease_until IS NULL OR lease_until<=${now}))
+          OR attempts=${attempt??null}) RETURNING attempts`;
+      return rows.length?Number(rows[0].attempts):null;
+    },
     async lastSuccess() {
       const rows=await sql`SELECT last_success_at FROM solitary_athlete.sync_status WHERE singleton=true`;
       return rows[0]?.last_success_at ? new Date(rows[0].last_success_at).toISOString() : null;
@@ -59,7 +68,7 @@ export function createDB(url:string, testOnlyNoTLS=false) {
     async retry(id:string,at:Date,code:string,attempt?:number) {
       await sql`UPDATE solitary_athlete.reply_cleanup_jobs
         SET status=CASE WHEN published_at IS NULL THEN 'preparing' ELSE 'scheduled' END,
-        next_attempt_at=${at},lease_until=NULL,last_error_code=${code}
+        next_attempt_at=LEAST(${at},token_expires_at),lease_until=NULL,last_error_code=${code}
         WHERE interaction_id=${id} AND status='processing'
         AND (${attempt??null}::integer IS NULL OR attempts=${attempt??null})`;
     },

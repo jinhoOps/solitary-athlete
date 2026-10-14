@@ -59,7 +59,7 @@ it('persists encrypted preparation before publishing and schedules from the succ
   await publishReply(job,{
     key,now:()=>new Date('2026-10-14T09:00:00Z'),dashboardUrl:'',
     db:{prepare:async(_b,cipher)=>{expect(cipher.length).toBeGreaterThan(12);order.push('prepare');return true;},
-      daily:async()=>[],lastSuccess:async()=>null,schedule:async(_id,at)=>{published=at;order.push('schedule');}},
+      reservePublish:async()=>0,daily:async()=>[],lastSuccess:async()=>null,schedule:async(_id,at)=>{published=at;order.push('schedule');}},
     discord:async(method,_path,payload)=>{expect(method).toBe('PATCH');expect(payload?.allowed_mentions).toEqual({parse:[]});order.push('publish');return new Response('{}',{status:200});},
   });
   expect(order).toEqual(['prepare','publish','schedule']);expect(published?.toISOString()).toBe('2026-10-14T09:00:00.000Z');
@@ -68,7 +68,23 @@ it('persists encrypted preparation before publishing and schedules from the succ
 it('deletes the deferred original when preparation fails, publishes nothing', async () => {
   const methods:string[]=[];
   await publishReply({...body,targetId:'10',targetName:'하루'},{key,now:()=>new Date(),dashboardUrl:'',
-    db:{prepare:async()=>{throw new Error('DB unavailable')},daily:async()=>[],lastSuccess:async()=>null,schedule:async()=>{}},
+    db:{prepare:async()=>{throw new Error('DB unavailable')},reservePublish:async()=>0,daily:async()=>[],lastSuccess:async()=>null,schedule:async()=>{}},
     discord:async method=>{methods.push(method);return new Response(null,{status:204});}});
   expect(methods).toEqual(['DELETE']);
+});
+
+it('never PATCHes after a recovery worker has claimed preparation',async()=>{
+  const methods:string[]=[];
+  await publishReply({...body,targetId:'10',targetName:'하루'},{key,now:()=>new Date(),dashboardUrl:'',
+    db:{prepare:async()=>true,reservePublish:async()=>null,daily:async()=>[],lastSuccess:async()=>null,schedule:async()=>{}},
+    discord:async method=>{methods.push(method);return Response.json({});}});
+  expect(methods).toEqual([]);
+});
+
+it('retries transient publication failures under a renewed ownership lease',async()=>{
+  const sleeps:number[]=[];let requests=0;let leases=0;let scheduled=false;
+  await publishReply({...body,targetId:'10',targetName:'하루'},{key,now:()=>new Date(),dashboardUrl:'',sleep:async n=>{sleeps.push(n)},
+    db:{prepare:async()=>true,reservePublish:async()=>{leases++;return 0},daily:async()=>[],lastSuccess:async()=>null,schedule:async()=>{scheduled=true}},
+    discord:async()=>{requests++;return requests===1?Response.json({retry_after:0.01},{status:429}):requests===2?new Response(null,{status:503}):Response.json({});}});
+  expect(scheduled).toBe(true);expect(requests).toBe(3);expect(leases).toBe(3);expect(sleeps[0]).toBe(10);
 });

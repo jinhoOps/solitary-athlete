@@ -13,5 +13,12 @@ for file in supabase/tests/bootstrap.sql supabase/migrations/20261014000002_mukm
 done
 port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).HostPort}}' "$container")
 docker exec "$container" psql -X -U postgres -v ON_ERROR_STOP=1 -c 'ALTER ROLE mukmuk_worker LOGIN' >/dev/null
+python3 - <<'PY' | docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 >/dev/null
+from pathlib import Path
+source=Path('supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql').read_text()
+start=source.index('SET LOCAL ROLE mukmuk_owner;')
+end=source.index('RESET ROLE;')+len('RESET ROLE;')
+print('BEGIN;\n'+source[start:end]+'\nCOMMIT;')
+PY
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" uv run pytest
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/cleanup_queue_test.ts

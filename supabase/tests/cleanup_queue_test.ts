@@ -10,6 +10,15 @@ Deno.test('real SQL queue: 300 seconds, concurrent claims, lease recovery, termi
   const published=new Date('2026-10-14T09:00:00Z');
   const body={id:'456',application_id:'1559809751603216444',token:'fixture',targetId:'123',targetName:'하루'};
   try{
+    const preparing={...body,id:'455'};
+    await a.db.prepare(preparing,await encryptToken('fixture',key,'455'),new Date('2026-10-14T09:15:00Z'));
+    await a.sql`UPDATE solitary_athlete.reply_cleanup_jobs SET created_at='2026-10-14T08:58:00Z' WHERE interaction_id='455'`;
+    const publisher=await a.db.reservePublish('455',published);
+    assert(publisher===0,'publisher must reserve a fresh generation');
+    assert((await b.db.claim(new Date('2026-10-14T09:00:44Z'))).length===0,'recovery must respect active publication');
+    assert((await b.db.claim(new Date('2026-10-14T09:00:45Z'))).length===1,'abandoned publication must recover');
+    assert(await a.db.reservePublish('455',new Date('2026-10-14T09:00:46Z'),0)===null,'old publisher must not PATCH after recovery claim');
+    await b.db.finish('455','done',undefined,1);
     await a.db.prepare(body,await encryptToken(body.token,key,body.id),new Date('2026-10-14T09:15:00Z'));
     assert(!await a.db.prepare(body,new Uint8Array([1]),new Date('2026-10-14T09:15:00Z')),'duplicate preparation must be ignored');
     await a.db.schedule(body.id,published);
