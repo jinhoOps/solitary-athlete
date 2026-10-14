@@ -17,4 +17,5 @@ export interface DashboardData {
   logs: WorkoutLog[];
   lastSuccess: string | null;
   kpis: MonthlyKPIs;
+  currentStats?: Map<string, {week:number;streak:number;total:number}>;
 }

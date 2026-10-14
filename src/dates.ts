@@ -23,6 +23,13 @@ export function calendar(today: string, totalDays = 365): (string | null)[] {
   while (result.length % 7) result.push(null);
   return result;
 }
+export function calendarYear(year: number): (string | null)[] {
+  if (!Number.isInteger(year) || year < 1 || year > 9999) throw new RangeError('Invalid calendar year');
+  const prefix = String(year).padStart(4, '0');
+  const start = `${prefix}-01-01`, end = `${prefix}-12-31`;
+  const days = (Date.parse(end + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / DAY + 1;
+  return calendar(end, days);
+}
 export function shortDate(date: string): string {
   return `${Number(date.slice(5, 7))}월 ${Number(date.slice(8, 10))}일`;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayAt, stats, calendar } from '../../src/dates';
+import { dayAt, stats, calendar, calendarYear } from '../../src/dates';
 
 describe('KST calendar and exercise days', () => {
   it('changes day at KST midnight, independently of the browser zone', () => {
@@ -23,4 +23,17 @@ describe('KST calendar and exercise days', () => {
     expect(cells84.slice(0, 5)).toEqual([null, null, null, '2026-07-23', '2026-07-24']);
     expect(cells84.length % 7).toBe(0);
   });
+});
+
+it('builds a whole calendar year with Monday padding and leap day',()=>{
+  for(const [year,length] of [[2026,365],[2025,365],[2024,366]] as const) {
+    const cells=calendarYear(year),dates=cells.filter(Boolean);
+    expect(dates).toHaveLength(length);
+    expect(dates[0]).toBe(`${year}-01-01`);
+    expect(dates.at(-1)).toBe(`${year}-12-31`);
+    expect(cells.length%7).toBe(0);
+  }
+  expect(calendarYear(2026).slice(0,4)).toEqual([null,null,null,'2026-01-01']);
+  expect(calendarYear(2024)).toContain('2024-02-29');
+  expect(calendarYear(2025)).not.toContain('2025-02-29');
 });
