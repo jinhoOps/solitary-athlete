@@ -1,5 +1,5 @@
 import { expect,it } from 'vitest';
-import { signCleanupHeaders,verifyCleanupHeaders } from '../../supabase/functions/_shared/internal-auth.ts';
+import { signCleanupHeaders,verifyCleanupHeaders,signInternalHeaders,verifyInternalHeaders } from '../../supabase/functions/_shared/internal-auth.ts';
 
 const secret='fixture-only-private-key';
 const now=new Date('2026-10-14T12:00:00Z');
@@ -18,4 +18,12 @@ it('rejects expired, future, malformed and modified headers',async()=>{
   modified.set('X-Mukmuk-Signature','invalid');
   expect(await verifyCleanupHeaders(modified,secret,now)).toBe(false);
   expect(await verifyCleanupHeaders(new Headers({'X-Mukmuk-Cleanup-Secret':secret}),secret,now)).toBe(false);
+});
+
+it('rejects signatures reused against another internal endpoint',async()=>{
+  const cleanup=new Headers(await signCleanupHeaders(secret,now));
+  expect(await verifyInternalHeaders(cleanup,secret,'weekly-code',now)).toBe(false);
+  const weekly=new Headers(await signInternalHeaders(secret,'weekly-code',now));
+  expect(await verifyInternalHeaders(weekly,secret,'weekly-code',now)).toBe(true);
+  expect(await verifyCleanupHeaders(weekly,secret,now)).toBe(false);
 });

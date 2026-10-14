@@ -87,3 +87,5 @@ CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref ol
 - 오류 로그는 이름·실패 종류만 남기고 토큰·URL·메모·DB 자격 증명을 출력하지 않는다. 오래 남은 `preparing`, 기한을 넘긴 `scheduled/processing`, `failed` 개수와 `sync_status.last_success_at`, Cron history를 관측한다.
 
 정확히 300초의 밀리초 단위 삭제를 보장하지 않는다. Cron 점검·네트워크·429 때문에 늦어질 수 있다. 장시간 장애로 15분 interaction token이 만료되면 운영자가 남은 메시지를 확인해 정리한다.
+
+내부 서명은 호출 목적도 구분한다. 삭제 요청의 서명 원문은 `mukmuk-cleanup-v1:<timestamp>:<nonce>`, 주간 코드 요청은 `mukmuk-weekly-code-v1:<timestamp>:<nonce>`다. 삭제 큐에서 관측한 서명으로 주간 코드를 발급할 수 없다. 주간 코드 호출자는 해당 목적의 서명을 생성해야 한다.
