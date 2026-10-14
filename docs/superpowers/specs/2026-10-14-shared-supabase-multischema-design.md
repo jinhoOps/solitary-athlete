@@ -1,8 +1,8 @@
 # Supabase 공용 데이터베이스 멀티 스키마 전환 설계
 
 - 작성일: 2026-10-14
-- 대상 프로젝트: Supabase `player-one` (Project ref: `weryaqsufylxtngjnhbn`)
-- 상태: **설계 승인 완료 (구현 전)**
+- 대상 프로젝트: Supabase `github-jinhoOps` (Region: `ap-northeast-2`, Project ref: `olqdftjssrzqvcindekh`)
+- 상태: **서울 리전 재생성 및 마이그레이션 완료**
 
 ## 1. 배경 및 목적
 
