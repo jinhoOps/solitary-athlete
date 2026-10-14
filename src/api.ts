@@ -54,7 +54,7 @@ export async function loadDashboard(
   fetcher: Fetcher = fetch
 ): Promise<DashboardData> {
   const [logs, status] = await Promise.all([
-    rpc<WorkoutLog>(config, 'get_workout_logs', {
+    rpc<WorkoutLog[]>(config, 'get_workout_logs', {
       p_secret_code: secretCode.trim().toLowerCase(),
       p_year: year ?? null,
     }, fetcher),

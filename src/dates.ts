@@ -16,10 +16,10 @@ export function stats(dates: Set<string>, today: string) {
   while (valid.has(cursor)) { streak++; cursor = shiftDay(cursor, -1); }
   return { week: [...valid].filter(d => d >= monday).length, streak, total: valid.size };
 }
-export function calendar(today: string): (string | null)[] {
-  const start = shiftDay(today, -83);
+export function calendar(today: string, totalDays = 365): (string | null)[] {
+  const start = shiftDay(today, -(totalDays - 1));
   const result: (string | null)[] = Array(mondayIndex(start)).fill(null);
-  for (let i = 0; i < 84; i++) result.push(shiftDay(start, i));
+  for (let i = 0; i < totalDays; i++) result.push(shiftDay(start, i));
   while (result.length % 7) result.push(null);
   return result;
 }
