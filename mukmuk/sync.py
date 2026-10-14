@@ -56,7 +56,8 @@ def run_sync(api, store, settings, now=None):
             if e.status != 404: raise
         store.reacted(pending['message_id'])
     pages = build_board(store.logs(),now,settings.get('DASHBOARD_URL',''),
-        (settings.get('DISCORD_GRASS_RECORD_EMOJI_ID'),settings.get('DISCORD_GRASS_PHOTO_EMOJI_ID')))
+        (settings.get('DISCORD_GRASS_RECORD_EMOJI_ID'),settings.get('DISCORD_GRASS_PHOTO_EMOJI_ID')),
+        secret_code=store.active_secret(now) if settings.get('DASHBOARD_URL') else None)
     update_board(api,store,settings,pages,bot['id'])
     store.success(channel,ceiling,datetime.now(timezone.utc))
     return {'messages_scanned':len(rows),'board_pages':len(pages)}

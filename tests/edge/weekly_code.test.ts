@@ -129,7 +129,7 @@ it('reuses a reserved code and existing notice after a retry',async()=>{
   const result=await rotateWeeklySecret({
     db:{async insertSecret(){throw new Error('must use reservation');},async reserveSecret(){return {code:'mukmuk-same',activeUntil,expiresAt};}},
     botUserId:'bot',noticeChannelId:'c',dashboardUrl:'https://example.com',
-    discord:async method=>{methods.push(method);return Response.json([{id:'existing',author:{id:'bot'},content:'🔑 이번 주 웹보드 시크릿 코드\n```\nmukmuk-same\n```'}]);}
+    discord:async method=>{methods.push(method);return Response.json([{id:'existing',author:{id:'bot'},content:formatWeeklyNotice('mukmuk-same','https://example.com')}]);}
   });
   expect(result.messageId).toBe('existing');
   expect(result.code).toBe('mukmuk-same');
@@ -148,4 +148,10 @@ it('concurrent publishers request Discord nonce deduplication for the same code'
   const results=await Promise.all([rotateWeeklySecret(deps),rotateWeeklySecret(deps)]);
   expect(results[0].messageId).toBe(results[1].messageId);
   expect(created.size).toBe(1);
+});
+
+it('preserves URL query and fragment while replacing the access code',()=>{
+  const notice=formatWeeklyNotice('mukmuk-new','https://example.com/board/?from=discord&code=old#grass');
+  expect(notice).toContain('https://example.com/board/?from=discord&code=mukmuk-new#grass');
+  expect(notice).not.toContain('code=old');
 });

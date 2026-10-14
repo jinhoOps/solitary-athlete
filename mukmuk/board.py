@@ -1,5 +1,6 @@
 from datetime import timedelta, timezone
 import re
+from .links import dashboard_link
 
 KST = timezone(timedelta(hours=9))
 MARKER = '고운 잔디밭'
@@ -34,7 +35,7 @@ def grass_lines(dates, photos, this_monday, today, emojis=None):
 
 def units(text): return len(text.encode('utf-16-le')) // 2
 
-def build_board(rows, now, dashboard_url='', emojis=None):
+def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
     today = now.astimezone(KST).date()
     this_monday = today - timedelta(days=today.weekday())
     monday_iso = this_monday.isoformat()
@@ -48,8 +49,11 @@ def build_board(rows, now, dashboard_url='', emojis=None):
         if row['has_photo']: member['photos'].add(d)
     header = f'## 🌱 {MARKER}\n최근 14일 · 갱신 · {now.astimezone(KST):%m.%d %H:%M} KST'
     footer_parts = []
-    if dashboard_url:
-        footer_parts.append(f'웹보드 · {dashboard_url}')
+    link = dashboard_link(dashboard_url, secret_code)
+    if link:
+        footer_parts.append(f'[웹보드 바로 가기]({link})')
+    elif dashboard_url:
+        footer_parts.append('웹보드 접속 링크는 #공지에서 확인해 주세요.')
     legend = '> ⬜ 기록 없음 · 🟩 텍스트 · 🌲 사진 포함'
     if emojis and all(emojis):
         legend = f'> ⬜ 기록 없음 · <:mukmuk_grass:{emojis[0]}> 텍스트 · <:mukmuk_photo:{emojis[1]}> 사진 포함'

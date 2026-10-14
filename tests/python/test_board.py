@@ -11,7 +11,7 @@ def test_14_day_board_weekday_headers_and_two_rows():
         {'user_id': '123', 'username': 'jhoops', 'log_date': '2026-10-07', 'memo': '웨이트', 'has_photo': False}, # last week Wednesday
     ]
     emojis = ('111', '222')
-    pages = build_board(rows, now, 'https://jinhoops.github.io/solitary-athlete/', emojis=emojis)
+    pages = build_board(rows, now, 'https://jinhoops.github.io/solitary-athlete/', emojis=emojis, secret_code='mukmuk-fixture')
     assert len(pages) == 1
     content = pages[0]
 
@@ -30,10 +30,16 @@ def test_14_day_board_weekday_headers_and_two_rows():
     assert expected_row1 in content
     assert expected_row2 in content
 
-    assert '웹보드 · https://jinhoops.github.io/solitary-athlete/' in content
+    assert '[웹보드 바로 가기](https://jinhoops.github.io/solitary-athlete/?code=mukmuk-fixture)' in content
     assert '> ⬜ 기록 없음 · <:mukmuk_grass:111> 텍스트 · <:mukmuk_photo:222> 사진 포함' in content
 
 def test_empty_board_message():
     now = datetime(2026, 10, 14, 11, 28, tzinfo=timezone.utc)
     pages = build_board([], now, 'https://jinhoops.github.io/solitary-athlete/')
     assert '첫 잔디를 기다리고 있어요.' in pages[0]
+
+def test_board_link_contains_current_secret_and_preserves_query():
+    now = datetime(2026,10,14,tzinfo=timezone.utc)
+    content = build_board([],now,'https://example.com/board/?from=discord#grass',secret_code='mukmuk-fixture')[0]
+    assert 'https://example.com/board/?from=discord&code=mukmuk-fixture#grass' in content
+    assert '웹보드 바로 가기' in content
