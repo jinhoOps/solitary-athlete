@@ -58,9 +58,9 @@
 
 **Interfaces:** `handleInteraction(request,deps): Promise<Response>`, `publishReply(body,deps)`, `cleanupDue(deps,now)`; DB 큐는 기존 preparing/scheduled/processing/done/failed 계약을 유지한다.
 
-- [ ] 1. 실제 Ed25519 서명·잘못된 입력/서버·defer·본인/타인·빈/오류·300초·AES-GCM 변조·재전달·lease 경쟁·429/404/만료·preparing 복구 테스트를 작성하고 실패를 확인한다.
-- [ ] 2. 큐를 먼저 저장하고 공개 원본 응답을 수정하는 함수와 due 작업만 선점하는 삭제 함수를 구현한다.
-- [ ] 3. `npm test`, Deno 형 검사, PostgreSQL 큐 통합 검사를 통과시키고 커밋·푸시한다.
+- [x] 1. 실제 Ed25519 서명·잘못된 입력/서버·defer·본인/타인·빈/오류·300초·AES-GCM 변조·재전달·lease 경쟁·429/404/만료·preparing 복구 테스트를 작성하고 실패를 확인한다.
+- [x] 2. 큐를 먼저 저장하고 공개 원본 응답을 수정하는 함수와 due 작업만 선점하는 삭제 함수를 구현한다.
+- [x] 3. `npm test`, Deno 형 검사, PostgreSQL 큐 통합 검사를 통과시키고 커밋·푸시한다.
 
 ### Task 4: CI·Pages·운영 연결
 

@@ -5,11 +5,13 @@ container="mukmuk-tests-$$"
 trap 'docker rm -f "$container" >/dev/null 2>&1 || true' EXIT
 docker run --detach --rm --name "$container" -p 127.0.0.1::5432 --env POSTGRES_HOST_AUTH_METHOD=trust postgres:17 >/dev/null
 for attempt in {1..30}; do
-  if docker exec "$container" pg_isready -U postgres >/dev/null 2>&1; then break; fi
+  if docker exec "$container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then break; fi
   sleep 1
 done
 for file in supabase/tests/bootstrap.sql supabase/migrations/20261014000002_mukmuk_foundation.sql supabase/tests/mukmuk_foundation.sql; do
   docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < "$file" >/dev/null
 done
 port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).HostPort}}' "$container")
+docker exec "$container" psql -X -U postgres -v ON_ERROR_STOP=1 -c 'ALTER ROLE mukmuk_worker LOGIN' >/dev/null
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" uv run pytest
+TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/cleanup_queue_test.ts
