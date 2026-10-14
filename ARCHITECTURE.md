@@ -147,7 +147,7 @@ Supabase Cron은 **10초마다** 만료 작업의 존재를 확인하고, 있을
 - 삭제 API의 204와 이미 삭제된 메시지의 404는 완료로 처리한다. 잘못된 webhook·권한·인증 실패를 메시지 404와 구분한다.
 - 429는 `retry_after`를 따르고, 5xx·타임아웃은 만료 전에 제한된 백오프로 재시도한다. 스케줄 도래 전에 재시도를 삭제 성공으로 기록하지 않는다.
 - 토큰 만료·지속적인 권한 오류는 `failed`로 기록하고 비밀값을 지운 운영 로그에 남긴다. 큐에는 실패 식별 정보만 보존하며 남아 있는 메시지는 운영자가 정리한다. 서비스가 장시간 중단된 동안의 자동 삭제는 보장할 수 없다.
-- 내부 삭제 함수는 Vault에 보관한 `MUKMUK_CLEANUP_SECRET`으로 호출을 검증한다. Discord 수신 함수의 공개 엔드포인트 설정과 분리한다.
+- 내부 삭제 함수는 Vault에 보관한 `MUKMUK_CLEANUP_SECRET`을 HTTP에 직접 싣지 않고, 타임스탬프·nonce의 HMAC-SHA256 서명으로 호출을 검증한다. 서명 유효기간은 30초다. Discord 수신 함수의 공개 엔드포인트 설정과 분리한다.
 
 함수 내부에서 5분 대기하지 않는다. Edge Functions의 수명 제한은 백그라운드 작업에도 적용된다. 무료 플랜의 문서상 제한은 5분보다 짧다. [Supabase 실행 제한](https://supabase.com/docs/guides/functions/limits), [백그라운드 작업](https://supabase.com/docs/guides/functions/background-tasks)
 
@@ -341,10 +341,14 @@ transaction pooler의 호스트는 통합 프로젝트 Connect 화면에서 전�
 2026-10-14에 [PR #1](https://github.com/jinhoOps/solitary-athlete/pull/1)이 main에 병합됐다. 이후 기준 main은 `3784894`다. 사용자가 변경한 수집 주기는 **매시 59분**이며 최초 설계의 17분으로 되돌리지 않는다.
 
 - [GitHub Pages](https://jinhoops.github.io/solitary-athlete/) 실제 HTTP 200·공개 DB·모바일 화면·배포 SHA를 확인했다. Actions의 Pages artifact 배포를 사용한다.
-- Vitest 18개·Chromium 브라우저 10개·Python 9개·SQL 역할/제약·Deno 실제 SQL 큐 검증이 통과했다. main Checks·Pages·수집 수동 실행도 성공했다.
+- Vitest 20개·Chromium 브라우저 10개·Python 9개·SQL 역할/제약·Deno 실제 SQL 큐 검증이 통과했다. main Checks·Pages·수집 수동 실행도 성공했다.
 - 수집기·현황판·명령어 등록을 실제 연결로 확인했다. 운영 DB에 가상 운동 인증은 넣지 않았다.
 - 기존 관리형 묵묵 역할 `1559812373869760525`에 현황판 View/History/Send만 명시적으로 연결했다. 일반 멤버 읽기 전용을 유지하며 관리자 권한은 추가하지 않았다.
-- Edge 두 함수는 플랫폼 JWT 대신 Ed25519/앱 비밀값으로 인증한다. 삭제 함수는 비인증 401·앱 인증 200과 실제 전용 DB 연결을 확인했다.
+- Edge 두 함수는 플랫폼 JWT 대신 Ed25519/앱 HMAC 서명으로 인증한다. 삭제 함수는 비인증 401·앱 인증 200과 실제 전용 DB 연결을 확인했다.
 - `pg_cron`·`pg_net`을 활성화하고 앱 전용 Vault 두 개와 [Cron 마이그레이션](supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql)을 적용했다. 앱 dispatch 함수는 SECURITY INVOKER이며 worker/anon 실행을 허용하지 않는다. 10초 due 점검과 앱 Cron 이력만 7일 보존하는 작업이 활성화됐다.
 - 별도 코드 리뷰의 게시/복구 경합·transient 게시 재시도·삭제 처리량 지적을 보완했다. 45초 게시 임대, 세 번의 제한된 게시 재시도, 30초 삭제 임대와 attempts fencing, 실행당 50건/약 20초 큐 처리를 적용했다. 함수 내부의 5분 대기는 없다.
 - 실제 `/잔디` 결과는 사용자 호출로 게시됐다. 20:55:35→21:00:35의 300초 예약과 기한 전 공개 메시지 유지를 확인했다. 21:00:44에 삭제 완료·토큰 제거를 관측하고 Discord 메시지 부재·현황판 보존을 확인했다. 운영·검증 상세는 [운영 안내](docs/operations.md)와 [구현 현황](docs/implementation-readiness.md)을 따른다.
+
+### 공용 HTTP 큐의 내부 인증 보완
+
+권한 점검에서 `net.http_request_queue`를 anon과 앱 worker도 읽을 수 있음을 확인했다. 프로젝트 전역 ACL을 변경하지 않고 [마이그레이션 00004](supabase/migrations/20261014000004_mukmuk_signed_cleanup.sql)로 묵묵 dispatch 함수만 교체한다. 재사용 가능한 비밀값은 Vault/Edge에 보관하고 HTTP에는 30초 HMAC 서명·시각·nonce만 전송한다. 묵묵 내부 키를 교체하며 다른 앱 키는 건드리지 않는다. SQL HMAC와 별도 Python 계산의 일치, 변조·만료·미래 시각·기존 원문 비밀값 거부를 검증한다.

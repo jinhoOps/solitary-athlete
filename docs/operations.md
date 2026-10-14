@@ -60,7 +60,7 @@ GitHub 환경 `github-pages`는 main·릴리스 브랜치 배포를 허용한다
 | 대상 | 설정 |
 | --- | --- |
 | `mukmuk-discord-grass` | 원문 Ed25519 서명, 서버·앱 검사 후 공개 defer |
-| `mukmuk-discord-cleanup` | POST, `X-Mukmuk-Cleanup-Secret` 확인 |
+| `mukmuk-discord-cleanup` | POST, 타임스탬프·nonce·HMAC-SHA256 서명 확인 |
 | `mukmuk-cleanup-due` | 10초마다 due 여부 확인, 있을 때만 함수 호출 |
 | `mukmuk-cleanup-history` | 앱 Cron 이력만 7일 보존, 다른 앱 이력 유지 |
 
@@ -70,9 +70,9 @@ GitHub 환경 `github-pages`는 main·릴리스 브랜치 배포를 허용한다
 https://olqdftjssrzqvcindekh.supabase.co/functions/v1/mukmuk-discord-grass
 ```
 
-Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP_SECRET`, `MUKMUK_DISCORD_PUBLIC_KEY`, `MUKMUK_DISCORD_GUILD_ID`, `MUKMUK_DISCORD_APP_ID`, `MUKMUK_DASHBOARD_URL`, `MUKMUK_GRASS_RECORD_EMOJI_ID`, `MUKMUK_GRASS_PHOTO_EMOJI_ID`다. 값은 문서에 남기지 않는다.
+Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP_SECRET`, `MUKMUK_DISCORD_PUBLIC_KEY`, `MUKMUK_DISCORD_GUILD_ID`, `MUKMUK_DISCORD_APP_ID`, `MUKMUK_DASHBOARD_URL`, `MUKMUK_GRASS_RECORD_EMOJI_ID`, `MUKMUK_GRASS_PHOTO_EMOJI_ID`다. 값은 문서에 남기지 않는다. `pg_net` 전송 큐를 다른 역할도 읽을 수 있어 장기 비밀값을 HTTP 요청에 넣지 않는다. Vault 키로 계산한 `X-Mukmuk-Timestamp`·`X-Mukmuk-Nonce`·`X-Mukmuk-Signature`만 전송한다. 서명은 30초 유효하며 미래 시각 오차는 최대 5초 허용한다. 짧은 창에서 동일 요청의 재전송은 가능하지만 due 큐의 원자적 선점으로 삭제 부작용은 중복 처리하지 않는다.
 
-Vault 이름은 `mukmuk_project_url`, `mukmuk_cleanup_secret`이다. 운영 관리자만 Vault를 읽으며 앱 worker에는 권한을 추가하지 않는다. 공용 프로젝트에서 `pg_cron`, `pg_net`을 활성화한 뒤 [Cron 마이그레이션](../supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql)을 적용한다. 공용 초기화 SQL을 다시 실행하거나 다른 앱의 키·스키마·권한을 바꾸지 않는다. 이 프로젝트는 콘솔에서 마이그레이션을 적용했으므로 향후 CLI history 통합은 공용 배포 담당자가 별도로 조정한다.
+Vault 이름은 `mukmuk_project_url`, `mukmuk_cleanup_secret`이다. 운영 관리자만 Vault를 읽으며 앱 worker에는 권한을 추가하지 않는다. 공용 프로젝트에서 `pg_cron`, `pg_net`을 활성화한 뒤 [Cron 마이그레이션](../supabase/migrations/20261014000003_mukmuk_cleanup_cron.sql)과 [서명 호출 마이그레이션](../supabase/migrations/20261014000004_mukmuk_signed_cleanup.sql)을 순서대로 적용한다. 공용 초기화 SQL을 다시 실행하거나 다른 앱의 키·스키마·권한을 바꾸지 않는다. 이 프로젝트는 콘솔에서 마이그레이션을 적용했으므로 향후 CLI history 통합은 공용 배포 담당자가 별도로 조정한다.
 
 CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref olqdftjssrzqvcindekh`로 배포한다. 이번에는 로그인된 Dashboard Editor를 사용했다. `node scripts/bundle-edge.mjs`로 타입 검사된 소스를 단일 배포 번들로 만들고 해당 함수의 Code 편집기에 넣는다. 생성된 `.edge-dist`는 Git 제외이며 타입이 제거된 번들이다. 원본 TypeScript와 Deno 검사가 기준이다.
 

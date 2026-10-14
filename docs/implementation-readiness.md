@@ -20,8 +20,8 @@
 | 정기 수집 | main에 워크플로우 등록, 현재 매시 59분·concurrency 적용 |
 | `/잔디` | 서버 명령어 등록, Ed25519 함수·인터랙션 엔드포인트 연결 |
 | 5분 삭제 | 암호화 큐·게시 임대·삭제 선점/재시도·preparing 복구·burst 처리 구현 |
-| Edge·Cron | 두 함수·앱 전용 Secrets/Vault·10초 due 점검·앱 이력 보존 적용 |
-| 테스트 | Vitest 18개, Playwright 10개, Python 9개, SQL 역할/제약, Deno 실제 SQL 큐 검증 통과 |
+| Edge·Cron | 두 함수·앱 전용 Secrets/Vault·10초 due 점검·앱 이력 보존 적용. 공용 HTTP 큐에는 30초 서명만 전송 |
+| 테스트 | Vitest 20개, Playwright 10개, Python 9개, SQL 역할/제약, Deno 실제 SQL 큐 검증 통과 |
 | main CI | Checks·Publish Pages·Sync Workout Logs 실행 성공 |
 | 비밀값 | 로컬 .env 0600/Git 제외, 앱 범위 GitHub Secrets·Edge Secrets·Vault에 보관 |
 
