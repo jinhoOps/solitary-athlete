@@ -1,7 +1,7 @@
 name: Sync Workout Logs
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '59 * * * *'
   workflow_dispatch:
 permissions:
   contents: read

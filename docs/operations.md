@@ -44,9 +44,9 @@ GitHub 환경 `github-pages`는 main·릴리스 브랜치 배포를 허용한다
 
 ## 인증 수집 스케줄
 
-`Sync Workout Logs`는 매시 00분(`0 * * * *`)과 수동 실행을 정의한다. `mukmuk-discord-sync` concurrency로 중복 실행을 막는다.
+`Sync Workout Logs`는 매시 59분(`59 * * * *`)과 수동 실행을 정의한다. `mukmuk-discord-sync` concurrency로 중복 실행을 막는다.
 
-**예약 워크플로우는 기본 브랜치에 있어야 실행된다.** 현재 구현은 기능 브랜치에 있으며 main 병합 전에는 정기 수집이 활성화되지 않는다. 그동안 로컬 `uv run main.py`로 수집할 수 있다. Pages와 Edge/Cron 배포 상태를 정기 수집 활성화와 혼동하지 않는다. [GitHub schedule 규칙](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+**예약 워크플로우는 기본 브랜치(`main`)에서 실행된다.** 현재 기본 브랜치에 반영되어 정기 수집이 활성화되어 있으며, 필요 시 Actions 콘솔 또는 로컬 `uv run main.py`로 수동 실행할 수 있다. [GitHub schedule 규칙](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
 
 | Repository Secrets | 용도 |
 | --- | --- |
