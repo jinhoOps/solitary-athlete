@@ -145,7 +145,7 @@ function renderCards() {
   const members = data.members.filter(m => !selected || m.id === selected);
   if (!members.length) {
     const empty = el('div', 'empty-card'); empty.append(el('h3', '', '첫 잔디를 기다리고 있어요.'),
-      el('p', 'secondary-text', '#오운완-인증에 오늘의 운동을 남겨 보세요.')); cards.append(empty);
+      el('p', 'secondary-text', '#오운완에 오늘의 운동을 남겨 보세요.')); cards.append(empty);
   } else members.forEach(m => cards.append(workoutCard(m)));
 }
 function renderTimeline() {
