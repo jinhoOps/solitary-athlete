@@ -37,7 +37,9 @@ async function fixture(
         await route.fulfill({ status: 400, json: { message: 'invalid_or_expired_secret' } });
         return;
       }
-      const list = mode === 'empty' ? [] : logs;
+      const year=route.request().postDataJSON()?.p_year ?? 2026;
+      const annualLogs=year===2025?[{...logs[0],log_date:'2025-01-02',memo:'작년 운동'}]:logs.filter(l=>l.log_date.startsWith(String(year)));
+      const list = mode === 'empty' ? [] : annualLogs;
       await route.fulfill({ json: list });
       return;
     }
@@ -171,4 +173,53 @@ test('supports 200 percent text scaling without a page overflow', async ({ page 
   await page.addStyleTag({ content: 'html { font-size: 200%; }' });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByRole('button', { name: '전체 멤버' })).toBeVisible();
+});
+
+test('switches full calendar years while preserving selected member and keyboard entry',async({page})=>{
+  await fixture(page);
+  const card=page.locator('.workout-card').filter({hasText:'하루'});
+  await expect(card.locator('[data-date="2026-01-01"]')).toHaveCount(1);
+  await expect(card.locator('[data-date="2026-12-31"]')).toBeDisabled();
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  const request=page.waitForRequest(r=>r.url().includes('/rpc/get_workout_logs') && r.postDataJSON()?.p_year===2025);
+  await page.getByRole('button',{name:'2025년',exact:true}).click();
+  await request;
+  await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(card.locator('[data-date="2025-01-01"]')).toHaveCount(1);
+  await expect(card.locator('[data-date="2025-12-31"]')).toHaveAttribute('tabindex','0');
+  await expect(card.locator('[data-date="2025-01-02"]')).toHaveAttribute('data-level','2');
+  await expect(page.locator('.timeline')).toContainText('작년 운동');
+  await page.getByRole('button',{name:'2024년',exact:true}).click();
+  await expect(card.locator('.grass-cell[data-date]')).toHaveCount(366);
+  await expect(card.locator('[data-date="2024-02-29"]')).toHaveCount(1);
+  await expect(card.locator('.grass-cell[tabindex="0"]')).toHaveCount(1);
+});
+
+test('keeps current-month KPIs while viewing a past year and expands older years',async({page})=>{
+  await fixture(page);
+  const values=await page.locator('.kpi-value').allTextContents();
+  await page.getByRole('button',{name:'2025년',exact:true}).click();
+  await expect(page.locator('.workout-card').first()).toContainText('2025년 · 1월 1일 — 12월 31일');
+  expect(await page.locator('.kpi-value').allTextContents()).toEqual(values);
+  await page.getByRole('button',{name:'이전 연도 더 보기'}).click();
+  await expect(page.getByRole('button',{name:'2021년',exact:true})).toBeVisible();
+});
+
+test('ignores a slower response for a previously selected year',async({page})=>{
+  await fixture(page);
+  let release!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/rpc/get_workout_logs',async route=>{
+    const year=route.request().postDataJSON().p_year;
+    if(year===2025)await gate;
+    await route.fulfill({json:[{...logs[0],log_date:`${year}-01-02`,memo:`${year} 기록`}]});
+  });
+  const pending=page.waitForRequest(r=>r.url().includes('rpc/get_workout_logs') && r.postDataJSON().p_year===2025);
+  await page.getByRole('button',{name:'2025년',exact:true}).click();await pending;
+  await page.getByRole('button',{name:'2024년',exact:true}).click();
+  await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
+  const settled=page.waitForResponse(r=>r.url().includes('rpc/get_workout_logs') && r.request().postDataJSON().p_year===2025);
+  release();await settled;
+  await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
+  await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
 });

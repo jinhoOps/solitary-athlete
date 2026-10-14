@@ -1,3 +1,4 @@
+import { dayAt, mondayIndex, shiftDay, stats } from './dates';
 import { calculateMonthlyKPIs } from './metrics';
 import type { DashboardData, Member, PublicConfig, WorkoutLog } from './types';
 
@@ -81,13 +82,44 @@ export async function loadDashboard(
     (a, b) => a.name.localeCompare(b.name, 'ko') || a.id.localeCompare(b.id)
   );
 
-  const kpis = calculateMonthlyKPIs(logs, new Date());
+  const now = new Date(), today = dayAt(now);
+  const currentYear = Number(today.slice(0, 4));
+  const currentStats = new Map<string, ReturnType<typeof stats>>();
+  if ((year ?? currentYear) === currentYear) {
+    const history = new Map(sortedMembers.map(m => [m.id, new Set(m.dates)]));
+    let historyYear = currentYear;
+    const monday = shiftDay(today, -mondayIndex(today));
+    // Extend only if this week or a continuous streak reaches an earlier year.
+    const needsEarlierHistory = () => {
+      const start = `${historyYear}-01-01`;
+      if (monday < start || (historyYear === currentYear && shiftDay(today, -1) < start)) return true;
+      return [...history.values()].some(dates => {
+        let cursor = dates.has(today) ? today : shiftDay(today, -1);
+        while (dates.has(cursor)) cursor = shiftDay(cursor, -1);
+        return cursor < start;
+      });
+    };
+    while (historyYear > 1 && needsEarlierHistory()) {
+      historyYear--;
+      const earlier = await rpc<WorkoutLog[]>(config, 'get_workout_logs', {
+        p_secret_code: secretCode.trim().toLowerCase(), p_year: historyYear,
+      }, fetcher);
+      for (const row of earlier) {
+        if (!history.has(row.user_id)) history.set(row.user_id, new Set());
+        history.get(row.user_id)!.add(row.log_date);
+      }
+    }
+    for (const [id, dates] of history) currentStats.set(id, stats(dates, today));
+  }
+
+  const kpis = calculateMonthlyKPIs(logs, now);
 
   return {
     members: sortedMembers,
     logs,
     lastSuccess: status[0]?.last_success_at ?? null,
     kpis,
+    currentStats,
   };
 }
 

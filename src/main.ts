@@ -1,13 +1,18 @@
 import './style.css';
 import markUrl from '../assets/brand/mark.svg';
 import { loadDashboard, loadTimeline } from './api';
-import { calendar, dayAt, mondayIndex, shortDate, stats } from './dates';
+import { calendarYear, dayAt, mondayIndex, shortDate, stats } from './dates';
 import type { DashboardData, Member, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const config = __PUBLIC_CONFIG__;
 let today = dayAt();
 let data: DashboardData;
+const currentYear = Number(today.slice(0, 4));
+let selectedYear = currentYear;
+let years = Array.from({ length: 5 }, (_, i) => currentYear - i).filter(y => y > 0);
+let currentKPIs: DashboardData['kpis'] | undefined;
+const knownMembers = new Map<string, string>();
 let selected: string | null = null;
 let timeline: WorkoutLog[] = [];
 let more = false;
@@ -62,7 +67,12 @@ const filters = el('nav', 'member-filter');
 filters.setAttribute('aria-label', '멤버 선택');
 
 const cards = el('section', 'cards');
-cards.setAttribute('aria-label', '1년 운동 잔디');
+cards.setAttribute('aria-label', '연도별 운동 잔디');
+const yearBar = el('div', 'year-bar');
+yearBar.hidden = true;
+const yearFilters = el('nav', 'year-filter');
+yearFilters.setAttribute('aria-label', '잔디 연도 선택');
+yearBar.append(el('h2', '', '연도별 운동 잔디'), yearFilters);
 
 const heading = el('div', 'section-heading');
 heading.append(el('h2', '', '남겨 둔 운동'), el('span', 'caption', '날짜별 기록 · 최신순'));
@@ -71,7 +81,7 @@ const logList = el('section', 'timeline');
 logList.setAttribute('aria-label', '운동 메모');
 
 const moreArea = el('div', 'more-area');
-main.append(status, kpiSection, filters, cards, heading, logList, moreArea, feedback);
+main.append(status, kpiSection, filters, yearBar, cards, heading, logList, moreArea, feedback);
 
 const footer = el('footer', 'footer');
 footer.append(
@@ -105,11 +115,12 @@ function updateStatus() {
 
 function renderKPIs() {
   kpiSection.replaceChildren();
+  const kpis = currentKPIs ?? data.kpis;
   const items = [
-    { title: '이번 달 고운', value: `${data.kpis.activeMembers}명` },
-    { title: '총 운동 일수', value: `${data.kpis.totalWorkoutDays}일` },
-    { title: '가장 푸른 요일', value: data.kpis.mostActiveWeekday },
-    { title: '1인당 평균 일수', value: `${data.kpis.averageDaysPerMember}일` },
+    { title: '이번 달 고운', value: `${kpis.activeMembers}명` },
+    { title: '총 운동 일수', value: `${kpis.totalWorkoutDays}일` },
+    { title: '가장 푸른 요일', value: kpis.mostActiveWeekday },
+    { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일` },
   ];
   for (const item of items) {
     const card = el('div', 'kpi-card');
@@ -122,13 +133,16 @@ function renderKPIs() {
 function workoutCard(member: Member): HTMLElement {
   const card = el('article', 'workout-card');
   const top = el('div', 'card-heading');
-  const cells = calendar(today, 365);
-  const firstDate = cells.find(Boolean)!;
-  top.append(el('h3', '', member.name), el('span', 'caption', `1년 잔디 · ${shortDate(firstDate)} — ${shortDate(today)}`));
+  const cells = calendarYear(selectedYear);
+  top.append(el('h3', '', member.name), el('span', 'caption', `${selectedYear}년 · 1월 1일 — 12월 31일`));
 
   const metrics = el('dl', 'metrics');
   const counts = stats(member.dates, today);
-  for (const [label, value] of [['이번 주', counts.week], ['연속', counts.streak], ['누적', counts.total]] as const) {
+  const currentCounts = data.currentStats?.get(member.id) ?? counts;
+  const metricsForYear = selectedYear === currentYear
+    ? [['이번 주', currentCounts.week], ['연속', currentCounts.streak], [`${selectedYear}년 운동`, counts.total]] as const
+    : [[`${selectedYear}년 운동`, counts.total]] as const;
+  for (const [label, value] of metricsForYear) {
     const item = el('div');
     item.append(el('dt', 'caption', label), el('dd', '', `${value}일`));
     metrics.append(item);
@@ -143,7 +157,7 @@ function workoutCard(member: Member): HTMLElement {
 
   const grid = el('div', 'grass-grid');
   grid.setAttribute('role', 'group');
-  grid.setAttribute('aria-label', `${member.name}의 1년 잔디, 화살표로 날짜 이동`);
+  grid.setAttribute('aria-label', `${member.name}의 ${selectedYear}년 잔디, 화살표로 날짜 이동`);
 
   const details = el('section', 'date-detail');
   details.hidden = true;
@@ -158,7 +172,7 @@ function workoutCard(member: Member): HTMLElement {
     openedLog?.log_date === date ? openedLog : data.logs.find(r => r.user_id === member.id && r.log_date === date);
   const levelFor = (date: string) => (!member.dates.has(date) ? 0 : member.photos.has(date) ? 2 : 1);
   const description = (date: string, log = memoFor(date)) =>
-    `${shortDate(date)} · ${['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log ? ` · ${log.memo || '사진 인증'}` : ''}`;
+    `${date} · ${date > today ? '아직 오지 않은 날짜' : ['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log ? ` · ${log.memo || '사진 인증'}` : ''}`;
 
   function close() {
     const date = opened;
@@ -199,7 +213,8 @@ function workoutCard(member: Member): HTMLElement {
     previousMonth = month;
   }
 
-  const dates = cells.filter((d): d is string => d !== null);
+  const dates = cells.filter((d): d is string => d !== null && d <= today);
+  const entryDate = dates.includes(today) ? today : dates.at(-1);
 
   function focusDate(date: string) {
     for (const [d, cell] of dayButtons) cell.tabIndex = d === date ? 0 : -1;
@@ -214,7 +229,8 @@ function workoutCard(member: Member): HTMLElement {
     const cell = button('', () => open(date), 'grass-cell');
     cell.dataset.date = date;
     cell.dataset.level = String(levelFor(date));
-    cell.tabIndex = date === today ? 0 : -1;
+    cell.disabled = date > today;
+    cell.tabIndex = date === entryDate ? 0 : -1;
     cell.setAttribute('aria-label', description(date));
     cell.setAttribute('aria-expanded', 'false');
     cell.onfocus = () => {
@@ -270,10 +286,13 @@ function renderCards() {
   cardOpeners.clear();
   cards.replaceChildren();
   const members = data.members.filter(m => !selected || m.id === selected);
+  if (selected && !members.length && knownMembers.has(selected)) {
+    members.push({id: selected, name: knownMembers.get(selected)!, dates: new Set(), photos: new Set()});
+  }
   if (!members.length) {
     const empty = el('div', 'empty-card');
     empty.append(
-      el('h3', '', '첫 잔디를 기다리고 있어요.'),
+      el('h3', '', selectedYear === currentYear ? '첫 잔디를 기다리고 있어요.' : `${selectedYear}년에 남긴 운동이 없어요.`),
       el('p', 'secondary-text', '#오운완에 오늘의 운동을 남겨 보세요.')
     );
     cards.append(empty);
@@ -324,7 +343,7 @@ function fetchTimeline(append: boolean) {
 
 function renderFilters() {
   filters.replaceChildren();
-  for (const member of [{ id: null, name: '전체 멤버' }, ...data.members]) {
+  for (const member of [{ id: null, name: '전체 멤버' }, ...[...knownMembers].sort((a,b)=>a[1].localeCompare(b[1],'ko') || a[0].localeCompare(b[0])).map(([id,name])=>({id,name}))]) {
     const b = button(member.name, () => {
       selected = member.id;
       filters.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -334,6 +353,28 @@ function renderFilters() {
     }, 'filter-button');
     b.setAttribute('aria-pressed', String(member.id === selected));
     filters.append(b);
+  }
+}
+
+function renderYears() {
+  yearBar.hidden = false;
+  yearFilters.replaceChildren();
+  for (const year of years) {
+    const b = button(`${year}년`, () => {
+      selectedYear = year;
+      yearFilters.querySelectorAll('[aria-pressed]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      void init(true);
+    }, 'filter-button');
+    b.setAttribute('aria-pressed', String(year === selectedYear));
+    yearFilters.append(b);
+  }
+  if (years.at(-1)! > 1) {
+    yearFilters.append(button('이전 연도 더 보기', () => {
+      const last = years.at(-1)!;
+      years = [...years, ...Array.from({length:5}, (_,i)=>last-i-1).filter(y=>y>0)];
+      renderYears();
+      yearFilters.querySelectorAll<HTMLButtonElement>('button').item(years.length - 5)?.focus();
+    }, 'button secondary'));
   }
 }
 
@@ -373,10 +414,15 @@ function showAuthModal(errorMsg?: string) {
   input.focus();
 }
 
-async function init() {
-  ++generation;
+async function init(preserveSelection = false) {
+  const request = ++generation;
+  const requestedYear = selectedYear;
   app.setAttribute('aria-busy', 'true');
   cards.replaceChildren(el('div', 'loading-placeholder', '운동 기록을 불러오고 있어요.'));
+  filters.querySelectorAll<HTMLButtonElement>('button').forEach(b => { b.disabled = true; });
+  heading.hidden = true;
+  logList.hidden = true;
+  moreArea.hidden = true;
 
   // 1. Check URL search query for code
   const urlParams = new URLSearchParams(window.location.search);
@@ -390,14 +436,23 @@ async function init() {
   if (!code) {
     app.setAttribute('aria-busy', 'false');
     cards.replaceChildren();
+    yearBar.hidden = true;
     showAuthModal();
     return;
   }
 
   try {
     today = dayAt();
-    data = await loadDashboard(config, code);
-    selected = null;
+    const loaded = await loadDashboard(config, code, requestedYear);
+    if (request !== generation) return;
+    data = loaded;
+    if (requestedYear === currentYear) currentKPIs = data.kpis;
+    for (const member of data.members) {
+      if (requestedYear === currentYear || !knownMembers.has(member.id)) knownMembers.set(member.id, member.name);
+    }
+    if (!preserveSelection) selected = null;
+    if (!yearFilters.children.length) renderYears();
+    yearBar.hidden = false;
     updateStatus();
     renderKPIs();
     renderFilters();
@@ -405,6 +460,7 @@ async function init() {
     fetchTimeline(false);
     feedback.textContent = '운동 기록을 불러왔어요.';
   } catch (err: any) {
+    if (request !== generation) return;
     filters.replaceChildren();
     kpiSection.replaceChildren();
     heading.hidden = true;
@@ -414,17 +470,18 @@ async function init() {
     const isSecretError = err?.message?.includes('invalid_or_expired_secret');
     if (isSecretError) {
       localStorage.removeItem('mukmuk_secret_code');
+      yearBar.hidden = true;
       showAuthModal('시크릿 코드가 올바르지 않거나 만료되었습니다.');
     } else {
       const error = el('div', 'empty-card error-state');
       error.append(
         el('p', '', '기록을 불러오지 못했어요.'),
-        button('다시 불러오기', () => void init(), 'button primary')
+        button('다시 불러오기', () => void init(true), 'button primary')
       );
       cards.replaceChildren(error);
     }
   } finally {
-    app.setAttribute('aria-busy', 'false');
+    if (request === generation) app.setAttribute('aria-busy', 'false');
   }
 }
 

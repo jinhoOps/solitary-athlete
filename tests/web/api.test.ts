@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { loadDashboard, loadTimeline } from '../../src/api';
 
 const config = { url: 'https://example.supabase.co', key: 'sb_publishable_fixture' };
@@ -66,4 +66,35 @@ it('slices timeline records for selected member in memory', () => {
 
   const allTimeline = loadTimeline(logs, null, 0, 10);
   expect(allTimeline).toHaveLength(3);
+});
+
+it('keeps current week and streak across New Year while annual logs stay in selected year',async()=>{
+  vi.useFakeTimers();vi.setSystemTime(new Date('2026-01-01T03:00:00Z'));
+  const years:number[]=[];
+  const fetcher:typeof fetch=async(input,init)=>{
+    if(String(input).includes('sync_status'))return Response.json([]);
+    const year=JSON.parse(String(init?.body)).p_year;years.push(year);
+    return Response.json((year===2026?['2026-01-01']:['2025-12-29','2025-12-30','2025-12-31']).map(log_date=>({...row(1),log_date})));
+  };
+  try {
+    const data=await loadDashboard(config,'fixture',2026,fetcher);
+    expect(data.logs.map(r=>r.log_date)).toEqual(['2026-01-01']);
+    expect(data.members[0].dates.size).toBe(1);
+    expect(data.currentStats?.get('1')).toMatchObject({week:4,streak:4});
+    expect(years).toEqual([2026,2025]);
+  } finally {vi.useRealTimers();}
+});
+
+it('counts yesterday grace at New Year even before the first workout of this year',async()=>{
+  vi.useFakeTimers();vi.setSystemTime(new Date('2026-01-01T03:00:00Z'));
+  const fetcher:typeof fetch=async(input,init)=>{
+    if(String(input).includes('sync_status'))return Response.json([]);
+    const year=JSON.parse(String(init?.body)).p_year;
+    return Response.json(year===2026?[]:['2025-12-29','2025-12-30','2025-12-31'].map(log_date=>({...row(1),log_date})));
+  };
+  try {
+    const data=await loadDashboard(config,'fixture',2026,fetcher);
+    expect(data.logs).toHaveLength(0);
+    expect(data.currentStats?.get('1')).toMatchObject({week:3,streak:3});
+  } finally {vi.useRealTimers();}
 });
