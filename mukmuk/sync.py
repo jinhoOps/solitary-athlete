@@ -62,7 +62,8 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None):
     logs = store.logs()
     pages = build_board(logs,now,settings.get('DASHBOARD_URL',''),
         (settings.get('DISCORD_GRASS_RECORD_EMOJI_ID'),settings.get('DISCORD_GRASS_PHOTO_EMOJI_ID')),
-        secret_code=store.active_secret(now) if settings.get('DASHBOARD_URL') else None)
+        secret_code=store.active_secret(now) if settings.get('DASHBOARD_URL') else None,
+        notice_channel_id=settings.get('DISCORD_NOTICE_CHANNEL_ID'))
     check_lock()
     image_bytes = render_grass_image(logs, now)
     update_board(api,store,settings,pages,bot['id'],check_lock=check_lock,file=('grass.png', image_bytes, 'image/png'))

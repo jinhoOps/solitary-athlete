@@ -35,7 +35,7 @@ def grass_lines(dates, photos, this_sunday, today, emojis=None):
 
 def units(text): return len(text.encode('utf-16-le')) // 2
 
-def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
+def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None, notice_channel_id=None):
     today = now.astimezone(KST).date()
     today_iso = today.isoformat()
     this_sunday = today - timedelta(days=(today.weekday()+1)%7)
@@ -48,8 +48,11 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
         member['dates'].add(d)
         if row['has_photo']: member['photos'].add(d)
     header = f'## 🌱 {MARKER}'
-    link = dashboard_link(dashboard_url, secret_code)
-    web_link = f' · [고독한 운동가 웹보드]({link})' if link else (f' · [고독한 운동가 웹보드]({dashboard_url})' if dashboard_url else '')
+    if notice_channel_id:
+        web_link = f' · 웹보드는 <#{notice_channel_id}>'
+    else:
+        link = dashboard_link(dashboard_url, secret_code)
+        web_link = f' · [고독한 운동가 웹보드]({link})' if link else (f' · [고독한 운동가 웹보드]({dashboard_url})' if dashboard_url else '')
     footer_parts = [
         f'> 최근 14일 · 일|월|화|수|목|금|토 · 갱신 · {now.astimezone(KST):%H:%M} KST{web_link}',
     ]

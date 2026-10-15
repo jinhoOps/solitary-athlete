@@ -47,6 +47,11 @@ def test_board_link_contains_current_secret_and_preserves_query():
     assert 'https://example.com/board/?from=discord&code=mukmuk-fixture#grass' in content
     assert '고독한 운동가 웹보드' in content
 
+def test_board_links_to_notice_channel_when_configured():
+    now = datetime(2026, 10, 14, 11, 28, tzinfo=timezone.utc)
+    pages = build_board([], now, 'https://jinhoops.github.io/solitary-athlete/', notice_channel_id='1559802402893340744')
+    assert '· 웹보드는 <#1559802402893340744>' in pages[0]
+
 
 def test_board_stops_before_writes_when_lock_is_lost_during_history_read():
     import pytest
