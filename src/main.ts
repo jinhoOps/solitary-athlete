@@ -45,7 +45,7 @@ const main = el('main');
 const status = el('div', 'status-notice');
 status.setAttribute('role', 'status');
 
-// 4 Monthly KPI Cards
+// Monthly KPI Cards: king first, then four summaries
 const kpiSection = el('section', 'kpi-section');
 kpiSection.setAttribute('aria-label', '이번 달 운동 요약');
 
@@ -108,6 +108,18 @@ function updateStatus() {
 function renderKPIs() {
   kpiSection.replaceChildren();
   const kpis = currentKPIs ?? data.kpis;
+  const king=el('div','kpi-card kpi-card--king');
+  king.append(el('div','kpi-title','운동왕 👑'));
+  if(!kpis.workoutKings.length)king.append(el('div','kpi-value','아직 없어요'));
+  else {
+    if(kpis.workoutKings.length>1)king.append(el('p','caption',`공동 운동왕 · ${kpis.workoutKings.length}명`));
+    for(const winner of kpis.workoutKings){
+      const person=el('div','king-member');
+      person.append(el('div','kpi-value',winner.name),el('p','caption',`ID: ${winner.id}`),el('p','caption',`이번 달 ${winner.days}일`));
+      king.append(person);
+    }
+  }
+  kpiSection.append(king);
   const items = [
     { title: '이번 달 고운', value: `${kpis.activeMembers}명` },
     { title: '총 운동 일수', value: `${kpis.totalWorkoutDays}일` },

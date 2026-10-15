@@ -51,13 +51,13 @@ async function fixture(
   await page.goto('./');
 }
 
-test('photo grass, safe text, all-history stats, 4 KPIs, and member filtering', async ({ page }) => {
+test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', async ({ page }) => {
   await fixture(page);
   await expect(page.locator('.brand-name')).toHaveText('고독한 운동가');
   await expect(page.locator('.brand-sub')).toHaveText('운동기록을 챙기는 묵묵, MUKMUK · WORKOUT JOURNAL');
 
   const kpiCards = page.locator('.kpi-card');
-  await expect(kpiCards).toHaveCount(4);
+  await expect(kpiCards).toHaveCount(5);
   await expect(page.locator('.timeline')).toBeHidden();
 
   const cards = page.locator('.workout-card');
@@ -263,3 +263,24 @@ test('reveals today automatically without stealing focus, then reveals selected 
  await expect(page.locator('.workout-card')).toContainText('과거 전용');
  await expect(page.locator('.grass-cell[data-level="1"]')).toHaveCount(0);
  });
+
+for(const width of [360,1280])test(`workout king is first and spans mobile row at ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ const cards=page.locator('.kpi-card');await expect(cards).toHaveCount(5);
+ await expect(cards.first().locator('.kpi-title')).toHaveText('운동왕 👑');
+ await expect(cards.first()).toContainText('하루');await expect(cards.first()).toContainText('ID: 2');await expect(cards.first()).toContainText('14일');
+ const first=await cards.nth(0).boundingBox(),next=await cards.nth(1).boundingBox(),section=await page.locator('.kpi-section').boundingBox();
+ if(width===360){expect(first!.width).toBeCloseTo(section!.width);expect(next!.y).toBeGreaterThan(first!.y);}
+ else {expect(first!.y).toBe(next!.y);expect(first!.x).toBeLessThan(next!.x);}
+});
+
+test('all joint workout kings and long IDs remain visible without page overflow',async({page})=>{
+ await page.setViewportSize({width:320,height:800});await fixture(page);
+ const many=Array.from({length:50},(_,i)=>({...logs[0],user_id:String(100000000000000000n+BigInt(i)),username:`공동 운동가 ${i}`}));
+ await page.route('**/rpc/get_workout_logs_page',r=>r.fulfill({json:many}));
+ await page.route('**/rpc/get_dashboard_members',r=>r.fulfill({json:many.map(l=>({user_id:l.user_id,username:l.username}))}));
+ await page.reload();
+ const king=page.locator('.kpi-card').first();await expect(king).toContainText('공동 운동왕 · 50명');
+ await expect(king.locator('.king-member')).toHaveCount(50);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
