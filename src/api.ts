@@ -54,13 +54,43 @@ export async function loadDashboard(
   year?: number,
   fetcher: Fetcher = fetch
 ): Promise<DashboardData> {
-  const [logs, status] = await Promise.all([
-    rpc<WorkoutLog[]>(config, 'get_workout_logs', {
-      p_secret_code: secretCode.trim().toLowerCase(),
-      p_year: year ?? null,
-    }, fetcher),
-    read<{ last_success_at: string | null }>(config, 'sync_status', { select: 'last_success_at' }, fetcher)
-      .catch(() => [{ last_success_at: null }]),
+  const normalizedCode = secretCode.trim().toLowerCase();
+  async function annual(targetYear:number):Promise<WorkoutLog[]> {
+    const result:WorkoutLog[]=[];
+    let cursor:WorkoutLog|undefined;
+    for (;;) {
+      const page=await rpc<WorkoutLog[]>(config,'get_workout_logs_page',{
+        p_secret_code:normalizedCode,p_year:targetYear,p_limit:500,
+        p_after_date:cursor?.log_date??null,p_after_user_id:cursor?.user_id??null,
+      },fetcher);
+      for(const row of page){
+        if(cursor && !(row.log_date<cursor.log_date || (row.log_date===cursor.log_date && row.user_id>cursor.user_id))) throw new Error('Non-progressing annual page');
+        cursor=row;
+      }
+      result.push(...page);
+      if(page.length<500)return result;
+    }
+  }
+  async function allMembers():Promise<{id:string;name:string}[]> {
+    const result:{id:string;name:string}[]=[];let cursor:string|null=null;
+    for(;;){
+      const page=await rpc<{user_id:string;username:string}[]>(config,'get_dashboard_members',{
+        p_secret_code:normalizedCode,p_after_user_id:cursor,p_limit:200,
+      },fetcher);
+      for(const row of page){
+        if(cursor!==null && row.user_id<=cursor)throw new Error('Non-progressing member page');
+        cursor=row.user_id;result.push({id:row.user_id,name:row.username});
+      }
+      if(page.length<200)return result.sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
+    }
+  }
+  const now = new Date(), today = dayAt(now);
+  const currentYear = Number(today.slice(0, 4));
+  const targetYear=year??currentYear;
+  const [logs, roster, status, currentLogs] = await Promise.all([
+    annual(targetYear),allMembers(),
+    read<{last_success_at:string|null}>(config,'sync_status',{select:'last_success_at'},fetcher).catch(()=>[{last_success_at:null}]),
+    targetYear===currentYear?Promise.resolve(null):annual(currentYear),
   ]);
 
   const members = new Map<string, Member>();
@@ -82,8 +112,6 @@ export async function loadDashboard(
     (a, b) => a.name.localeCompare(b.name, 'ko') || a.id.localeCompare(b.id)
   );
 
-  const now = new Date(), today = dayAt(now);
-  const currentYear = Number(today.slice(0, 4));
   const currentStats = new Map<string, ReturnType<typeof stats>>();
   if ((year ?? currentYear) === currentYear) {
     const history = new Map(sortedMembers.map(m => [m.id, new Set(m.dates)]));
@@ -101,9 +129,7 @@ export async function loadDashboard(
     };
     while (historyYear > 1 && needsEarlierHistory()) {
       historyYear--;
-      const earlier = await rpc<WorkoutLog[]>(config, 'get_workout_logs', {
-        p_secret_code: secretCode.trim().toLowerCase(), p_year: historyYear,
-      }, fetcher);
+      const earlier = await annual(historyYear);
       for (const row of earlier) {
         if (!history.has(row.user_id)) history.set(row.user_id, new Set());
         history.get(row.user_id)!.add(row.log_date);
@@ -112,9 +138,10 @@ export async function loadDashboard(
     for (const [id, dates] of history) currentStats.set(id, stats(dates, today));
   }
 
-  const kpis = calculateMonthlyKPIs(logs, now);
+  const kpis = calculateMonthlyKPIs(currentLogs??logs, now);
 
   return {
+    roster,
     members: sortedMembers,
     logs,
     lastSuccess: status[0]?.last_success_at ?? null,

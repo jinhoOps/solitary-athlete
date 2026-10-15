@@ -13,6 +13,7 @@ export interface MonthlyKPIs {
   averageDaysPerMember: number;
 }
 export interface DashboardData {
+  roster: {id:string;name:string}[];
   members: Member[];
   logs: WorkoutLog[];
   lastSuccess: string | null;
