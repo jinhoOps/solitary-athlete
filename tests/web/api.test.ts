@@ -118,12 +118,14 @@ it('loads a stable all-history roster and more than 1000 annual logs with keyset
 });
 
 it('rejects partial annual data if the second page fails', async()=>{
+ let secondPages=0;
  const fetcher:typeof fetch=async(input,init)=>{
   const p=JSON.parse(String(init?.body??'{}'));
   if(String(input).includes('sync_status'))return Response.json([]);
   if(String(input).includes('get_dashboard_members'))return Response.json([]);
-  if(p.p_after_user_id)return new Response('',{status:503});
-  return Response.json(Array.from({length:500},(_,n)=>row(n)));
+  if(p.p_after_user_id){secondPages++;return new Response('',{status:503});}
+  return Response.json(Array.from({length:500},(_,n)=>({...row(n),user_id:String(n).padStart(4,'0')})));
  };
- await expect(loadDashboard(config,'fixture',2026,fetcher)).rejects.toThrow();
+ await expect(loadDashboard(config,'fixture',2026,fetcher)).rejects.toThrow('Public RPC failed (503)');
+ expect(secondPages).toBe(1);
 });

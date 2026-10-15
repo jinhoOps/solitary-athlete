@@ -328,3 +328,27 @@ test('search exposes overflow and distinguishes same names by ID',async({page})=
  await expect(page.locator('.workout-card')).toContainText('동명');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+test('desktop member chips stay within two rows even when first name wraps',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width:768,height:900});await fixture(page);
+ const people=Array.from({length:30},(_,i)=>({user_id:String(1000+i),username:i===0?'가'.repeat(90):`나 운동가 ${i}`}));
+ await page.route('**/rpc/get_dashboard_members',r=>r.fulfill({json:people}));await page.reload();
+ await expect(page.getByRole('button',{name:'멤버 찾기',exact:true})).toBeVisible();
+ await expect(async()=>{
+ const rows=await page.locator('.member-options button:visible').evaluateAll(nodes=>new Set(nodes.map(n=>n.getBoundingClientRect().top)).size);
+ expect(rows).toBeLessThanOrEqual(2);
+ }).toPass();
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ expect(errors.filter(e=>e.includes('ResizeObserver'))).toEqual([]);
+});
+
+test('aggregate detail preserves 51 actual people and photo count past opacity saturation',async({page})=>{
+ await fixture(page);
+ const many=Array.from({length:51},(_,i)=>({...logs[0],user_id:String(1000+i),username:`멤버 ${i}`,has_photo:i<2}));
+ await page.route('**/rpc/get_dashboard_members',r=>r.fulfill({json:many.map(l=>({user_id:l.user_id,username:l.username}))}));
+ await page.route('**/rpc/get_workout_logs_page',r=>r.fulfill({json:many}));await page.reload();
+ const cell=page.locator(`[data-date="${today}"]`);await expect(cell).toHaveAttribute('data-count','51');
+ await cell.click();await expect(page.locator('.date-detail')).toContainText('전체 51명 중 51명 운동 · 사진 포함 2명');
+ await expect(page.locator('.aggregate-entry')).toHaveCount(51);
+});

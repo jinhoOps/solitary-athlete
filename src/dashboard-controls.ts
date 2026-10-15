@@ -38,17 +38,24 @@ export function renderDashboardControls(options:Options):HTMLElement {
   const mobile=matchMedia('(max-width:767px)').matches;
   personal.forEach(b=>b.hidden=false);
   if(!mobile){
-   const top=list.getBoundingClientRect().top;const firstHeight=personal[0]?.getBoundingClientRect().height??44;
-   const hidden=personal.filter(b=>b.getBoundingClientRect().top>=top+firstHeight*2+12);
-   hidden.forEach(b=>b.hidden=true);
+   const tops=[...new Set(personal.map(b=>b.getBoundingClientRect().top))].sort((a,b)=>a-b);
+   const limit=tops[1]??tops[0]??0;
+   const overflow=personal.filter(b=>b.getBoundingClientRect().top>limit);
+   overflow.forEach(b=>b.hidden=true);
    const chosen=personal.find(b=>b.dataset.memberId===selected);
-   if(chosen?.hidden){const last=personal.filter(b=>!b.hidden).at(-1);if(last)last.hidden=true;chosen.hidden=false;}
+   if(chosen?.hidden){
+    chosen.hidden=false;
+    while(new Set(personal.filter(b=>!b.hidden).map(b=>b.getBoundingClientRect().top)).size>2){
+     const last=personal.filter(b=>!b.hidden && b!==chosen).at(-1);if(!last)break;last.hidden=true;
+    }
+   }
   } else {
    const chosen=personal.find(b=>b.dataset.memberId===selected);
    if(chosen){const a=chosen.getBoundingClientRect(),b=list.getBoundingClientRect();if(a.left<b.left)list.scrollLeft+=a.left-b.left;else if(a.right>b.right)list.scrollLeft+=a.right-b.right;}
   }
  }
- const observer=new ResizeObserver(fit);observer.observe(list);root.addEventListener('dispose',()=>{observer.disconnect();dialog.remove();});requestAnimationFrame(fit);
+ let lastWidth=-1;
+ const observer=new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;requestAnimationFrame(fit);}});observer.observe(list);root.addEventListener('dispose',()=>{observer.disconnect();dialog.remove();});requestAnimationFrame(fit);
 
  const years=el('div','year-controls'),desktop=el('nav','year-desktop');desktop.setAttribute('aria-label','잔디 연도 선택');
  const mobile=el('div','year-mobile'),yearLabel=el('label','','연도');yearLabel.htmlFor='year-select';
