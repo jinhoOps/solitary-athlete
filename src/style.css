@@ -23,10 +23,14 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .brand-divider { color: var(--border); }
 .brand-sub { font-size: 0.8125rem; color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
 .brand-mark { flex-shrink: 0; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.discord-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; color: var(--muted); background: transparent; transition: color .15s ease, background-color .15s ease; flex-shrink: 0; }
+.discord-link:hover { color: var(--primary); background: #E8EDE4; }
+.discord-link svg { display: block; }
 .text-link { color: var(--primary); font-size: .875rem; text-underline-offset: 4px; margin-left: auto; min-height: 40px; display: flex; align-items: center; white-space: nowrap; font-weight: 500; }
 .secondary-text { font-size: .875rem; color: var(--muted); }
 .caption { color: var(--muted); font-size: .75rem; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
-.status-notice { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 14px; background: #D9E9D9; border-radius: 8px; font-size: .8125rem; margin-bottom: 16px; }
+.status-notice { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 12px; background: #D9E9D9; color: #18271E; border-radius: 9999px; font-size: .75rem; font-weight: 500; line-height: 1.4; }
 .status-notice.warning { color: #8A5A13; background: #FFF4DD; }
 
 .kpi-section { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
@@ -102,6 +106,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
   .brand-header { flex-wrap: wrap; }
   .brand-wrap { flex-direction: column; gap: 2px; }
   .brand-divider { display: none; }
+  .header-actions { width: 100%; justify-content: space-between; margin-left: 0; }
   .kpi-section { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grass-content { display: block; }
   .date-detail { margin-top: 16px; }
@@ -109,7 +114,6 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 }
 
 .grass-cell[data-today="true"]:not(:focus-visible):not([aria-expanded="true"]) { outline: 1px solid var(--primary); outline-offset: 2px; }
-.today-action { min-height: 44px; }
 .date-detail { scroll-margin-top: 16px; }
 
 /* A single graph stays full-width when its date detail opens. */

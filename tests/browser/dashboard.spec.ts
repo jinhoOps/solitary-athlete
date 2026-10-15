@@ -56,6 +56,15 @@ test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', 
   await expect(page.locator('.brand-name')).toHaveText('고독한 운동가');
   await expect(page.locator('.brand-sub')).toHaveText('운동기록을 챙기는 묵묵, MUKMUK · WORKOUT JOURNAL');
 
+  const discordLink = page.locator('.brand-header .discord-link');
+  await expect(discordLink).toBeVisible();
+  await expect(discordLink).toHaveAttribute('aria-label', 'Discord 채널 열기');
+  await expect(discordLink.locator('svg')).toBeVisible();
+
+  const status = page.locator('.brand-header .status-notice');
+  await expect(status).toBeVisible();
+  await expect(status).toContainText('마지막 수집');
+
   const kpiCards = page.locator('.kpi-card');
   await expect(kpiCards).toHaveCount(5);
   await expect(page.locator('.timeline')).toBeHidden();
@@ -64,6 +73,9 @@ test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', 
   await expect(cards).toHaveCount(1);
   await expect(cards.first().locator('.grass-cell[data-date]')).toHaveCount(365);
   await expect(cards.first().locator(`[data-date="${today}"]`)).toHaveAttribute('data-count', '1');
+  await expect(cards.first().locator('.metrics')).toContainText('누적');
+  await expect(cards.first().locator('.metrics')).not.toContainText('인일');
+  await expect(cards.first().getByRole('button', { name: '오늘 날짜로 이동' })).toHaveCount(0);
   await expect(page.locator('#app img[src="x"]')).toHaveCount(0);
   expect(await page.evaluate(() => (window as unknown as { attacked?: boolean }).attacked)).toBeUndefined();
 
@@ -243,10 +255,7 @@ test('reveals today automatically without stealing focus, then reveals selected 
   const title=card.locator('.detail-heading h4');
   await expect(title).toBeFocused();await expect(title).toBeInViewport();
   await page.getByRole('button',{name:'날짜 상세 닫기'}).click();await expect(cell).toBeFocused();
-  await scroll.evaluate(e=>{e.scrollLeft=0;});
-  await card.getByRole('button',{name:'오늘 날짜로 이동'}).click();
-  await expect(cell).toBeFocused();
-  const a=await cell.boundingBox(),b=await scroll.boundingBox();expect(a!.x).toBeGreaterThanOrEqual(b!.x);
+  await expect(card.getByRole('button',{name:'오늘 날짜로 이동'})).toHaveCount(0);
 });
 
  test('all-history roster keeps the denominator stable and date detail below the graph',async({page})=>{

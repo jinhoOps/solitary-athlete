@@ -24,7 +24,7 @@ export function renderGrassCard(options: {
   const counts = stats(member.dates, today);
   const currentCounts = data.currentStats?.get(member.id) ?? counts;
   const metricsForYear = aggregate
-    ? [['전체 멤버',roster.length,'명'],['누적',logs.filter(l=>l.log_date<=today).length,'인일']] as const
+    ? [['전체 멤버',roster.length,'명'],['누적',logs.filter(l=>l.log_date<=today).length,'일']] as const
     : selectedYear === currentYear
     ? [['이번 주', currentCounts.week,'일'], ['연속', currentCounts.streak,'일'], [`${selectedYear}년 운동`, counts.total,'일']] as const
     : [[`${selectedYear}년 운동`, counts.total,'일']] as const;
@@ -204,15 +204,6 @@ export function renderGrassCard(options: {
   }
 
   if(aggregate)legend.append(el('span','','색이 진할수록 더 많은 멤버가 운동했어요'));
-  if (selectedYear === currentYear) {
-    const goToday = button(`오늘 · ${shortDate(today)}`, () => {
-      focusDate(today);
-      revealDate(today);
-      dayButtons.get(today)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
-    }, 'button secondary today-action');
-    goToday.setAttribute('aria-label','오늘 날짜로 이동');
-    legend.append(goToday);
-  }
   visual.append(grassScroll, legend, preview);
   content.append(visual, details);
   if(!logs.length && aggregate)card.append(el('p','secondary-text',roster.length?'선택한 연도에 남긴 운동이 없어요.':'첫 잔디를 기다리고 있어요.'));
