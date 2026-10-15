@@ -112,10 +112,9 @@ function renderKPIs() {
   king.append(el('div','kpi-title','운동왕 👑'));
   if(!kpis.workoutKings.length)king.append(el('div','kpi-value','아직 없어요'));
   else {
-    if(kpis.workoutKings.length>1)king.append(el('p','caption',`공동 운동왕 · ${kpis.workoutKings.length}명`));
     for(const winner of kpis.workoutKings){
       const person=el('div','king-member');
-      person.append(el('div','kpi-value',winner.name),el('p','caption',`ID: ${winner.id}`),el('p','caption',`이번 달 ${winner.days}일`));
+      person.append(el('div','kpi-value',winner.name));
       king.append(person);
     }
   }
