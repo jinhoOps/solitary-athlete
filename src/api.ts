@@ -74,7 +74,7 @@ export async function loadDashboard(
   async function allMembers():Promise<{id:string;name:string}[]> {
     const result:{id:string;name:string}[]=[];let cursor:string|null=null;
     for(;;){
-      const page=await rpc<{user_id:string;username:string}[]>(config,'get_dashboard_members',{
+      const page:{user_id:string;username:string}[]=await rpc<{user_id:string;username:string}[]>(config,'get_dashboard_members',{
         p_secret_code:normalizedCode,p_after_user_id:cursor,p_limit:200,
       },fetcher);
       for(const row of page){
