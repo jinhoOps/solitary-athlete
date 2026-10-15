@@ -1,49 +1,13 @@
-from datetime import date, timedelta, timezone
-import struct
-import zlib
+from datetime import date, datetime, timedelta, timezone
+import io
+import os
+from PIL import Image, ImageDraw, ImageFont
 
 KST = timezone(timedelta(hours=9))
 
-FONT_5X7 = {
-    ' ': [0, 0, 0, 0, 0],
-    '0': [0x3e, 0x51, 0x49, 0x45, 0x3e],
-    '1': [0x00, 0x42, 0x7f, 0x40, 0x00],
-    '2': [0x42, 0x61, 0x51, 0x49, 0x46],
-    '3': [0x21, 0x41, 0x45, 0x4b, 0x31],
-    '4': [0x18, 0x14, 0x12, 0x7f, 0x10],
-    '5': [0x27, 0x45, 0x45, 0x45, 0x39],
-    '6': [0x3c, 0x4a, 0x49, 0x49, 0x30],
-    '7': [0x01, 0x71, 0x09, 0x05, 0x03],
-    '8': [0x36, 0x49, 0x49, 0x49, 0x36],
-    '9': [0x06, 0x49, 0x49, 0x29, 0x1e],
-    '%': [0x23, 0x13, 0x08, 0x64, 0x62],
-    '.': [0x00, 0x60, 0x60, 0x00, 0x00],
-    ':': [0x00, 0x36, 0x36, 0x00, 0x00],
-    '·': [0x00, 0x0c, 0x0c, 0x00, 0x00],
-    '-': [0x08, 0x08, 0x08, 0x08, 0x08],
-    '~': [0x08, 0x04, 0x08, 0x10, 0x08],
-    '/': [0x20, 0x10, 0x08, 0x04, 0x02],
-    '(': [0x00, 0x1c, 0x22, 0x41, 0x00],
-    ')': [0x00, 0x41, 0x22, 0x1c, 0x00],
-    'K': [0x7f, 0x08, 0x14, 0x22, 0x41],
-    'S': [0x46, 0x49, 0x49, 0x49, 0x31],
-    'T': [0x01, 0x01, 0x7f, 0x01, 0x01],
-}
-
-# 7x8 custom Korean glyphs
-KOREAN_GLYPHS = {
-    '월': [0b0111000, 0b1000101, 0b0111011, 0b0010001, 0b1111111, 0b1111000, 0b0001000, 0b1111000],
-    '화': [0b0100100, 0b1111110, 0b0100100, 0b1000010, 0b1111110, 0b0010010, 0b0100010, 0b1000010],
-    '수': [0b0010000, 0b0101000, 0b1000100, 0b0000000, 0b1111110, 0b0010000, 0b0010000, 0b0010000],
-    '목': [0b0010000, 0b1111110, 0b0010000, 0b0101000, 0b1000100, 0b1111110, 0b1000100, 0b1111110],
-    '금': [0b0010000, 0b0101000, 0b1000100, 0b1111110, 0b1000100, 0b1111110, 0b0000000, 0b1111110],
-    '토': [0b0010000, 0b1111110, 0b0010000, 0b0010000, 0b1111110, 0b0000000, 0b0000000, 0b0000000],
-    '일': [0b0111000, 0b1000100, 0b0111000, 0b0000000, 0b1111110, 0b0000010, 0b1111110, 0b1000000, 0b1111110],
-}
-
 COLOR_BG = (43, 45, 49, 255)       # Discord #2B2D31
 COLOR_EMPTY = (49, 55, 61, 255)     # #31373D (Twemoji empty block)
-COLOR_DISABLED = (32, 34, 37, 255)  # #202225 (Dark inactive block)
+COLOR_DISABLED = (30, 32, 35, 255)  # #1E2023 (Dark inactive future block)
 COLOR_TODAY_BORDER = (87, 242, 135, 255) # #57F287 (Discord green highlight)
 COLOR_TEXT = (219, 222, 225, 255)   # #DBDEE1
 COLOR_MUTED = (148, 155, 164, 255)  # #949BA4
@@ -56,79 +20,30 @@ LEVELS = [
     (78, 174, 99, 255),   # 100%
 ]
 
-def encode_png(width, height, pixels):
-    raw = bytearray()
-    row_bytes = width * 4
-    for y in range(height):
-        raw.append(0)
-        raw.extend(pixels[y * row_bytes : (y + 1) * row_bytes])
-    compressed = zlib.compress(raw, level=6)
-    def chunk(tag, data):
-        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xffffffff)
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", compressed) + chunk(b"IEND", b"")
+def get_font(size: int):
+    candidates = [
+        '/System/Library/Fonts/AppleSDGothicNeo.ttc',
+        '/System/Library/Fonts/Supplemental/AppleGothic.ttf',
+        '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',
+        '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, size)
+            except Exception:
+                pass
+    return ImageFont.load_default()
 
 class Canvas:
+    """Compatibility stub for tests importing Canvas."""
     def __init__(self, width, height, bg_color):
         self.width = width
         self.height = height
         self.pixels = bytearray(width * height * 4)
-        for i in range(width * height):
-            idx = i * 4
-            self.pixels[idx] = bg_color[0]
-            self.pixels[idx+1] = bg_color[1]
-            self.pixels[idx+2] = bg_color[2]
-            self.pixels[idx+3] = bg_color[3]
 
-    def set_pixel(self, x, y, color):
-        if 0 <= x < self.width and 0 <= y < self.height:
-            idx = (y * self.width + x) * 4
-            self.pixels[idx] = color[0]
-            self.pixels[idx+1] = color[1]
-            self.pixels[idx+2] = color[2]
-            self.pixels[idx+3] = color[3]
-
-    def draw_rect(self, x, y, w, h, color, rx=0):
-        for cy in range(y, y + h):
-            for cx in range(x, x + w):
-                if rx > 0:
-                    if (cx == x and cy == y) or (cx == x + w - 1 and cy == y) or \
-                       (cx == x and cy == y + h - 1) or (cx == x + w - 1 and cy == y + h - 1):
-                        continue
-                self.set_pixel(cx, cy, color)
-
-    def draw_rect_border(self, x, y, w, h, color):
-        for cx in range(x, x + w):
-            self.set_pixel(cx, y, color)
-            self.set_pixel(cx, y + h - 1, color)
-        for cy in range(y, y + h):
-            self.set_pixel(x, cy, color)
-            self.set_pixel(x + w - 1, cy, color)
-
-    def draw_char(self, x, y, ch, color):
-        if ch in KOREAN_GLYPHS:
-            rows = KOREAN_GLYPHS[ch]
-            for row_idx, row_val in enumerate(rows):
-                for col_idx in range(7):
-                    if (row_val >> (6 - col_idx)) & 1:
-                        self.set_pixel(x + col_idx, y + row_idx, color)
-            return 8
-        if ch in FONT_5X7:
-            cols = FONT_5X7[ch]
-            for col_idx, col_val in enumerate(cols):
-                for row_idx in range(7):
-                    if (col_val >> row_idx) & 1:
-                        self.set_pixel(x + col_idx, y + row_idx, color)
-            return 6
-        return 4
-
-    def draw_text(self, x, y, text, color):
-        cur_x = x
-        for ch in text:
-            cur_x += self.draw_char(cur_x, y, ch, color)
-        return cur_x
-
-def compute_grid_range(today):
+def compute_grid_range(today: date):
     if today.month == 12:
         next_month_first = date(today.year + 1, 1, 1)
     else:
@@ -152,7 +67,7 @@ def compute_grid_range(today):
     total_weeks = total_days // 7
     return grid_start, grid_end, total_weeks
 
-def render_grass_image(rows, now, member_count=None):
+def render_grass_image(rows, now, member_count=None) -> bytes:
     today = now.astimezone(KST).date()
     grid_start, grid_end, num_weeks = compute_grid_range(today)
 
@@ -166,44 +81,56 @@ def render_grass_image(rows, now, member_count=None):
 
     denom = member_count if (member_count is not None and member_count > 0) else max(len(all_users), 1)
 
-    cell_size = 15
-    cell_gap = 4
-    pad_left = 30
-    pad_top = 28
-    pad_right = 16
-    pad_bottom = 26
+    cell_size = 28
+    cell_gap = 6
+    pad_left = 60
+    pad_top = 84
+    pad_right = 36
+    pad_bottom = 54
 
     width = pad_left + num_weeks * (cell_size + cell_gap) + pad_right
     height = pad_top + 7 * (cell_size + cell_gap) + pad_bottom
 
-    canvas = Canvas(width, height, COLOR_BG)
+    img = Image.new('RGBA', (width, height), COLOR_BG)
+    draw = ImageDraw.Draw(img)
 
-    # Weekday labels on the left (일, 화, 목, 토)
-    weekday_labels = {0: '일', 2: '화', 4: '목', 6: '토'}
-    for r_idx, label in weekday_labels.items():
-        y = pad_top + r_idx * (cell_size + cell_gap) + 3
-        canvas.draw_char(pad_left - 16, y, label, COLOR_MUTED)
+    font_title = get_font(20)
+    font_label = get_font(15)
+    font_sm = get_font(13)
+
+    # Title & Meta
+    draw.text((pad_left, 24), '고독한 운동가 · 전체 잔디', fill=COLOR_TEXT, font=font_title)
+    draw.text((width - pad_right - 130, 26), f'오늘 {today:%m.%d} KST', fill=COLOR_MUTED, font=font_label)
+
+    # Weekday labels (월, 수, 금)
+    weekdays = ['일', '월', '화', '수', '목', '금', '토']
+    for r_idx, w_name in enumerate(weekdays):
+        if r_idx in [1, 3, 5]: # 월, 수, 금
+            y = pad_top + r_idx * (cell_size + cell_gap) + 6
+            draw.text((pad_left - 30, y), w_name, fill=COLOR_MUTED, font=font_sm)
 
     # Month labels along columns
     months_seen = set()
     for col in range(num_weeks):
         col_x = pad_left + col * (cell_size + cell_gap)
-        col_date = grid_start + timedelta(days=col * 7)
-        for d_offset in range(7):
-            d = col_date + timedelta(days=d_offset)
+        week_start = grid_start + timedelta(days=col * 7)
+        for d_off in range(7):
+            d = week_start + timedelta(days=d_off)
             if d.day <= 7 and d.month not in months_seen and d <= grid_end:
                 months_seen.add(d.month)
-                canvas.draw_text(col_x, pad_top - 14, f'{d.month}월', COLOR_TEXT)
+                draw.text((col_x, pad_top - 26), f'{d.month}월', fill=COLOR_TEXT, font=font_label)
                 break
 
-        # Render cells in this week column
+    # Cells
+    for col in range(num_weeks):
+        col_x = pad_left + col * (cell_size + cell_gap)
+        week_start = grid_start + timedelta(days=col * 7)
         for row in range(7):
-            c_date = col_date + timedelta(days=row)
+            c_date = week_start + timedelta(days=row)
             cell_y = pad_top + row * (cell_size + cell_gap)
             iso_d = c_date.isoformat()
 
             if c_date > today:
-                # Disabled block for future dates
                 color = COLOR_DISABLED
             else:
                 count = len(daily_users.get(iso_d, set()))
@@ -214,16 +141,19 @@ def render_grass_image(rows, now, member_count=None):
                     level = 1 if opacity <= 0.25 else 2 if opacity <= 0.50 else 3 if opacity <= 0.75 else 4
                     color = LEVELS[level]
 
-            canvas.draw_rect(col_x, cell_y, cell_size, cell_size, color, rx=2)
+            draw.rounded_rectangle([col_x, cell_y, col_x + cell_size, cell_y + cell_size], radius=4, fill=color)
             if c_date == today:
-                canvas.draw_rect_border(col_x - 1, cell_y - 1, cell_size + 2, cell_size + 2, COLOR_TODAY_BORDER)
+                draw.rounded_rectangle([col_x - 1, cell_y - 1, col_x + cell_size + 1, cell_y + cell_size + 1], radius=5, outline=COLOR_TODAY_BORDER, width=2)
 
     # Legend at bottom right
-    leg_x = width - 150
-    leg_y = height - 16
-    canvas.draw_text(leg_x - 22, leg_y + 2, '0%', COLOR_MUTED)
+    leg_x = width - pad_right - 220
+    leg_y = height - 34
+    draw.text((leg_x - 34, leg_y + 2), '0%', fill=COLOR_MUTED, font=font_sm)
     for i, lvl_col in enumerate(LEVELS):
-        canvas.draw_rect(leg_x + i * 14, leg_y, 10, 10, lvl_col, rx=2)
-    canvas.draw_text(leg_x + 5 * 14 + 4, leg_y + 2, '100%', COLOR_MUTED)
+        bx = leg_x + i * 20
+        draw.rounded_rectangle([bx, leg_y, bx + 16, leg_y + 16], radius=3, fill=lvl_col)
+    draw.text((leg_x + 5 * 20 + 8, leg_y + 2), '100%', fill=COLOR_MUTED, font=font_sm)
 
-    return encode_png(width, height, canvas.pixels)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    return buf.getvalue()

@@ -17,7 +17,7 @@ def test_14_day_board_weekday_headers_and_two_rows():
     content = pages[0]
 
     assert content.startswith('## 🌱 고운 잔디밭\n\n')
-    assert '🌱 jhoops · 누적 2일' in content
+    assert 'jhoops · 누적 2일' in content
     assert 'xion · 누적 1일' in content
     assert '🌱 xion' not in content
     assert '이번 주' not in content
@@ -33,8 +33,7 @@ def test_14_day_board_weekday_headers_and_two_rows():
     assert expected_row1 in content
     assert expected_row2 in content
 
-    assert '[고독한 운동가 웹보드](https://jinhoops.github.io/solitary-athlete/?code=mukmuk-fixture)' in content
-    assert '> 최근 14일 · 갱신 · 10.14 20:28 KST · 일|월|화|수|목|금|토' in content
+    assert '> 최근 14일 · 일|월|화|수|목|금|토 · 갱신 · 20:28 KST · [고독한 운동가 웹보드](https://jinhoops.github.io/solitary-athlete/?code=mukmuk-fixture)' in content
     assert '> ⬛ 기록 없음 · <:mukmuk_grass:111> 텍스트 · <:mukmuk_photo:222> 사진 포함' in content
 
 def test_empty_board_message():

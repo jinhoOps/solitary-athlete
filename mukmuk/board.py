@@ -48,23 +48,20 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
         member['dates'].add(d)
         if row['has_photo']: member['photos'].add(d)
     header = f'## 🌱 {MARKER}'
-    footer_parts = []
     link = dashboard_link(dashboard_url, secret_code)
-    if link:
-        footer_parts.append(f'[고독한 운동가 웹보드]({link})')
-    elif dashboard_url:
-        footer_parts.append('웹보드 접속 링크는 #공지에서 확인해 주세요.')
-    footer_parts.append(f'> 최근 14일 · 갱신 · {now.astimezone(KST):%m.%d %H:%M} KST · 일|월|화|수|목|금|토')
+    web_link = f' · [고독한 운동가 웹보드]({link})' if link else (f' · [고독한 운동가 웹보드]({dashboard_url})' if dashboard_url else '')
+    footer_parts = [
+        f'> 최근 14일 · 일|월|화|수|목|금|토 · 갱신 · {now.astimezone(KST):%H:%M} KST{web_link}',
+    ]
     legend = '> ⬛ 기록 없음 · 🟩 텍스트 · 🌲 사진 포함'
     if emojis and all(emojis):
         legend = f'> ⬛ 기록 없음 · <:mukmuk_grass:{emojis[0]}> 텍스트 · <:mukmuk_photo:{emojis[1]}> 사진 포함'
     footer_parts.append(legend)
-    footer = '\n\n' + '\n'.join(footer_parts)
+    footer = '\n\n\n' + '\n'.join(footer_parts)
 
     pages, blocks = [], []
     for uid, m in sorted(members.items(), key=lambda p:(p[1]['name'],p[0])):
-        sprout = '🌱 ' if today_iso in m['dates'] else ''
-        block = f"{sprout}{safe_name(m['name'])} · 누적 {len(m['dates'])}일\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_sunday, today, emojis))
+        block = f"{safe_name(m['name'])} · 누적 {len(m['dates'])}일\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_sunday, today, emojis))
         candidate = header + '\n\n' + '\n\n'.join(blocks+[block]) + footer
         if units(candidate) > 1970 and blocks:
             pages.append(header + '\n\n' + '\n\n'.join(blocks) + footer); blocks=[]
