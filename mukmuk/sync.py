@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import PurePath
 from .board import build_board, update_board
 from .discord import DiscordError
+from .render import render_grass_image
 
 @dataclass
 class Event:
@@ -58,11 +59,13 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None):
         except DiscordError as e:
             if e.status != 404: raise
         store.reacted(pending['message_id'])
-    pages = build_board(store.logs(),now,settings.get('DASHBOARD_URL',''),
+    logs = store.logs()
+    pages = build_board(logs,now,settings.get('DASHBOARD_URL',''),
         (settings.get('DISCORD_GRASS_RECORD_EMOJI_ID'),settings.get('DISCORD_GRASS_PHOTO_EMOJI_ID')),
         secret_code=store.active_secret(now) if settings.get('DASHBOARD_URL') else None)
     check_lock()
-    update_board(api,store,settings,pages,bot['id'],check_lock=check_lock)
+    image_bytes = render_grass_image(logs, now)
+    update_board(api,store,settings,pages,bot['id'],check_lock=check_lock,file=('grass.png', image_bytes, 'image/png'))
     check_lock()
     store.success(channel,ceiling,datetime.now(timezone.utc))
     return {'messages_scanned':len(rows),'board_pages':len(pages)}

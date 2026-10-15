@@ -1,3 +1,4 @@
+import json
 import time
 from urllib.parse import quote
 import httpx
@@ -37,9 +38,25 @@ class Discord:
     def message(self, channel, mid): return self.request('GET', f'/channels/{channel}/messages/{mid}')
     def react(self, channel, mid):
         self.request('PUT', f'/channels/{channel}/messages/{mid}/reactions/{quote("✅", safe="")}/@me')
-    def write(self, channel, content, mid=None):
-        return self.request('PATCH' if mid else 'POST', f'/channels/{channel}/messages' + (f'/{mid}' if mid else ''),
-            json={'content': content, 'allowed_mentions': {'parse': []}})
+    def write(self, channel, content, mid=None, file=None):
+        path = f'/channels/{channel}/messages' + (f'/{mid}' if mid else '')
+        method = 'PATCH' if mid else 'POST'
+        if file:
+            filename = file[0]
+            data_bytes = file[1]
+            content_type = file[2] if len(file) > 2 else 'image/png'
+            payload = {
+                'content': content,
+                'allowed_mentions': {'parse': []},
+                'attachments': [{'id': 0, 'filename': filename}],
+            }
+            return self.request(
+                method,
+                path,
+                data={'payload_json': json.dumps(payload)},
+                files={'files[0]': (filename, data_bytes, content_type)},
+            )
+        return self.request(method, path, json={'content': content, 'allowed_mentions': {'parse': []}})
     def delete(self, channel, mid):
         try: self.request('DELETE', f'/channels/{channel}/messages/{mid}')
         except DiscordError as e:

@@ -73,3 +73,20 @@ def test_week_resets_on_sunday_in_kst():
     sunday=build_board(rows,datetime(2026,10,10,15,0,tzinfo=timezone.utc))[0]
     assert '⬛⬛⬛⬛⬛⬛🟩' in saturday
     assert '⬛⬛⬛⬛⬛⬛🟩\n🟩⬛⬛⬛⬛⬛⬛' in sunday
+
+def test_update_board_attaches_file_to_first_page():
+    from mukmuk.board import update_board
+    calls = []
+    class API:
+        def messages(self, channel, before=None): return []
+        def write(self, channel, content, mid=None, file=None):
+            calls.append({'content': content, 'mid': mid, 'file': file})
+            return {'id': 'new-mid'}
+    class Store:
+        def board_ids(self, auth_channel, ids): pass
+    settings = {'DISCORD_BOARD_CHANNEL_ID': 'chan', 'DISCORD_AUTH_CHANNEL_ID': 'auth'}
+    dummy_file = ('grass.png', b'image_bytes', 'image/png')
+    update_board(API(), Store(), settings, ['page1', 'page2'], 'bot', file=dummy_file)
+    assert len(calls) == 2
+    assert calls[0]['file'] == dummy_file
+    assert calls[1]['file'] is None
