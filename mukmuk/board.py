@@ -73,10 +73,11 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
     if any(units(p)>2000 for p in pages): raise ValueError('Board member exceeds Discord content limit')
     return pages
 
-def update_board(api, store, settings, pages, bot_id):
+def update_board(api, store, settings, pages, bot_id, check_lock=lambda: None):
     channel, auth_channel = settings['DISCORD_BOARD_CHANNEL_ID'], settings['DISCORD_AUTH_CHANNEL_ID']
     before, found = None, {}
     while True:
+        check_lock()
         batch = api.messages(channel, before)
         for msg in batch:
             first_line = msg.get('content','').split('\n')[0]
@@ -87,8 +88,13 @@ def update_board(api, store, settings, pages, bot_id):
     ids = sorted(found, key=int)
     kept = []
     for i, content in enumerate(pages):
+        check_lock()
         result = api.write(channel, content, ids[i] if i<len(ids) else None)
+        check_lock()
         kept.append(result['id'])
         store.board_ids(auth_channel, kept + ids[i+1:])
-    for mid in ids[len(pages):]: api.delete(channel, mid)
+    for mid in ids[len(pages):]:
+        check_lock()
+        api.delete(channel, mid)
+    check_lock()
     store.board_ids(auth_channel, kept)

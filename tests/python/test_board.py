@@ -43,3 +43,22 @@ def test_board_link_contains_current_secret_and_preserves_query():
     content = build_board([],now,'https://example.com/board/?from=discord#grass',secret_code='mukmuk-fixture')[0]
     assert 'https://example.com/board/?from=discord&code=mukmuk-fixture#grass' in content
     assert '웹보드 바로 가기' in content
+
+
+def test_board_stops_before_writes_when_lock_is_lost_during_history_read():
+    import pytest
+    from mukmuk.board import update_board
+    alive = [True]
+    class API:
+        def messages(self, channel, before=None):
+            alive[0] = False
+            return []
+        def write(self, *args):
+            pytest.fail('must not publish after losing the sync lock')
+    class Store:
+        def board_ids(self, *args):
+            pytest.fail('must not change state after losing the sync lock')
+    def check():
+        if not alive[0]: raise RuntimeError('lock connection lost')
+    with pytest.raises(RuntimeError, match='lock connection lost'):
+        update_board(API(), Store(), {'DISCORD_BOARD_CHANNEL_ID':'board','DISCORD_AUTH_CHANNEL_ID':'auth'}, ['page'], 'bot', check_lock=check)

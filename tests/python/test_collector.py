@@ -46,3 +46,24 @@ def test_board_splits_whole_members_disables_markdown_in_names_and_four_rows():
     assert sum(p.count('이번 주') for p in pages)==25
     assert '@everyone' not in '\n'.join(pages)
     assert '🌲' in '\n'.join(pages)
+
+def test_sync_stops_board_publish_if_lock_lost_during_board_history():
+    from mukmuk.sync import run_sync
+    alive = [True]
+    class API:
+        def channel(self, cid): return {'guild_id': 'guild'}
+        def me(self): return {'id': 'bot'}
+        def messages(self, cid, before=None):
+            if cid == 'board': alive[0] = False
+            return []
+        def write(self, *args): pytest.fail('must not publish without lock')
+    class Store:
+        def state(self, cid): return {'last_message_id': None}
+        def pending_reactions(self): return []
+        def logs(self): return []
+        def success(self, *args): pytest.fail('must not report success without lock')
+    def check():
+        if not alive[0]: raise RuntimeError('lock connection lost')
+    with pytest.raises(RuntimeError, match='lock connection lost'):
+        run_sync(API(), Store(), {'DISCORD_GUILD_ID': 'guild',
+            'DISCORD_AUTH_CHANNEL_ID': 'auth', 'DISCORD_BOARD_CHANNEL_ID': 'board'}, check_lock=check)

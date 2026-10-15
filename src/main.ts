@@ -90,7 +90,7 @@ main.append(status, kpiSection, filters, yearBar, cards, heading, logList, moreA
 const footer = el('footer', 'footer');
 footer.append(
   el('p', 'caption', '공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 사진은 Discord에 남습니다.'),
-  el('p', 'caption', '인증은 매시간 수집됩니다. 쉬어 간 날도 그대로 둡니다.')
+  el('p', 'caption', '인증은 약 5분 간격으로 수집됩니다. 쉬어 간 날도 그대로 둡니다.')
 );
 
 app.replaceChildren(header, main, footer);
