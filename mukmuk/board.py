@@ -4,27 +4,27 @@ from .links import dashboard_link
 
 KST = timezone(timedelta(hours=9))
 MARKER = '고운 잔디밭'
-WEEKDAYS = '월 | 화 | 수 | 목 | 금 | 토 | 일'
+WEEKDAYS = '일 | 월 | 화 | 수 | 목 | 금 | 토'
 
 def safe_name(value):
     return re.sub(r'[`*_~<>@\r\n]', '', value)[:48] or '운동가'
 
-def grass_lines(dates, photos, this_monday, today, emojis=None):
+def grass_lines(dates, photos, this_sunday, today, emojis=None):
     record, photo = ('🟩', '🌲')
     if emojis and all(emojis):
         record, photo = f'<:mukmuk_grass:{emojis[0]}>', f'<:mukmuk_photo:{emojis[1]}>'
-    last_monday = this_monday - timedelta(days=7)
+    last_sunday = this_sunday - timedelta(days=7)
 
-    # Row 1: Last week (Monday .. Sunday)
+    # Row 1: Last week (Sunday .. Saturday)
     row1 = []
     for i in range(7):
-        d = (last_monday + timedelta(days=i)).isoformat()
+        d = (last_sunday + timedelta(days=i)).isoformat()
         row1.append(photo if d in photos else record if d in dates else '⬜')
 
-    # Row 2: This week (Monday .. Sunday)
+    # Row 2: This week (Sunday .. Saturday)
     row2 = []
     for i in range(7):
-        cur = this_monday + timedelta(days=i)
+        cur = this_sunday + timedelta(days=i)
         d = cur.isoformat()
         if cur > today:
             row2.append('⬜')
@@ -37,8 +37,8 @@ def units(text): return len(text.encode('utf-16-le')) // 2
 
 def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
     today = now.astimezone(KST).date()
-    this_monday = today - timedelta(days=today.weekday())
-    monday_iso = this_monday.isoformat()
+    this_sunday = today - timedelta(days=(today.weekday()+1)%7)
+    sunday_iso = this_sunday.isoformat()
     members = {}
     for row in rows:
         uid = row['user_id']
@@ -62,8 +62,8 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
 
     pages, blocks = [], []
     for uid, m in sorted(members.items(), key=lambda p:(p[1]['name'],p[0])):
-        week = sum(d >= monday_iso for d in m['dates'])
-        block = f"{safe_name(m['name'])} · 이번 주 {week}일 · 누적 {len(m['dates'])}일\n{WEEKDAYS}\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_monday, today, emojis))
+        week = sum(d >= sunday_iso for d in m['dates'])
+        block = f"{safe_name(m['name'])} · 이번 주 {week}일 · 누적 {len(m['dates'])}일\n{WEEKDAYS}\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_sunday, today, emojis))
         candidate = header + '\n\n' + '\n\n'.join(blocks+[block]) + footer
         if units(candidate) > 1970 and blocks:
             pages.append(header + '\n\n' + '\n\n'.join(blocks) + footer); blocks=[]

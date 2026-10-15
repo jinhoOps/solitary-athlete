@@ -5,20 +5,21 @@ export function dayAt(now = new Date(), daysAgo = 0): string {
 export function shiftDay(date: string, delta: number): string {
   return new Date(Date.parse(date + 'T00:00:00Z') + delta * DAY).toISOString().slice(0, 10);
 }
+export function sundayIndex(date:string):number { return new Date(date+'T00:00:00Z').getUTCDay(); }
 export function mondayIndex(date: string): number {
   return (new Date(date + 'T00:00:00Z').getUTCDay() + 6) % 7;
 }
 export function stats(dates: Set<string>, today: string) {
   const valid = new Set([...dates].filter(d => d <= today));
-  const monday = shiftDay(today, -mondayIndex(today));
+  const sunday = shiftDay(today, -sundayIndex(today));
   let streak = 0;
   let cursor = valid.has(today) ? today : shiftDay(today, -1);
   while (valid.has(cursor)) { streak++; cursor = shiftDay(cursor, -1); }
-  return { week: [...valid].filter(d => d >= monday).length, streak, total: valid.size };
+  return { week: [...valid].filter(d => d >= sunday).length, streak, total: valid.size };
 }
 export function calendar(today: string, totalDays = 365): (string | null)[] {
   const start = shiftDay(today, -(totalDays - 1));
-  const result: (string | null)[] = Array(mondayIndex(start)).fill(null);
+  const result: (string | null)[] = Array(sundayIndex(start)).fill(null);
   for (let i = 0; i < totalDays; i++) result.push(shiftDay(start, i));
   while (result.length % 7) result.push(null);
   return result;

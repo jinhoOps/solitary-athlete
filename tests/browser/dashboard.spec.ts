@@ -89,7 +89,7 @@ test('one tab stop per grass grid and keyboard date detail with focus restoratio
   await page.keyboard.press('Escape');
   await expect(card.locator('.date-detail')).toBeHidden();
   await expect(card.locator('[data-date="2026-10-07"]')).toBeFocused();
-  const monday = card.locator('[data-date="2026-10-12"]');
+  const monday = card.locator('[data-date="2026-10-11"]');
   await monday.focus(); await page.keyboard.press('ArrowUp');
   await expect(monday).toBeFocused();
 });
@@ -282,5 +282,49 @@ test('all joint workout kings and long IDs remain visible without page overflow'
  await page.reload();
  const king=page.locator('.kpi-card').first();await expect(king).toContainText('공동 운동왕 · 50명');
  await expect(king.locator('.king-member')).toHaveCount(50);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+test('mobile year select preserves member and search finds hidden same-name members',async({page})=>{
+ await page.setViewportSize({width:360,height:900});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await page.getByLabel('연도', {exact:true}).selectOption('2025');
+ await expect(page.locator('.workout-card')).toContainText('2025년');
+ await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
+ const search=page.getByLabel('멤버 이름 검색');await expect(search).toBeFocused();
+ await search.fill('과거');await page.getByRole('dialog').getByRole('button',{name:/과거 전용/}).click();
+ await expect(page.getByRole('dialog')).toBeHidden();
+ await expect(page.locator('.workout-card')).toContainText('과거 전용');
+ await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();await search.fill('없는이름');
+ await expect(page.getByRole('dialog')).toContainText('일치하는 멤버가 없어요.');
+ await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'멤버 찾기',exact:true})).toBeFocused();
+});
+
+test('uses Sunday-first contribution rows and Sunday-based week stats',async({page})=>{
+ await fixture(page);
+ await expect(page.locator('.weekday-labels span')).toHaveText(['일','월','화','수','목','금','토']);
+ const row=await page.locator('[data-date="2026-01-01"]').evaluate(e=>Array.from(e.parentElement!.children).indexOf(e)%7);
+ expect(row).toBe(4);
+});
+
+test('weekday labels stay visible after automatic horizontal centering',async({page})=>{
+ await page.setViewportSize({width:360,height:800});await fixture(page);
+ await page.locator('.grass-scroll').scrollIntoViewIfNeeded();
+ await expect(page.locator('.weekday-labels')).toBeInViewport();
+ const labels=await page.locator('.weekday-labels').boundingBox(),scroll=await page.locator('.grass-scroll').boundingBox();
+ expect(labels!.x).toBeGreaterThanOrEqual(scroll!.x);
+});
+
+test('search exposes overflow and distinguishes same names by ID',async({page})=>{
+ await fixture(page);
+ const many=Array.from({length:60},(_,i)=>({user_id:String(1000+i),username:i<2?'동명':`운동가 ${i} 이름이 긴 멤버`}));
+ await page.route('**/rpc/get_dashboard_members',r=>r.fulfill({json:many}));await page.reload();
+ await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
+ await page.getByLabel('멤버 이름 검색').fill('동명');
+ const dialog=page.getByRole('dialog');await expect(dialog.getByRole('button',{name:/동명/})).toHaveCount(2);
+ await dialog.getByRole('button',{name:'동명 · ID: 1001',exact:true}).click();
+ await expect(page.locator('.member-options [data-member-id="1001"]')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('.workout-card')).toContainText('동명');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

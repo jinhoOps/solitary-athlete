@@ -1,4 +1,4 @@
-import { dayAt, mondayIndex, shiftDay, stats } from './dates';
+import { dayAt, sundayIndex, shiftDay, stats } from './dates';
 import { calculateMonthlyKPIs } from './metrics';
 import type { DashboardData, Member, PublicConfig, WorkoutLog } from './types';
 
@@ -116,11 +116,11 @@ export async function loadDashboard(
   if ((year ?? currentYear) === currentYear) {
     const history = new Map(sortedMembers.map(m => [m.id, new Set(m.dates)]));
     let historyYear = currentYear;
-    const monday = shiftDay(today, -mondayIndex(today));
+    const sunday = shiftDay(today, -sundayIndex(today));
     // Extend only if this week or a continuous streak reaches an earlier year.
     const needsEarlierHistory = () => {
       const start = `${historyYear}-01-01`;
-      if (monday < start || (historyYear === currentYear && shiftDay(today, -1) < start)) return true;
+      if (sunday < start || (historyYear === currentYear && shiftDay(today, -1) < start)) return true;
       return [...history.values()].some(dates => {
         let cursor = dates.has(today) ? today : shiftDay(today, -1);
         while (dates.has(cursor)) cursor = shiftDay(cursor, -1);

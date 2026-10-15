@@ -1,5 +1,5 @@
 import {el,button} from './dom';
-import {calendarYear,mondayIndex,shortDate,stats} from './dates';
+import {calendarYear,sundayIndex,shortDate,stats} from './dates';
 import {aggregateDays} from './aggregate';
 import type {Member,WorkoutLog,DashboardData} from './types';
 
@@ -39,7 +39,7 @@ export function renderGrassCard(options: {
   const months = el('div', 'month-labels');
   const gridWrap = el('div', 'grid-wrap');
   const weekdays = el('div', 'weekday-labels');
-  for (const d of ['월', '화', '수', '목', '금', '토', '일']) weekdays.append(el('span', '', d));
+  for (const d of ['일', '월', '화', '수', '목', '금', '토']) weekdays.append(el('span', '', d));
 
   const grid = el('div', 'grass-grid');
   grid.setAttribute('role', 'group');
@@ -161,7 +161,7 @@ export function renderGrassCard(options: {
       const delta = ({ ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 } as Record<string, number>)[e.key];
       if (delta !== undefined) {
         e.preventDefault();
-        if ((e.key === 'ArrowUp' && mondayIndex(date) === 0) || (e.key === 'ArrowDown' && mondayIndex(date) === 6)) return;
+        if ((e.key === 'ArrowUp' && sundayIndex(date) === 0) || (e.key === 'ArrowDown' && sundayIndex(date) === 6)) return;
         const next = dates[dates.indexOf(date) + delta];
         if (next) focusDate(next);
       }

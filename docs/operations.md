@@ -81,7 +81,7 @@ Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP
 - **RPC 보안**: `solitary_athlete.workout_logs`의 직접 `anon` 조회를 회수하고, `solitary_athlete.get_workout_logs(p_secret_code, p_year)` RPC를 통해서만 유효한 시크릿 코드로 1년 데이터를 조회한다.
 - **대시보드 UI**:
   - 컴팩트 단일 라인 헤더 및 높이가 줄어든 탭 버튼.
-  - 기본 `전체 멤버` 뷰: 상단 4대 월간 KPI (1. 이번 달 고운, 2. 총 운동 일수, 3. 가장 푸른 요일, 4. 1인당 평균 일수), 하단 타임라인 숨김.
+  - 기본 `전체 멤버` 뷰: 상단 5대 월간 KPI (1. 운동왕 👑, 2. 이번 달 고운, 3. 총 운동 일수, 4. 가장 푸른 요일, 5. 1인당 평균 일수), 하단 타임라인 숨김.
   - 개별 유저 뷰: 1년(365일) 잔디 그리드 및 `#남겨둔운동` 메모 타임라인 노출.
   - 시크릿 코드 미입력/만료 시 모달 팝업으로 재입력 유도, URL `?code=...` 진입 시 `localStorage` 자동 저장 후 주소창 쿼리 정리.
 

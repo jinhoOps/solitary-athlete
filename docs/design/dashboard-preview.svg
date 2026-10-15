@@ -607,9 +607,9 @@
 <rect x="832" y="628" width="10" height="14" rx="3" fill="#E8EDE4" stroke="none" />
 <rect x="832" y="646" width="10" height="14" rx="3" fill="#E8EDE4" stroke="none" />
 <rect x="832" y="664" width="10" height="14" rx="3" fill="#E8EDE4" stroke="none" />
-<text x="72" y="621" font-size="12" font-weight="400" fill="#57665B">월</text>
-<text x="72" y="657" font-size="12" font-weight="400" fill="#57665B">수</text>
-<text x="72" y="693" font-size="12" font-weight="400" fill="#57665B">금</text>
+
+
+
 <text x="72" y="774" font-size="12" font-weight="400" fill="#57665B">색이 진할수록 더 많은 멤버가 운동했어요</text>
 <rect x="716" y="754" width="144" height="44" rx="10" fill="#FFFFFF" stroke="#D3DBD0" />
 <text x="728" y="782" font-size="14" font-weight="600" fill="#57665B">오늘로 이동</text>
@@ -902,4 +902,4 @@
 <rect x="1262" y="341" width="170" height="56" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="1274" y="364" font-size="12" fill="#18271E">1인당 평균 일수</text>
 <text x="1274" y="389" font-size="16" fill="#18271E">7.2일</text>
-</g></svg>
+<text x="72" y="621" font-size="12" fill="#57665B">일</text><text x="72" y="639" font-size="12" fill="#57665B">월</text><text x="72" y="657" font-size="12" fill="#57665B">화</text><text x="72" y="675" font-size="12" fill="#57665B">수</text><text x="72" y="693" font-size="12" fill="#57665B">목</text><text x="72" y="711" font-size="12" fill="#57665B">금</text><text x="72" y="729" font-size="12" fill="#57665B">토</text></g></svg>

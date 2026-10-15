@@ -4,6 +4,7 @@ import { loadDashboard, loadTimeline } from './api';
 import { dayAt, shortDate } from './dates';
 import {el,button} from './dom';
 import {renderGrassCard} from './grass-card';
+import {renderDashboardControls} from './dashboard-controls';
 import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -12,7 +13,6 @@ let today = dayAt();
 let data: DashboardData;
 const currentYear = Number(today.slice(0, 4));
 let selectedYear = currentYear;
-let years = Array.from({ length: 5 }, (_, i) => currentYear - i).filter(y => y > 0);
 let currentKPIs: DashboardData['kpis'] | undefined;
 const knownMembers = new Map<string, string>();
 let selected: string | null = null;
@@ -52,19 +52,19 @@ kpiSection.setAttribute('aria-label', '이번 달 운동 요약');
 const feedback = el('p', 'sr-only');
 feedback.setAttribute('aria-live', 'polite');
 
-const filters = el('nav', 'member-filter');
-filters.setAttribute('aria-label', '멤버 선택');
+const filters = el('div', 'controls-slot');
 
 const cards = el('section', 'cards');
 cards.setAttribute('aria-label', '연도별 운동 잔디');
 const yearBar = el('div', 'year-bar');
 yearBar.hidden = true;
-const yearFilters = el('nav', 'year-filter');
-yearFilters.setAttribute('aria-label', '잔디 연도 선택');
+const yearFilters = el('aside', 'year-filter');
+yearFilters.setAttribute('aria-label', '연도 탐색');
 const yearTitle = el('div');
 const todayCaption = el('p', 'caption');
 yearTitle.append(el('h2', '', '연도별 운동 잔디'), todayCaption);
-yearBar.append(yearTitle, yearFilters);
+yearBar.append(yearTitle);
+const boardLayout=el('div','dashboard-layout');boardLayout.append(cards,yearFilters);
 
 const heading = el('div', 'section-heading');
 heading.append(el('h2', '', '남겨 둔 운동'), el('span', 'caption', '날짜별 기록 · 최신순'));
@@ -73,7 +73,7 @@ const logList = el('section', 'timeline');
 logList.setAttribute('aria-label', '운동 메모');
 
 const moreArea = el('div', 'more-area');
-main.append(status, kpiSection, filters, yearBar, cards, heading, logList, moreArea, feedback);
+main.append(status, kpiSection, filters, yearBar, boardLayout, heading, logList, moreArea, feedback);
 
 const footer = el('footer', 'footer');
 footer.append(
@@ -185,40 +185,16 @@ function fetchTimeline(append: boolean) {
 }
 
 function renderFilters() {
-  filters.replaceChildren();
-  for (const member of [{ id: null, name: '전체 멤버' }, ...[...knownMembers].sort((a,b)=>a[1].localeCompare(b[1],'ko') || a[0].localeCompare(b[0])).map(([id,name])=>({id,name}))]) {
-    const b = button(member.name, () => {
-      selected = member.id;
-      filters.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-      renderKPIs();
-      renderCards();
-      fetchTimeline(false);
-    }, 'filter-button');
-    b.setAttribute('aria-pressed', String(member.id === selected));
-    filters.append(b);
-  }
-}
-
-function renderYears() {
-  yearBar.hidden = false;
-  yearFilters.replaceChildren();
-  for (const year of years) {
-    const b = button(`${year}년`, () => {
-      selectedYear = year;
-      yearFilters.querySelectorAll('[aria-pressed]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-      void init(true);
-    }, 'filter-button');
-    b.setAttribute('aria-pressed', String(year === selectedYear));
-    yearFilters.append(b);
-  }
-  if (years.at(-1)! > 1) {
-    yearFilters.append(button('이전 연도 더 보기', () => {
-      const last = years.at(-1)!;
-      years = [...years, ...Array.from({length:5}, (_,i)=>last-i-1).filter(y=>y>0)];
-      renderYears();
-      yearFilters.querySelectorAll<HTMLButtonElement>('button').item(years.length - 5)?.focus();
-    }, 'button secondary'));
-  }
+  const focused=(document.activeElement as HTMLElement)?.dataset.control;
+  filters.firstElementChild?.dispatchEvent(new Event('dispose'));
+  const controls=renderDashboardControls({
+    roster:data.roster,selectedMemberId:selected,selectedYear,
+    onMemberChange:id=>{selected=id;renderKPIs();renderCards();fetchTimeline(false);},
+    onYearChange:year=>{selectedYear=year;void init(true);},
+  });
+  filters.replaceChildren(controls);
+  yearFilters.replaceChildren(controls.querySelector('.year-controls')!);
+  if(focused)document.querySelectorAll<HTMLElement>('[data-control]').forEach(e=>{if(e.dataset.control===focused)e.focus({preventScroll:true});});
 }
 
 function showAuthModal(errorMsg?: string) {
@@ -291,12 +267,12 @@ async function init(preserveSelection = false) {
     const loaded = await loadDashboard(config, code, requestedYear);
     if (request !== generation) return;
     data = loaded;
-    if (requestedYear === currentYear) currentKPIs = data.kpis;
+    currentKPIs = data.kpis;
+    knownMembers.clear();
     for (const member of data.roster) {
-      if (requestedYear === currentYear || !knownMembers.has(member.id)) knownMembers.set(member.id, member.name);
+      knownMembers.set(member.id, member.name);
     }
     if (!preserveSelection) selected = null;
-    if (!yearFilters.children.length) renderYears();
     yearBar.hidden = false;
     updateStatus();
     renderKPIs();
@@ -306,6 +282,7 @@ async function init(preserveSelection = false) {
     feedback.textContent = '운동 기록을 불러왔어요.';
   } catch (err: any) {
     if (request !== generation) return;
+    filters.firstElementChild?.dispatchEvent(new Event('dispose'));
     filters.replaceChildren();
     kpiSection.replaceChildren();
     heading.hidden = true;
@@ -316,6 +293,7 @@ async function init(preserveSelection = false) {
     if (isSecretError) {
       localStorage.removeItem('mukmuk_secret_code');
       yearBar.hidden = true;
+      yearFilters.replaceChildren();cards.replaceChildren();
       showAuthModal('시크릿 코드가 올바르지 않거나 만료되었습니다.');
     } else {
       const error = el('div', 'empty-card error-state');
