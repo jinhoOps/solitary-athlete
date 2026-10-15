@@ -8,7 +8,7 @@ export function formatGrass(name: string, rows: WorkoutLog[], today: string, las
   const dates = new Set(rows.map(r => r.log_date));
   const photos = new Set(rows.filter(r => r.has_photo).map(r => r.log_date));
   const counts = stats(dates, today);
-  const icons = emojis?.every(Boolean) ? ['⬜', `<:mukmuk_grass:${emojis[0]}>`, `<:mukmuk_photo:${emojis[1]}>`] : ['⬜', '🟩', '🌲'];
+  const icons = emojis?.every(Boolean) ? ['⬛', `<:mukmuk_grass:${emojis[0]}>`, `<:mukmuk_photo:${emojis[1]}>`] : ['⬛', '🟩', '🌲'];
   const cells = Array.from({length:28}, (_, i) => {
     const d = shiftDay(today, i - 27); return icons[photos.has(d) ? 2 : dates.has(d) ? 1 : 0];
   });

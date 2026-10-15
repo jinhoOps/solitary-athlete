@@ -21,17 +21,17 @@ def test_14_day_board_weekday_headers_and_two_rows():
 
     # Check 2 rows of 7 cells
     # Last week (10-05 Mon .. 10-11 Sun): 10-07 Wed had text log <:mukmuk_grass:111>
-    # Mon: ⬜, Tue: ⬜, Wed: <:mukmuk_grass:111>, Thu: ⬜, Fri: ⬜, Sat: ⬜, Sun: ⬜
-    expected_row1 = '⬜⬜⬜<:mukmuk_grass:111>⬜⬜⬜'
+    # Sun: ⬛, Mon: ⬛, Tue: ⬛, Wed: <:mukmuk_grass:111>, Thu: ⬛, Fri: ⬛, Sat: ⬛
+    expected_row1 = '⬛⬛⬛<:mukmuk_grass:111>⬛⬛⬛'
     # This week (10-12 Mon .. 10-18 Sun): 10-14 Wed had photo <:mukmuk_photo:222>
-    # Mon: ⬜, Tue: ⬜, Wed: <:mukmuk_photo:222>, Thu..Sun: ⬜ (future/empty)
-    expected_row2 = '⬜⬜⬜<:mukmuk_photo:222>⬜⬜⬜'
+    # Sun: ⬛, Mon: ⬛, Tue: ⬛, Wed: <:mukmuk_photo:222>, Thu..Sat: ⬛ (future/empty)
+    expected_row2 = '⬛⬛⬛<:mukmuk_photo:222>⬛⬛⬛'
 
     assert expected_row1 in content
     assert expected_row2 in content
 
     assert '[웹보드 바로 가기](https://jinhoops.github.io/solitary-athlete/?code=mukmuk-fixture)' in content
-    assert '> ⬜ 기록 없음 · <:mukmuk_grass:111> 텍스트 · <:mukmuk_photo:222> 사진 포함' in content
+    assert '> ⬛ 기록 없음 · <:mukmuk_grass:111> 텍스트 · <:mukmuk_photo:222> 사진 포함' in content
 
 def test_empty_board_message():
     now = datetime(2026, 10, 14, 11, 28, tzinfo=timezone.utc)

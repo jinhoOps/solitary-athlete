@@ -51,6 +51,7 @@ it('retains all five record days with bounded previews and twenty-eight cells', 
   expect(content).toContain('누적 5일'); expect(content).toContain('5분');
   for (const day of ['10.14','10.13','10.12','10.11','10.10']) expect(content).toContain(day);
   expect(content).not.toContain('@everyone'); expect(content).toContain('🌲');
+  expect(content).toContain('⬛ 기록 없음'); expect(content).toContain('⬛'); expect(content).not.toContain('⬜');
 });
 
 it('persists encrypted preparation before publishing and schedules from the successful display time', async () => {

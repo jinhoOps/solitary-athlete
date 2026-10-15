@@ -19,7 +19,7 @@ def grass_lines(dates, photos, this_sunday, today, emojis=None):
     row1 = []
     for i in range(7):
         d = (last_sunday + timedelta(days=i)).isoformat()
-        row1.append(photo if d in photos else record if d in dates else '⬜')
+        row1.append(photo if d in photos else record if d in dates else '⬛')
 
     # Row 2: This week (Sunday .. Saturday)
     row2 = []
@@ -27,9 +27,9 @@ def grass_lines(dates, photos, this_sunday, today, emojis=None):
         cur = this_sunday + timedelta(days=i)
         d = cur.isoformat()
         if cur > today:
-            row2.append('⬜')
+            row2.append('⬛')
         else:
-            row2.append(photo if d in photos else record if d in dates else '⬜')
+            row2.append(photo if d in photos else record if d in dates else '⬛')
 
     return [''.join(row1), ''.join(row2)]
 
@@ -54,9 +54,9 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
         footer_parts.append(f'[웹보드 바로 가기]({link})')
     elif dashboard_url:
         footer_parts.append('웹보드 접속 링크는 #공지에서 확인해 주세요.')
-    legend = '> ⬜ 기록 없음 · 🟩 텍스트 · 🌲 사진 포함'
+    legend = '> ⬛ 기록 없음 · 🟩 텍스트 · 🌲 사진 포함'
     if emojis and all(emojis):
-        legend = f'> ⬜ 기록 없음 · <:mukmuk_grass:{emojis[0]}> 텍스트 · <:mukmuk_photo:{emojis[1]}> 사진 포함'
+        legend = f'> ⬛ 기록 없음 · <:mukmuk_grass:{emojis[0]}> 텍스트 · <:mukmuk_photo:{emojis[1]}> 사진 포함'
     footer_parts.append(legend)
     footer = '\n\n' + '\n'.join(footer_parts)
 
