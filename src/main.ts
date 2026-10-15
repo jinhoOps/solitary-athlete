@@ -1,8 +1,10 @@
 import './style.css';
 import markUrl from '../assets/brand/mark.svg';
 import { loadDashboard, loadTimeline } from './api';
-import { calendarYear, dayAt, mondayIndex, shortDate, stats } from './dates';
-import type { DashboardData, Member, WorkoutLog } from './types';
+import { dayAt, shortDate } from './dates';
+import {el,button} from './dom';
+import {renderGrassCard} from './grass-card';
+import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const config = __PUBLIC_CONFIG__;
@@ -19,20 +21,6 @@ let more = false;
 let generation = 0;
 const cardReveals = new Map<string, () => void>();
 const cardOpeners = new Map<string, (date: string, log?: WorkoutLog) => void>();
-
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text?: string): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
-
-function button(text: string, action: () => void, className = 'button secondary') {
-  const b = el('button', className, text);
-  b.type = 'button';
-  b.onclick = action;
-  return b;
-}
 
 // Brand Header
 const header = el('header', 'brand-header');
@@ -134,213 +122,14 @@ function renderKPIs() {
   kpiSection.hidden = selected !== null;
 }
 
-function workoutCard(member: Member): HTMLElement {
-  const card = el('article', 'workout-card');
-  const top = el('div', 'card-heading');
-  const cells = calendarYear(selectedYear);
-  top.append(el('h3', '', member.name), el('span', 'caption', `${selectedYear}년 · 1월 1일 — 12월 31일`));
-
-  const metrics = el('dl', 'metrics');
-  const counts = stats(member.dates, today);
-  const currentCounts = data.currentStats?.get(member.id) ?? counts;
-  const metricsForYear = selectedYear === currentYear
-    ? [['이번 주', currentCounts.week], ['연속', currentCounts.streak], [`${selectedYear}년 운동`, counts.total]] as const
-    : [[`${selectedYear}년 운동`, counts.total]] as const;
-  for (const [label, value] of metricsForYear) {
-    const item = el('div');
-    item.append(el('dt', 'caption', label), el('dd', '', `${value}일`));
-    metrics.append(item);
-  }
-
-  const content = el('div', 'grass-content');
-  const visual = el('div', 'grass-visual');
-  const months = el('div', 'month-labels');
-  const gridWrap = el('div', 'grid-wrap');
-  const weekdays = el('div', 'weekday-labels');
-  for (const d of ['월', '화', '수', '목', '금', '토', '일']) weekdays.append(el('span', '', d));
-
-  const grid = el('div', 'grass-grid');
-  grid.setAttribute('role', 'group');
-  grid.setAttribute('aria-label', `${member.name}의 ${selectedYear}년 잔디, 화살표로 날짜 이동`);
-
-  const details = el('section', 'date-detail');
-  details.hidden = true;
-  details.setAttribute('aria-label', '날짜 상세');
-  const preview = el('p', 'grass-preview caption', '날짜를 선택하면 운동 메모를 볼 수 있어요.');
-
-  const dayButtons = new Map<string, HTMLButtonElement>();
-  let opened: string | null = null;
-  let openedLog: WorkoutLog | undefined;
-
-  const memoFor = (date: string) =>
-    openedLog?.log_date === date ? openedLog : data.logs.find(r => r.user_id === member.id && r.log_date === date);
-  const levelFor = (date: string) => (!member.dates.has(date) ? 0 : member.photos.has(date) ? 2 : 1);
-  const description = (date: string, log = memoFor(date)) =>
-    `${date} · ${date > today ? '아직 오지 않은 날짜' : ['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log ? ` · ${log.memo || '사진 인증'}` : ''}`;
-
-  function close() {
-    const date = opened;
-    opened = null;
-    openedLog = undefined;
-    details.hidden = true;
-    for (const cell of dayButtons.values()) cell.setAttribute('aria-expanded', 'false');
-    if (date) {
-      const cell = dayButtons.get(date);
-      cell?.focus({preventScroll:true});
-      revealDate(date);
-      cell?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
-    }
-  }
-
-  function open(date: string, log?: WorkoutLog) {
-    if (opened === date && !log) {
-      close();
-      return;
-    }
-    opened = date;
-    openedLog = log;
-    const title = el('div', 'detail-heading');
-    const closeButton = button('×', close, 'button icon-button');
-    closeButton.setAttribute('aria-label', '날짜 상세 닫기');
-    const detailHeading = el('h4', '', `${date} · ${['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}`);
-    detailHeading.tabIndex = -1;
-    title.append(detailHeading, closeButton);
-    details.replaceChildren(title, el('p', 'memo', memoFor(date)?.memo || (levelFor(date) ? '사진 인증' : '기록 없음')));
-    details.hidden = false;
-    for (const [d, cell] of dayButtons) cell.setAttribute('aria-expanded', String(d === date));
-    requestAnimationFrame(() => {
-      if (opened !== date || !card.isConnected) return;
-      revealDate(date);
-      details.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
-      detailHeading.focus({preventScroll:true});
-    });
-  }
-
-  cardOpeners.set(member.id, (date, log) => {
-    open(date, log);
-  });
-
-  let previousMonth = '';
-  for (let i = 0; i < cells.length; i += 7) {
-    const date = cells.slice(i, i + 7).find(Boolean);
-    const month = date?.slice(5, 7) ?? '';
-    const label = el('span', '', month && month !== previousMonth ? `${Number(month)}월` : '');
-    months.append(label);
-    previousMonth = month;
-  }
-
-  const dates = cells.filter((d): d is string => d !== null && d <= today);
-  const entryDate = dates.includes(today) ? today : dates.at(-1);
-
-  function focusDate(date: string) {
-    for (const [d, cell] of dayButtons) cell.tabIndex = d === date ? 0 : -1;
-    dayButtons.get(date)?.focus();
-  }
-
-  for (const date of cells) {
-    if (!date) {
-      grid.append(el('span', 'grass-padding'));
-      continue;
-    }
-    const cell = button('', () => open(date), 'grass-cell');
-    cell.dataset.date = date;
-    cell.dataset.today = String(date === today);
-    cell.dataset.level = String(levelFor(date));
-    cell.disabled = date > today;
-    cell.tabIndex = date === entryDate ? 0 : -1;
-    cell.setAttribute('aria-label', description(date));
-    cell.setAttribute('aria-expanded', 'false');
-    cell.onfocus = () => {
-      for (const [d, b] of dayButtons) b.tabIndex = d === date ? 0 : -1;
-      preview.textContent = description(date);
-      revealDate(date);
-    };
-    cell.onmouseenter = () => {
-      preview.textContent = description(date);
-    };
-    cell.onmouseleave = () => {
-      if (document.activeElement !== cell) preview.textContent = '날짜를 선택하면 운동 메모를 볼 수 있어요.';
-    };
-    cell.onkeydown = e => {
-      const delta = ({ ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 } as Record<string, number>)[e.key];
-      if (delta !== undefined) {
-        e.preventDefault();
-        if ((e.key === 'ArrowUp' && mondayIndex(date) === 0) || (e.key === 'ArrowDown' && mondayIndex(date) === 6)) return;
-        const next = dates[dates.indexOf(date) + delta];
-        if (next) focusDate(next);
-      }
-    };
-    dayButtons.set(date, cell);
-    grid.append(cell);
-  }
-
-  card.onkeydown = e => {
-    if (e.key === 'Escape' && opened) {
-      e.preventDefault();
-      close();
-    }
-  };
-  gridWrap.append(weekdays, grid);
-
-  const grassScroll = el('div', 'grass-scroll');
-  grassScroll.append(months, gridWrap);
-
-  function revealDate(date: string) {
-    if (!card.isConnected) return;
-    const cell = dayButtons.get(date);
-    if (!cell) return;
-    const target = cell.getBoundingClientRect(), viewport = grassScroll.getBoundingClientRect();
-    grassScroll.scrollLeft += target.left - viewport.left - (viewport.width - target.width) / 2;
-  }
-  cardReveals.set(member.id, () => {
-    const date = opened ?? (selectedYear === currentYear ? today : null);
-    if (date) revealDate(date);
-  });
-
-  const legend = el('div', 'legend');
-  for (const [level, text] of ['기록 없음', '텍스트 인증', '사진 포함'].entries()) {
-    const item = el('span');
-    const swatch = el('span', 'swatch');
-    swatch.dataset.level = String(level);
-    item.append(swatch, document.createTextNode(text));
-    legend.append(item);
-  }
-
-  if (selectedYear === currentYear) {
-    const goToday = button(`오늘 · ${shortDate(today)}`, () => {
-      focusDate(today);
-      revealDate(today);
-      dayButtons.get(today)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
-    }, 'button secondary today-action');
-    goToday.setAttribute('aria-label','오늘 날짜로 이동');
-    legend.append(goToday);
-  }
-  visual.append(grassScroll, legend, preview);
-  content.append(visual, details);
-  card.append(top, metrics, content);
-  return card;
-}
-
 function renderCards() {
   todayCaption.textContent = `오늘 · ${today} KST`;
-  cardOpeners.clear();
-  cardReveals.clear();
-  cards.replaceChildren();
-  const members = data.members.filter(m => !selected || m.id === selected);
-  if (selected && !members.length && knownMembers.has(selected)) {
-    members.push({id: selected, name: knownMembers.get(selected)!, dates: new Set(), photos: new Set()});
-  }
-  if (!members.length) {
-    const empty = el('div', 'empty-card');
-    empty.append(
-      el('h3', '', selectedYear === currentYear ? '첫 잔디를 기다리고 있어요.' : `${selectedYear}년에 남긴 운동이 없어요.`),
-      el('p', 'secondary-text', '#오운완에 오늘의 운동을 남겨 보세요.')
-    );
-    cards.append(empty);
-  } else {
-    members.forEach(m => cards.append(workoutCard(m)));
-    requestAnimationFrame(() => cardReveals.forEach(reveal => reveal()));
-  }
+  cardOpeners.clear();cardReveals.clear();
+  const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
+  const card=renderGrassCard({year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats});
+  cards.replaceChildren(card.element);
+  cardOpeners.set(selected??'ALL',card.openDate);cardReveals.set(selected??'ALL',card.revealToday);
+  requestAnimationFrame(card.revealToday);
 }
 
 function renderTimeline() {
@@ -491,7 +280,7 @@ async function init(preserveSelection = false) {
     if (request !== generation) return;
     data = loaded;
     if (requestedYear === currentYear) currentKPIs = data.kpis;
-    for (const member of data.members) {
+    for (const member of data.roster) {
       if (requestedYear === currentYear || !knownMembers.has(member.id)) knownMembers.set(member.id, member.name);
     }
     if (!preserveSelection) selected = null;

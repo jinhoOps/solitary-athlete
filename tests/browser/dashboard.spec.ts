@@ -5,7 +5,7 @@ const dangerous = '<img src=x onerror="window.attacked=true">';
 const logs = Array.from({ length: 45 }, (_, n) => ({
   user_id: n < 35 ? '2' : '1',
   username: n < 35 ? '하루' : dangerous,
-  log_date: new Date(Date.UTC(2026, 9, 14 - Math.floor(n / 2))).toISOString().slice(0, 10),
+  log_date: new Date(Date.UTC(2026, 9, 14 - n)).toISOString().slice(0, 10),
   memo: n === 0 ? '' : (n === 35 ? dangerous : '가볍게 30분 걷기\n스트레칭'),
   has_photo: n < 2,
   verification_count: 1,
@@ -28,7 +28,10 @@ async function fixture(
       await route.fulfill({ json: [{ last_success_at: '2026-10-14T08:17:00Z' }] });
       return;
     }
-    if (url.pathname.endsWith('rpc/get_workout_logs')) {
+    if(url.pathname.endsWith('rpc/get_dashboard_members')) {
+      await route.fulfill({json:mode==='empty'?[]:[{user_id:'1',username:dangerous},{user_id:'2',username:'하루'},{user_id:'3',username:'과거 전용'}]});return;
+    }
+    if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       if (mode === 'error') {
         await route.fulfill({ status: 503, json: { message: 'unavailable' } });
         return;
@@ -58,14 +61,15 @@ test('photo grass, safe text, all-history stats, 4 KPIs, and member filtering', 
   await expect(page.locator('.timeline')).toBeHidden();
 
   const cards = page.locator('.workout-card');
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(1);
   await expect(cards.first().locator('.grass-cell[data-date]')).toHaveCount(365);
-  await expect(cards.filter({ hasText: '하루' }).locator(`[data-date="${today}"]`)).toHaveAttribute('data-level', '2');
+  await expect(cards.first().locator(`[data-date="${today}"]`)).toHaveAttribute('data-count', '1');
   await expect(page.locator('#app img[src="x"]')).toHaveCount(0);
   expect(await page.evaluate(() => (window as unknown as { attacked?: boolean }).attacked)).toBeUndefined();
 
   await page.getByRole('button', { name: '하루', exact: true }).click();
   await expect(cards).toHaveCount(1);
+  await expect(cards.first().locator(`[data-date="${today}"]`)).toHaveAttribute('data-level','2');
   await expect(page.locator('.kpi-section')).toBeHidden();
   await expect(page.locator('.timeline')).toBeVisible();
   await expect(page.locator('.timeline-item')).toHaveCount(30);
@@ -107,7 +111,7 @@ test('secret code modal requires code and unlocks dashboard', async ({ page }) =
   await page.locator('.modal-input').fill('test-code');
   await page.getByRole('button', { name: '확인' }).click();
   await expect(modal).toBeHidden();
-  await expect(page.locator('.workout-card')).toHaveCount(2);
+  await expect(page.locator('.workout-card')).toHaveCount(1);
 });
 
 test('URL code parameter automatically stores code and cleans URL', async ({ page }) => {
@@ -118,14 +122,14 @@ test('URL code parameter automatically stores code and cleans URL', async ({ pag
       await route.fulfill({ json: [{ last_success_at: '2026-10-14T08:17:00Z' }] });
       return;
     }
-    if (url.pathname.endsWith('rpc/get_workout_logs')) {
+    if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       await route.fulfill({ json: logs });
       return;
     }
     await route.fulfill({ json: [] });
   });
   await page.goto('./?code=mukmuk-query&from=discord#grass');
-  await expect(page.locator('.workout-card')).toHaveCount(2);
+  await expect(page.locator('.workout-card')).toHaveCount(1);
   const stored = await page.evaluate(() => localStorage.getItem('mukmuk_secret_code'));
   expect(stored).toBe('mukmuk-query');
   expect(page.url()).not.toContain('code=');
@@ -147,7 +151,7 @@ test('empty state and failure are distinct and retry succeeds', async ({ page })
   await page.unroute('**/rest/v1/**');
   await page.route('**/rest/v1/**', r => {
     const url = new URL(r.request().url());
-    if (url.pathname.endsWith('rpc/get_workout_logs')) {
+    if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       return r.fulfill({ json: [] });
     }
     return r.fulfill({ json: [] });
@@ -179,11 +183,11 @@ test('supports 200 percent text scaling without a page overflow', async ({ page 
 
 test('switches full calendar years while preserving selected member and keyboard entry',async({page})=>{
   await fixture(page);
-  const card=page.locator('.workout-card').filter({hasText:'하루'});
+  const card=page.locator('.workout-card');
   await expect(card.locator('[data-date="2026-01-01"]')).toHaveCount(1);
   await expect(card.locator('[data-date="2026-12-31"]')).toBeDisabled();
   await page.getByRole('button',{name:'하루',exact:true}).click();
-  const request=page.waitForRequest(r=>r.url().includes('/rpc/get_workout_logs') && r.postDataJSON()?.p_year===2025);
+  const request=page.waitForRequest(r=>r.url().includes('/rpc/get_workout_logs_page') && r.postDataJSON()?.p_year===2025);
   await page.getByRole('button',{name:'2025년',exact:true}).click();
   await request;
   await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
@@ -211,16 +215,16 @@ test('ignores a slower response for a previously selected year',async({page})=>{
   await fixture(page);
   let release!:()=>void;
   const gate=new Promise<void>(resolve=>{release=resolve;});
-  await page.route('**/rpc/get_workout_logs',async route=>{
+  await page.route('**/rpc/get_workout_logs_page',async route=>{
     const year=route.request().postDataJSON().p_year;
     if(year===2025)await gate;
     await route.fulfill({json:[{...logs[0],log_date:`${year}-01-02`,memo:`${year} 기록`}]});
   });
-  const pending=page.waitForRequest(r=>r.url().includes('rpc/get_workout_logs') && r.postDataJSON().p_year===2025);
+  const pending=page.waitForRequest(r=>r.url().includes('rpc/get_workout_logs_page') && r.postDataJSON().p_year===2025);
   await page.getByRole('button',{name:'2025년',exact:true}).click();await pending;
   await page.getByRole('button',{name:'2024년',exact:true}).click();
   await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
-  const settled=page.waitForResponse(r=>r.url().includes('rpc/get_workout_logs') && r.request().postDataJSON().p_year===2025);
+  const settled=page.waitForResponse(r=>r.url().includes('rpc/get_workout_logs_page') && r.request().postDataJSON().p_year===2025);
   release();await settled;
   await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
   await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
@@ -228,7 +232,7 @@ test('ignores a slower response for a previously selected year',async({page})=>{
 
 test('reveals today automatically without stealing focus, then reveals selected date and detail',async({page})=>{
   await page.setViewportSize({width:360,height:600});await fixture(page);
-  const card=page.locator('.workout-card').filter({hasText:'하루'});
+  const card=page.locator('.workout-card');
   const cell=card.locator(`[data-date="${today}"]`),scroll=card.locator('.grass-scroll');
   await expect(async()=>{
     const a=await cell.boundingBox(),b=await scroll.boundingBox();
@@ -236,7 +240,7 @@ test('reveals today automatically without stealing focus, then reveals selected 
   }).toPass();
   await expect(cell).not.toBeFocused();
   await cell.click();
-  const title=card.locator('.date-detail h4');
+  const title=card.locator('.detail-heading h4');
   await expect(title).toBeFocused();await expect(title).toBeInViewport();
   await page.getByRole('button',{name:'날짜 상세 닫기'}).click();await expect(cell).toBeFocused();
   await scroll.evaluate(e=>{e.scrollLeft=0;});
@@ -244,3 +248,18 @@ test('reveals today automatically without stealing focus, then reveals selected 
   await expect(cell).toBeFocused();
   const a=await cell.boundingBox(),b=await scroll.boundingBox();expect(a!.x).toBeGreaterThanOrEqual(b!.x);
 });
+
+ test('all-history roster keeps the denominator stable and date detail below the graph',async({page})=>{
+ await fixture(page);
+ const cell=page.locator(`[data-date="${today}"]`);
+ await expect(cell).toHaveAttribute('data-count','1');
+ await expect(cell).toHaveAttribute('aria-label',/전체 3명 중 1명 운동/);
+ await cell.click();
+ await expect(page.locator('.date-detail')).toContainText('사진 포함 1명');
+ const detail=await page.locator('.date-detail').boundingBox(),graph=await page.locator('.grass-scroll').boundingBox();
+ expect(detail!.y).toBeGreaterThan(graph!.y+graph!.height);
+ await page.getByRole('button',{name:'날짜 상세 닫기'}).click();
+ await page.getByRole('button',{name:'과거 전용',exact:true}).click();
+ await expect(page.locator('.workout-card')).toContainText('과거 전용');
+ await expect(page.locator('.grass-cell[data-level="1"]')).toHaveCount(0);
+ });
