@@ -1,11 +1,5 @@
-import type { WorkoutLog } from './types';
-
-export interface MonthlyKPIs {
-  activeMembers: number;        // 이번 달 고운 (명)
-  totalWorkoutDays: number;     // 총 운동 일수 (일)
-  mostActiveWeekday: string;    // 가장 푸른 요일 (예: "수요일" or "-")
-  averageDaysPerMember: number; // 1인당 평균 일수 (소수점 1자리)
-}
+import {dayAt} from './dates';
+import type { MonthlyKPIs, WorkoutLog } from './types';
 
 const WEEKDAY_NAMES = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
@@ -15,9 +9,10 @@ export function calculateMonthlyKPIs(logs: WorkoutLog[], now: Date): MonthlyKPIs
     year: 'numeric',
     month: '2-digit',
   });
-  const currentMonthPrefix = kstFormatter.format(now); // "YYYY-MM"
+  const parts=kstFormatter.formatToParts(now);
+  const currentMonthPrefix=`${parts.find(p=>p.type==='year')!.value}-${parts.find(p=>p.type==='month')!.value}`;
 
-  const monthlyLogs = logs.filter(l => l.log_date.startsWith(currentMonthPrefix));
+  const monthlyLogs = logs.filter(l => l.log_date.startsWith(currentMonthPrefix) && l.log_date<=dayAt(now));
 
   const memberDays = new Map<string, Set<string>>();
   const weekdayCounts = new Array(7).fill(0);
@@ -60,7 +55,12 @@ export function calculateMonthlyKPIs(logs: WorkoutLog[], now: Date): MonthlyKPIs
     }
   }
 
+  const maximum=Math.max(0,...[...memberDays.values()].map(d=>d.size));
+  const workoutKings=[...memberDays].filter(([,days])=>days.size===maximum).map(([id,days])=>({
+    id,days:days.size,name:monthlyLogs.find(l=>l.user_id===id)!.username,
+  })).sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
   return {
+    workoutKings,
     activeMembers,
     totalWorkoutDays,
     mostActiveWeekday,

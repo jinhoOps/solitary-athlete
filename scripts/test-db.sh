@@ -25,3 +25,5 @@ docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/mi
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" uv run pytest
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/cleanup_queue_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/secrets_rpc_test.ts
+docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261015000001_mukmuk_dashboard_paging.sql >/dev/null
+TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/dashboard_rpc_test.ts
