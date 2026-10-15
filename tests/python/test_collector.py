@@ -43,7 +43,7 @@ def test_board_splits_whole_members_disables_markdown_in_names_and_four_rows():
     pages=build_board(rows,datetime(2026,10,14,tzinfo=timezone.utc),'https://example.com')
     assert len(pages)>1 and all(len(p.encode('utf-16-le'))//2<=2000 for p in pages)
     assert all('고운 잔디밭' in p for p in pages)
-    assert sum(p.count('이번 주') for p in pages)==25
+    assert sum(p.count('누적') for p in pages)==25
     assert '@everyone' not in '\n'.join(pages)
     assert '🌲' in '\n'.join(pages)
 

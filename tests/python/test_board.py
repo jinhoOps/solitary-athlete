@@ -9,15 +9,18 @@ def test_14_day_board_weekday_headers_and_two_rows():
     rows = [
         {'user_id': '123', 'username': 'jhoops', 'log_date': '2026-10-14', 'memo': '달리기', 'has_photo': True},
         {'user_id': '123', 'username': 'jhoops', 'log_date': '2026-10-07', 'memo': '웨이트', 'has_photo': False}, # last week Wednesday
+        {'user_id': '456', 'username': 'xion', 'log_date': '2026-10-07', 'memo': '스트레칭', 'has_photo': False}, # not exercised today
     ]
     emojis = ('111', '222')
     pages = build_board(rows, now, 'https://jinhoops.github.io/solitary-athlete/', emojis=emojis, secret_code='mukmuk-fixture')
     assert len(pages) == 1
     content = pages[0]
 
-    assert content.startswith('## 🌱 고운 잔디밭\n최근 14일 · 갱신 · 10.14 20:28 KST')
-    assert 'jhoops · 이번 주 1일 · 누적 2일' in content
-    assert '일 | 월 | 화 | 수 | 목 | 금 | 토' in content
+    assert content.startswith('## 🌱 고운 잔디밭\n\n')
+    assert '🌱 jhoops · 누적 2일' in content
+    assert 'xion · 누적 1일' in content
+    assert '🌱 xion' not in content
+    assert '이번 주' not in content
 
     # Check 2 rows of 7 cells
     # Last week (10-05 Mon .. 10-11 Sun): 10-07 Wed had text log <:mukmuk_grass:111>
@@ -30,7 +33,8 @@ def test_14_day_board_weekday_headers_and_two_rows():
     assert expected_row1 in content
     assert expected_row2 in content
 
-    assert '[웹보드 바로 가기](https://jinhoops.github.io/solitary-athlete/?code=mukmuk-fixture)' in content
+    assert '[고독한 운동가 웹보드](https://jinhoops.github.io/solitary-athlete/?code=mukmuk-fixture)' in content
+    assert '> 최근 14일 · 갱신 · 10.14 20:28 KST · 일|월|화|수|목|금|토' in content
     assert '> ⬛ 기록 없음 · <:mukmuk_grass:111> 텍스트 · <:mukmuk_photo:222> 사진 포함' in content
 
 def test_empty_board_message():
@@ -42,7 +46,7 @@ def test_board_link_contains_current_secret_and_preserves_query():
     now = datetime(2026,10,14,tzinfo=timezone.utc)
     content = build_board([],now,'https://example.com/board/?from=discord#grass',secret_code='mukmuk-fixture')[0]
     assert 'https://example.com/board/?from=discord&code=mukmuk-fixture#grass' in content
-    assert '웹보드 바로 가기' in content
+    assert '고독한 운동가 웹보드' in content
 
 
 def test_board_stops_before_writes_when_lock_is_lost_during_history_read():
@@ -67,5 +71,5 @@ def test_week_resets_on_sunday_in_kst():
     rows=[{'user_id':'123','username':'하루','log_date':d,'memo':'','has_photo':False} for d in ['2026-10-10','2026-10-11']]
     saturday=build_board(rows,datetime(2026,10,10,14,59,tzinfo=timezone.utc))[0]
     sunday=build_board(rows,datetime(2026,10,10,15,0,tzinfo=timezone.utc))[0]
-    assert '이번 주 1일' in saturday
-    assert '이번 주 1일' in sunday
+    assert '⬛⬛⬛⬛⬛⬛🟩' in saturday
+    assert '⬛⬛⬛⬛⬛⬛🟩\n🟩⬛⬛⬛⬛⬛⬛' in sunday

@@ -37,8 +37,8 @@ def units(text): return len(text.encode('utf-16-le')) // 2
 
 def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
     today = now.astimezone(KST).date()
+    today_iso = today.isoformat()
     this_sunday = today - timedelta(days=(today.weekday()+1)%7)
-    sunday_iso = this_sunday.isoformat()
     members = {}
     for row in rows:
         uid = row['user_id']
@@ -47,13 +47,14 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
         if d > today.isoformat(): continue
         member['dates'].add(d)
         if row['has_photo']: member['photos'].add(d)
-    header = f'## 🌱 {MARKER}\n최근 14일 · 갱신 · {now.astimezone(KST):%m.%d %H:%M} KST'
+    header = f'## 🌱 {MARKER}'
     footer_parts = []
     link = dashboard_link(dashboard_url, secret_code)
     if link:
-        footer_parts.append(f'[웹보드 바로 가기]({link})')
+        footer_parts.append(f'[고독한 운동가 웹보드]({link})')
     elif dashboard_url:
         footer_parts.append('웹보드 접속 링크는 #공지에서 확인해 주세요.')
+    footer_parts.append(f'> 최근 14일 · 갱신 · {now.astimezone(KST):%m.%d %H:%M} KST · 일|월|화|수|목|금|토')
     legend = '> ⬛ 기록 없음 · 🟩 텍스트 · 🌲 사진 포함'
     if emojis and all(emojis):
         legend = f'> ⬛ 기록 없음 · <:mukmuk_grass:{emojis[0]}> 텍스트 · <:mukmuk_photo:{emojis[1]}> 사진 포함'
@@ -62,8 +63,8 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None):
 
     pages, blocks = [], []
     for uid, m in sorted(members.items(), key=lambda p:(p[1]['name'],p[0])):
-        week = sum(d >= sunday_iso for d in m['dates'])
-        block = f"{safe_name(m['name'])} · 이번 주 {week}일 · 누적 {len(m['dates'])}일\n{WEEKDAYS}\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_sunday, today, emojis))
+        sprout = '🌱 ' if today_iso in m['dates'] else ''
+        block = f"{sprout}{safe_name(m['name'])} · 누적 {len(m['dates'])}일\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_sunday, today, emojis))
         candidate = header + '\n\n' + '\n\n'.join(blocks+[block]) + footer
         if units(candidate) > 1970 and blocks:
             pages.append(header + '\n\n' + '\n\n'.join(blocks) + footer); blocks=[]
