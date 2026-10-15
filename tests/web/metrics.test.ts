@@ -43,3 +43,11 @@ it('handles empty logs gracefully without NaN or errors', () => {
   expect(kpis.mostActiveWeekday).toBe('-');
   expect(kpis.averageDaysPerMember).toBe(0);
 });
+
+it('selects all tied kings by unique KST month days, excluding future records',()=>{
+ const row=(id:string,date:string,photo=false):WorkoutLog=>({user_id:id,username:'동명',log_date:date,memo:'',has_photo:photo,verification_count:1});
+ const logs=[row('2','2026-10-01'),row('2','2026-10-01',true),row('1','2026-10-01'),row('3','2026-10-02'),row('3','2026-09-30')];
+ expect(calculateMonthlyKPIs(logs,new Date('2026-09-30T15:00:00Z')).workoutKings).toEqual([{id:'1',name:'동명',days:1},{id:'2',name:'동명',days:1}]);
+ expect(calculateMonthlyKPIs([],new Date('2026-10-01')).workoutKings).toEqual([]);
+ expect(calculateMonthlyKPIs([...logs,row('2','2026-10-02')],new Date('2026-10-02T00:00:00Z')).workoutKings).toEqual([{id:'2',name:'동명',days:2}]);
+});

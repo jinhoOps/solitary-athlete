@@ -7,6 +7,7 @@ export interface Member {
 }
 export interface PublicConfig { url: string; key: string }
 export interface MonthlyKPIs {
+  workoutKings: {id:string;name:string;days:number}[];
   activeMembers: number;
   totalWorkoutDays: number;
   mostActiveWeekday: string;

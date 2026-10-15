@@ -139,6 +139,8 @@ export async function loadDashboard(
   }
 
   const kpis = calculateMonthlyKPIs(currentLogs??logs, now);
+  for(const king of kpis.workoutKings)king.name=roster.find(m=>m.id===king.id)?.name??king.name;
+  kpis.workoutKings.sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
 
   return {
     roster,
