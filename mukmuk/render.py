@@ -84,7 +84,7 @@ def render_grass_image(rows, now, member_count=None) -> bytes:
     cell_size = 28
     cell_gap = 6
     pad_left = 60
-    pad_top = 84
+    pad_top = 48
     pad_right = 36
     pad_bottom = 54
 
@@ -94,13 +94,8 @@ def render_grass_image(rows, now, member_count=None) -> bytes:
     img = Image.new('RGBA', (width, height), COLOR_BG)
     draw = ImageDraw.Draw(img)
 
-    font_title = get_font(20)
     font_label = get_font(15)
     font_sm = get_font(13)
-
-    # Title & Meta
-    draw.text((pad_left, 24), '고독한 운동가 · 전체 잔디', fill=COLOR_TEXT, font=font_title)
-    draw.text((width - pad_right - 130, 26), f'오늘 {today:%m.%d} KST', fill=COLOR_MUTED, font=font_label)
 
     # Weekday labels (월, 수, 금)
     weekdays = ['일', '월', '화', '수', '목', '금', '토']
