@@ -44,7 +44,7 @@ GitHub 환경 `github-pages`는 main·릴리스 브랜치 배포를 허용한다
 
 ## 인증 수집 스케줄
 
-`Sync Workout Logs`는 매시 59분(`59 * * * *`)과 수동 실행을 정의한다. `mukmuk-discord-sync` concurrency로 중복 실행을 막는다.
+`Sync Workout Logs`는 매일 06:00 KST(`0 21 * * *` UTC) 보완 수집과 수동 실행을 정의한다. GitHub 내부 concurrency와 수집기 DB transaction advisory lock으로 로컬 수집과의 중복 실행도 막는다. GitHub 예약은 지연될 수 있다.
 
 **예약 워크플로우는 기본 브랜치(`main`)에서 실행된다.** 현재 기본 브랜치에 반영되어 정기 수집이 활성화되어 있으며, 필요 시 Actions 콘솔 또는 로컬 `uv run main.py`로 수동 실행할 수 있다. [GitHub schedule 규칙](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
 
@@ -116,3 +116,18 @@ CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref ol
 주간 공지, `/잔디` 결과, 상시 현황판 모두 서버에서 현재 유효한 코드를 조회해 `?code=`가 포함된 웹보드 링크를 만든다. 다른 쿼리와 앵커는 유지하고 기존 code 값은 교체한다. 코드가 없으면 기본 주소로 우회하지 않는다. 주간 공지 재실행 시 같은 코드 안내의 링크 형식도 갱신한다.
 
 웹은 링크의 코드를 저장하고 주소창에서는 code만 지운다. 올해 잔디를 그린 뒤 오늘 칸을 가로 영역 가운데에 보여주고, `오늘` 버튼으로 다시 이동할 수 있다. 상세를 열면 선택 칸과 상세 제목을 드러내고 제목으로 초점을 옮긴다. 닫으면 날짜 칸으로 돌리며 화면 폭이 바뀌어도 선택 날짜를 다시 보여준다. 초기 표시에서 페이지의 키보드 초점을 강제로 바꾸지 않는다.
+
+## macOS 기본 수집기
+
+```sh
+uv run python scripts/install_macos_scheduler.py
+launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
+```
+
+`~/Library/LaunchAgents/io.jinhoops.mukmuk.sync.plist`에 매시 00·05·…·55분 달력 예약과 등록 직후 실행을 설치한다. 사용자 로그인이 필요하며 터미널·Orca를 닫아도 실행된다. 절전 중 놓친 달력 일정은 기상 후 한 번으로 합쳐 실행한다. 전원이 꺼져 있거나 로그아웃 상태에서는 동작하지 않는다. 네트워크 실패는 다음 주기에 재시도하며 맥북을 강제로 깨우거나 켜 두지는 않는다. [Apple 예약 동작 문서](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)
+
+수집 소스·잠금 파일·의존성은 `~/Library/Application Support/mukmuk/versions/<소스 해시>/`에 설치해 개발 브랜치 변경과 분리한다. plist에는 기존 프로젝트 `.env` 경로만 들어가며 키 값은 넣지 않는다. `.env`가 이동하면 다시 설치한다. **Python 수집기 수정 후 검증·배포할 때 설치 명령을 다시 실행한다.** 이전 버전은 복구용으로 보존한다.
+
+`~/Library/Logs/mukmuk/sync.log`에는 실행 시각·결과·성공/실패가 남는다(1MB×4 회전). launchd/uv 시작 오류는 같은 폴더의 `launchd-error.log`에서 확인한다. 실행은 240초에 중단되며 중단 시 자식 프로세스도 종료한다. 수동 실행·GitHub와 겹치면 `sync_already_running`으로 건너뛴다. 마지막 정상 수집은 Supabase `sync_status.last_success_at`으로 확인한다.
+
+제거는 `uv run python scripts/install_macos_scheduler.py --uninstall`이다. 이 앱의 LaunchAgent만 제거하며 `.env`, 수집 데이터, 로그, 설치 버전은 보존한다. 미리보기는 `--dry-run`으로 plist를 출력한다.

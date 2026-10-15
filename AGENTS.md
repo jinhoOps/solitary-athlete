@@ -11,7 +11,7 @@
 
 ## 현재 단계와 읽는 순서
 
-현재는 **기능 구현·배포 검증 단계**다. Python 수집기, 서명 검증 슬래시·삭제 워커, 바닐라 TypeScript 웹보드와 CI/배포 워크플로우가 구현됐다. Pages·Edge·삭제 Cron은 배포됐고 로컬 수집·명령어 등록은 확인됐다. PR #1이 main에 병합됐고 수집 워크플로우 수동 실행이 성공했다. 현재 정기 수집은 매시 59분이다. 실행·상태는 [운영 안내](docs/operations.md), 실제 ID·권한·이력은 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)를 따른다.
+현재는 **기능 구현·배포 검증 단계**다. Python 수집기, 서명 검증 슬래시·삭제 워커, 바닐라 TypeScript 웹보드와 CI/배포 워크플로우가 구현됐다. Pages·Edge·삭제 Cron은 배포됐고 로컬 수집·명령어 등록은 확인됐다. PR #1이 main에 병합됐고 수집 워크플로우 수동 실행이 성공했다. 정기 수집은 로그인된 개발 맥북의 launchd에서 5분마다 실행하며 GitHub Actions는 매일 06:00 KST 보완 수집을 예약한다. 수집기 변경을 배포할 때는 `uv run python scripts/install_macos_scheduler.py`로 검증한 로컬 런타임도 갱신한다. 실행·상태는 [운영 안내](docs/operations.md), 실제 ID·권한·이력은 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)를 따른다.
 
 1. [README](README.md): 목적, 범위, 진행 상태.
 2. [DESIGN.md](DESIGN.md): YAML 디자인 토큰, 브랜드·타이포그래피·레이아웃·컴포넌트·반응형의 단일 기준.

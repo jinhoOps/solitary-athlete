@@ -42,15 +42,18 @@ def collect_messages(api, channel, cursor, now):
         before = page[-1]['id']
     return sorted(result,key=lambda m:int(m['id'])), ceiling
 
-def run_sync(api, store, settings, now=None):
+def run_sync(api, store, settings, now=None, check_lock=lambda: None):
     now = now or datetime.now(timezone.utc)
     guild, channel = settings['DISCORD_GUILD_ID'], settings['DISCORD_AUTH_CHANNEL_ID']
     for cid in (channel, settings['DISCORD_BOARD_CHANNEL_ID']):
         if api.channel(cid).get('guild_id')!=guild: raise ValueError('Channel does not belong to the configured guild')
     bot = api.me()
     rows, ceiling = collect_messages(api,channel,store.state(channel)['last_message_id'],now)
-    for msg in rows: store.save(msg['id'], event_from_message(msg,guild,channel))
+    for msg in rows:
+        check_lock()
+        store.save(msg['id'], event_from_message(msg,guild,channel))
     for pending in store.pending_reactions():
+        check_lock()
         try: api.react(pending['channel_id'],pending['message_id'])
         except DiscordError as e:
             if e.status != 404: raise
@@ -58,6 +61,8 @@ def run_sync(api, store, settings, now=None):
     pages = build_board(store.logs(),now,settings.get('DASHBOARD_URL',''),
         (settings.get('DISCORD_GRASS_RECORD_EMOJI_ID'),settings.get('DISCORD_GRASS_PHOTO_EMOJI_ID')),
         secret_code=store.active_secret(now) if settings.get('DASHBOARD_URL') else None)
-    update_board(api,store,settings,pages,bot['id'])
+    check_lock()
+    update_board(api,store,settings,pages,bot['id'],check_lock=check_lock)
+    check_lock()
     store.success(channel,ceiling,datetime.now(timezone.utc))
     return {'messages_scanned':len(rows),'board_pages':len(pages)}

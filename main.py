@@ -5,14 +5,19 @@ from dotenv import load_dotenv
 from mukmuk.discord import Discord
 from mukmuk.store import Store
 from mukmuk.sync import run_sync
+from mukmuk.scheduler import sync_lock
 
 def main():
-    load_dotenv()
+    load_dotenv(dotenv_path=os.environ.get('MUKMUK_ENV_FILE'))
     required = ['DISCORD_BOT_TOKEN','DISCORD_GUILD_ID','DISCORD_AUTH_CHANNEL_ID','DISCORD_BOARD_CHANNEL_ID','MUKMUK_DATABASE_URL']
     missing = [key for key in required if not os.environ.get(key)]
     if missing: raise ValueError('Missing settings: '+', '.join(missing))
-    with psycopg.connect(os.environ['MUKMUK_DATABASE_URL'], connect_timeout=10) as conn:
-        print(run_sync(Discord(os.environ['DISCORD_BOT_TOKEN']),Store(conn),dict(os.environ)))
+    with sync_lock(os.environ['MUKMUK_DATABASE_URL'], os.environ['DISCORD_AUTH_CHANNEL_ID']) as lock:
+        if lock is None:
+            print({'skipped': 'sync_already_running'}); return
+        with psycopg.connect(os.environ['MUKMUK_DATABASE_URL'], connect_timeout=10) as conn:
+            print(run_sync(Discord(os.environ['DISCORD_BOT_TOKEN']),Store(conn),dict(os.environ),
+                check_lock=lambda: lock.execute('SELECT 1')))
 
 if __name__ == '__main__':
     try: main()

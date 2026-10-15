@@ -78,3 +78,19 @@ def test_active_secret_ignores_expired_codes_and_uses_latest_valid_issue(store):
           ('fixture-expired','2026-10-13','2026-10-13','2026-10-14')""")
     assert store.active_secret(datetime(2026,10,14,9,tzinfo=timezone.utc))=='fixture-current'
     assert store.active_secret(datetime(2026,10,22,tzinfo=timezone.utc)) is None
+
+
+def test_sync_lock_excludes_another_connection_and_releases_after_failure():
+    from mukmuk.scheduler import sync_lock
+    url = os.environ.get('TEST_DATABASE_URL')
+    if not url:
+        pytest.skip('isolated PostgreSQL required')
+    channel = '1559804769327910932'
+    with pytest.raises(RuntimeError):
+        with sync_lock(url, channel) as first:
+            assert first is not None
+            with sync_lock(url, channel) as second:
+                assert second is None
+            raise RuntimeError('fixture failure')
+    with sync_lock(url, channel) as next_run:
+        assert next_run is not None
