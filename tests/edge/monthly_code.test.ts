@@ -15,8 +15,9 @@ it('generates readable secret code starting with mukmuk-', () => {
 
 it('formats notice message with codeblock and direct link', () => {
   const msg = formatMonthlyNotice('mukmuk-7k2x', 'https://example.com/board');
-  expect(msg).toContain('## 🔑 이번 달 웹보드 시크릿 코드');
-  expect(msg).toContain('매월 1일 새로운 코드가 발급됩니다.');
+  expect(msg).toContain('## 이번 달 웹보드 시크릿 코드예요 <:mukmuk_hi:1560534653893353472>');
+  expect(msg).toContain('매월 1일에 새로운 코드로 바뀌어요.');
+  expect(msg).toContain('링크로 접속하거나 코드를 한 번 입력해 두면 브라우저에 저장되어서, 유효기간 동안은 매번 입력하지 않아도 바로 열려요 🌱');
   expect(msg).toContain('```\nmukmuk-7k2x\n```');
   expect(msg).toContain('👉 [**웹보드 바로 접속하기**](https://example.com/board?code=mukmuk-7k2x)');
 
@@ -69,7 +70,7 @@ it('rotates secret, saves with 24h grace period, and posts to discord notice cha
   expect(calls[1].method).toBe('POST');
   expect(calls[1].path).toBe('/channels/1559802402893340744/messages');
   expect(calls[1].payload?.content).toContain('mukmuk-7k2x');
-  expect(calls[1].payload?.content).toContain('## 🔑 이번 달 웹보드 시크릿 코드');
+  expect(calls[1].payload?.content).toContain('## 이번 달 웹보드 시크릿 코드예요 <:mukmuk_hi:1560534653893353472>');
 });
 
 it('posts the new notice before deleting old bot notices (both weekly and monthly), preserving other authors', async () => {
