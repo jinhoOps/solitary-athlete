@@ -32,7 +32,7 @@
 | `/잔디 유저:@멤버` | 선택한 멤버의 같은 정보. 봇 계정은 조회 대상에서 제외 |
 | 결과 공개 범위 | 호출 채널 구성원에게 공개. 결과·빈 상태·조회 오류 안내 모두 표시 후 5분 삭제 |
 | 현황판 | 전원의 최근 14일 잔디를 요일별 2행(`월 \| 화 \| 수 \| 목 \| 금 \| 토 \| 일`)으로 갱신. 영구 유지하며 자동 수정 |
-| 웹 | 선택 연도(평년 365일·윤년 366일) 잔디, 전체 뷰 5대 월간 KPI, 개별 멤버 필터, 날짜별 메모 타임라인, 주간 시크릿 코드 보호 |
+| 웹 | 선택 연도(평년 365일·윤년 366일) 잔디, 전체 뷰 5대 월간 KPI, 개별 멤버 필터, 날짜별 메모 타임라인, 월간 시크릿 코드 보호 |
 
 ### 날짜·집계
 
@@ -65,7 +65,7 @@ flowchart LR
     R[Supabase Cron] --> S[삭제 Edge Function]
     Q --> S
     S --> H
-    K[매주 월요일 Cron] --> L[주간 시크릿 Edge Function]
+    K[매월 1일 Cron] --> L[월간 시크릿 Edge Function]
     L --> D
     L --> M[Discord #공지 발송]
     D --> W[GitHub Pages 웹보드 v2]
@@ -77,7 +77,7 @@ flowchart LR
 | 명령어 등록 | 지정 서버에 `/잔디`와 선택 `유저` 옵션 등록 | `register_cmd.py` |
 | Discord 수신 | 서명 검증, 서버 검사, 응답 예약·조회·게시 | `supabase/functions/mukmuk-discord-grass/` |
 | 삭제 처리 | 도래한 예약 선점, 원본 응답 삭제, 재시도 | `supabase/functions/mukmuk-discord-cleanup/` |
-| 주간 시크릿 발급 | 매주 월요일 코드 생성, 24h 유예 기간, `#공지` 채널 메시지 | `supabase/functions/mukmuk-weekly-code/` |
+| 월간 시크릿 발급 | 매월 1일 코드 생성, 24h 유예 기간, `#공지` 채널 메시지 | `supabase/functions/mukmuk-weekly-code/` (`mukmuk-monthly-code`) |
 | DB 계약 | 앱 전용 테이블·역할·권한·RPC·Cron 마이그레이션 | `supabase/migrations/` |
 | 웹 | 시크릿 인증, 5대 월간 KPI, 1년 잔디, 필터, 메모 타임라인 | `src/` (TypeScript / Vite / Vanilla) |
 
@@ -387,3 +387,12 @@ GitHub 예약은 10월 15일 01:09·05:22·08:32 KST에만 생성돼 매시간 �
 ### 2026-10-16 Discord 앱 이미지 반영
 
 최종 브랜드 파일을 실제 Discord에 적용했다. 앱 아이콘은 `assets/brand/mukmuk/profile/mukmuk-profile-1024.png`, 봇 아바타는 같은 정면의 512px PNG를 사용한다. 앱 커버(`cover_image`)와 봇 프로필 배너(`banner`)에는 하단 묵묵을 80px로 축소·좌우 반전하고 소개 문구를 400 굵기로 조정한 `assets/brand/banner.png`를 적용했다. 앱 ID와 봇 사용자 ID를 대조하고 이미지 필드만 수정했다. API 재조회와 네 이미지의 CDN HTTP 200 응답을 확인했다. 고독한 운동가 서버 아이콘은 변경 전후 동일함을 검증했다.
+
+
+### 2026-10-16 월간 시크릿 코드 전환
+
+사용자 요청에 따라 주간 시크릿 코드를 매월 1일 갱신되는 월간 시크릿 코드로 전면 전환했다.
+- **발급 주기 및 유효기간**: `activeUntil`을 다음 달 1일 00:00 KST, `expiresAt`을 그로부터 24시간 뒤로 설정하여 24시간 유예 기간을 유지한다.
+- **Discord 공지**: `#공지` 채널 문구를 `## 🔑 이번 달 웹보드 시크릿 코드` 및 `매월 1일 새로운 코드가 발급됩니다.`로 변경했다. 봇이 새 공지를 게시한 뒤 이전 주간/월간 공지 메시지를 모두 정리한다.
+- **웹 대시보드**: 모달 입력 안내 문구를 `이번 달 시크릿 코드`로 갱신했다.
+- **Edge Functions 및 Cron**: 매일 15:00 UTC (= 00:00 KST)에 실행되어 KST 1일인 경우만 디스패치하는 `solitary_athlete.mukmuk_dispatch_monthly_code()` 및 `mukmuk-monthly-code` cron(`0 15 * * *`)을 구성했다. 기존 `mukmuk-weekly-code` 함수와 내부 서명(`mukmuk-monthly-code-v1` 및 `mukmuk-weekly-code-v1`)의 상호 호환성을 유지한다.

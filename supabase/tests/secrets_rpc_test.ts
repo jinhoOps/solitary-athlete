@@ -105,7 +105,7 @@ Deno.test('secrets & RPC: active code, grace period, expiration, and anon access
   }
 });
 
-Deno.test('worker reserves one weekly code under concurrent calls', async()=>{
+Deno.test('worker reserves one monthly code under concurrent calls', async()=>{
   const url=Deno.env.get('TEST_DATABASE_URL')!;
   const {createDB}=await import('../functions/_shared/db.ts');
   const first=createDB(url.replace('postgres@','mukmuk_worker@'),true);

@@ -11,3 +11,7 @@ verify_jwt = false
 [functions.mukmuk-weekly-code]
 # Authenticated by the purpose-bound weekly-code HMAC, never public JWT bypass alone.
 verify_jwt = false
+
+[functions.mukmuk-monthly-code]
+# Authenticated by the purpose-bound monthly-code HMAC, never public JWT bypass alone.
+verify_jwt = false

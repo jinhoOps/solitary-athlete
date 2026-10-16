@@ -26,4 +26,8 @@ it('rejects signatures reused against another internal endpoint',async()=>{
   const weekly=new Headers(await signInternalHeaders(secret,'weekly-code',now));
   expect(await verifyInternalHeaders(weekly,secret,'weekly-code',now)).toBe(true);
   expect(await verifyCleanupHeaders(weekly,secret,now)).toBe(false);
+  const monthly=new Headers(await signInternalHeaders(secret,'monthly-code',now));
+  expect(await verifyInternalHeaders(monthly,secret,'monthly-code',now)).toBe(true);
+  expect(await verifyInternalHeaders(monthly,secret,'weekly-code',now)).toBe(false);
+  expect(await verifyCleanupHeaders(monthly,secret,now)).toBe(false);
 });

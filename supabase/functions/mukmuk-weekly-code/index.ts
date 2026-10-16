@@ -1,5 +1,5 @@
 import { createDB } from '../_shared/db.ts';
-import { rotateWeeklySecret } from '../_shared/weekly_code.ts';
+import { rotateMonthlySecret } from '../_shared/monthly_code.ts';
 import { discordBot, setting } from '../_shared/runtime.ts';
 import { verifyInternalHeaders } from '../_shared/internal-auth.ts';
 
@@ -7,11 +7,14 @@ const { db } = createDB(setting('MUKMUK_DATABASE_URL'));
 
 Deno.serve(async req => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-  if (!await verifyInternalHeaders(req.headers, setting('MUKMUK_CLEANUP_SECRET'), 'weekly-code'))
+  const secret = setting('MUKMUK_CLEANUP_SECRET');
+  const authorized = await verifyInternalHeaders(req.headers, secret, 'monthly-code') ||
+                     await verifyInternalHeaders(req.headers, secret, 'weekly-code');
+  if (!authorized)
     return new Response('Unauthorized', { status: 401 });
 
   try {
-    const result = await rotateWeeklySecret({
+    const result = await rotateMonthlySecret({
       db,
       discord: discordBot(setting('DISCORD_BOT_TOKEN')),
       noticeChannelId: setting('DISCORD_NOTICE_CHANNEL_ID'),
