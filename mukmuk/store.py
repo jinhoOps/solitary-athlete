@@ -60,7 +60,7 @@ class Store:
 
     def pending_reactions(self):
         with self.conn.transaction():
-            return self.conn.execute('SELECT message_id,channel_id FROM solitary_athlete.workout_events WHERE reacted_at IS NULL ORDER BY message_id::numeric').fetchall()
+            return self.conn.execute('SELECT message_id,channel_id,has_photo FROM solitary_athlete.workout_events WHERE reacted_at IS NULL ORDER BY message_id::numeric').fetchall()
 
     def reacted(self, mid):
         with self.conn.transaction():

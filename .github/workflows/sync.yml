@@ -28,5 +28,7 @@ jobs:
           DISCORD_BOARD_CHANNEL_ID: ${{ vars.DISCORD_BOARD_CHANNEL_ID }}
           DISCORD_GRASS_RECORD_EMOJI_ID: ${{ vars.DISCORD_GRASS_RECORD_EMOJI_ID }}
           DISCORD_GRASS_PHOTO_EMOJI_ID: ${{ vars.DISCORD_GRASS_PHOTO_EMOJI_ID }}
+          DISCORD_CHECK_EMOJI_ID: ${{ vars.DISCORD_CHECK_EMOJI_ID }}
+          DISCORD_FLEX_EMOJI_ID: ${{ vars.DISCORD_FLEX_EMOJI_ID }}
           DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
         run: uv run --locked main.py

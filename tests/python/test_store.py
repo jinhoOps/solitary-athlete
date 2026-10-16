@@ -39,8 +39,12 @@ def test_failed_save_leaves_previous_event_and_daily_aggregate_intact(store):
 
 def test_retry_reaction_keeps_record_and_cursor_separate(store):
     store.save('100',event())
-    assert store.pending_reactions()[0]['message_id']=='100'
+    store.save('101',event('101', '달리기', photo=True))
+    pending = store.pending_reactions()
+    assert pending[0]['message_id']=='100' and pending[0]['has_photo'] is False
+    assert pending[1]['message_id']=='101' and pending[1]['has_photo'] is True
     store.reacted('100')
+    store.reacted('101')
     assert store.pending_reactions()==[]
     assert store.state('1559804769327910932')['last_message_id'] is None
 
@@ -48,14 +52,16 @@ def test_sync_reaction_failure_restarts_without_duplicate_memo_or_cursor_advance
     class API:
         fail=True
         writes=[]
+        reactions=[]
         def channel(self,cid): return {'guild_id':'1559802401802952706'}
         def me(self): return {'id':'42'}
         def messages(self,cid,before=None):
             if cid=='1559804769327910932': return [message('100')]
             return [{'id':'200','author':{'id':'42'},'content':'개인 메시지'},
                     {'id':'201','author':{'id':'42'},'content':'🌱 묵묵 · 운동 잔디 현황\n이전 현황'}]
-        def react(self,cid,mid):
+        def react(self,cid,mid,emoji='✅'):
             if self.fail: raise DiscordError(503)
+            self.reactions.append((cid,mid,emoji))
         def write(self,cid,content,mid=None,file=None):
             self.writes.append((mid,content)); return {'id':mid or '202'}
     api=API()

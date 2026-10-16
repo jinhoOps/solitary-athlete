@@ -27,3 +27,21 @@ def test_write_with_file_sends_multipart():
     assert b'payload_json' in captured[0].content
     assert b'grass.png' in captured[0].content
     assert b'\x89PNGfake' in captured[0].content
+
+def test_react_formats_unicode_and_custom_emojis():
+    captured = []
+    def respond(req):
+        captured.append(req)
+        return httpx.Response(204)
+    api = Discord('test-token', httpx.Client(transport=httpx.MockTransport(respond)))
+
+    api.react('chan-1', 'msg-1')
+    assert captured[-1].method == 'PUT'
+    assert str(captured[-1].url) == 'https://discord.com/api/v10/channels/chan-1/messages/msg-1/reactions/%E2%9C%85/@me'
+
+    api.react('chan-1', 'msg-1', 'mukmuk_check:1560537044969725973')
+    assert str(captured[-1].url) == 'https://discord.com/api/v10/channels/chan-1/messages/msg-1/reactions/mukmuk_check%3A1560537044969725973/@me'
+
+    api.react('chan-1', 'msg-1', '<:mukmuk_flex:1560537051680604163>')
+    assert str(captured[-1].url) == 'https://discord.com/api/v10/channels/chan-1/messages/msg-1/reactions/mukmuk_flex%3A1560537051680604163/@me'
+

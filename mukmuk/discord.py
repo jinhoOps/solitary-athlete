@@ -36,8 +36,9 @@ class Discord:
     def messages(self, channel, before=None):
         return self.request('GET', f'/channels/{channel}/messages', params={'limit': 100, **({'before': before} if before else {})})
     def message(self, channel, mid): return self.request('GET', f'/channels/{channel}/messages/{mid}')
-    def react(self, channel, mid):
-        self.request('PUT', f'/channels/{channel}/messages/{mid}/reactions/{quote("✅", safe="")}/@me')
+    def react(self, channel, mid, emoji='✅'):
+        raw = emoji.strip().removeprefix('<:').removeprefix('<a:').removesuffix('>')
+        self.request('PUT', f'/channels/{channel}/messages/{mid}/reactions/{quote(raw, safe="")}/@me')
     def write(self, channel, content, mid=None, file=None):
         path = f'/channels/{channel}/messages' + (f'/{mid}' if mid else '')
         method = 'PATCH' if mid else 'POST'

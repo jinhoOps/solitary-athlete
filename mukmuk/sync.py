@@ -52,6 +52,15 @@ def collect_messages(api, channel, cursor, now):
         before = page[-1]['id']
     return sorted(result,key=lambda m:int(m['id'])), ceiling
 
+def reaction_emojis(settings):
+    check = (f"mukmuk_check:{settings['DISCORD_CHECK_EMOJI_ID']}"
+             if settings.get('DISCORD_CHECK_EMOJI_ID')
+             else settings.get('DISCORD_CHECK_EMOJI', '✅'))
+    flex = (f"mukmuk_flex:{settings['DISCORD_FLEX_EMOJI_ID']}"
+            if settings.get('DISCORD_FLEX_EMOJI_ID')
+            else settings.get('DISCORD_FLEX_EMOJI', '💪'))
+    return check, flex
+
 def run_sync(api, store, settings, now=None, check_lock=lambda: None):
     now = now or datetime.now(timezone.utc)
     guild, channel = settings['DISCORD_GUILD_ID'], settings['DISCORD_AUTH_CHANNEL_ID']
@@ -62,9 +71,13 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None):
     for msg in rows:
         check_lock()
         store.save(msg['id'], event_from_message(msg,guild,channel))
+    check_emoji, flex_emoji = reaction_emojis(settings)
     for pending in store.pending_reactions():
         check_lock()
-        try: api.react(pending['channel_id'],pending['message_id'])
+        try:
+            api.react(pending['channel_id'], pending['message_id'], check_emoji)
+            if pending.get('has_photo'):
+                api.react(pending['channel_id'], pending['message_id'], flex_emoji)
         except DiscordError as e:
             if e.status != 404: raise
         store.reacted(pending['message_id'])
