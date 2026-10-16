@@ -5,6 +5,7 @@ import type {Member,WorkoutLog,DashboardData} from './types';
 
 export function renderGrassCard(options: {
  year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
+ photos?:(log:WorkoutLog)=>HTMLElement;
  logs:WorkoutLog[];currentStats?:DashboardData['currentStats'];
 }) {
   const {year:selectedYear,today,roster}=options;
@@ -62,7 +63,11 @@ export function renderGrassCard(options: {
     ? `${date} · ${date>today?'아직 오지 않은 날짜':summary(date)}`
     : `${date} · ${date > today ? '아직 오지 않은 날짜' : ['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log ? ` · ${log.memo || '사진 인증'}` : ''}`;
 
+  const disposePhotos=()=>details.querySelectorAll('.photo-section').forEach(e=>e.dispatchEvent(new Event('dispose')));
+  card.addEventListener('dispose',disposePhotos);
+
   function close() {
+    disposePhotos();
     const date = opened;
     opened = null;
     openedLog = undefined;
@@ -81,6 +86,7 @@ export function renderGrassCard(options: {
       close();
       return;
     }
+    disposePhotos();
     opened = date;
     openedLog = log;
     const title = el('div', 'detail-heading');
@@ -97,9 +103,11 @@ export function renderGrassCard(options: {
       for(const entry of entries){
         const item=el('article','aggregate-entry');
         item.append(el('h4','',`${entry.username}${entry.has_photo?' · 사진 포함':''}`),el('p','memo',entry.memo||(entry.has_photo?'사진 인증':'텍스트 인증')));
+        if(entry.has_photo&&options.photos)item.append(options.photos(entry));
         details.append(item);
       }
     }
+    if(!aggregate){const entry=memoFor(date);if(entry?.has_photo&&options.photos)details.append(options.photos(entry));}
     details.hidden = false;
     for (const [d, cell] of dayButtons) cell.setAttribute('aria-expanded', String(d === date));
     requestAnimationFrame(() => {

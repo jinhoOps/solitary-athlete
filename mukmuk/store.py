@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 class Store:
     def __init__(self, connection):
@@ -16,12 +17,14 @@ class Store:
             if event is None:
                 self.conn.execute('DELETE FROM solitary_athlete.workout_events WHERE message_id=%s', (message_id,))
             else:
+                payload = asdict(event)
+                payload['attachments'] = Jsonb(payload['attachments'])
                 row = self.conn.execute('''INSERT INTO solitary_athlete.workout_events
-                    (message_id,guild_id,channel_id,user_id,username,created_at,edited_at,memo,has_photo)
-                    VALUES (%(message_id)s,%(guild_id)s,%(channel_id)s,%(user_id)s,%(username)s,%(created_at)s,%(edited_at)s,%(memo)s,%(has_photo)s)
+                    (message_id,guild_id,channel_id,user_id,username,created_at,edited_at,memo,has_photo,attachments)
+                    VALUES (%(message_id)s,%(guild_id)s,%(channel_id)s,%(user_id)s,%(username)s,%(created_at)s,%(edited_at)s,%(memo)s,%(has_photo)s,%(attachments)s)
                     ON CONFLICT (message_id) DO UPDATE SET username=EXCLUDED.username,
-                    edited_at=EXCLUDED.edited_at,memo=EXCLUDED.memo,has_photo=EXCLUDED.has_photo,updated_at=now()
-                    RETURNING user_id, log_date''', asdict(event)).fetchone()
+                    edited_at=EXCLUDED.edited_at,memo=EXCLUDED.memo,has_photo=EXCLUDED.has_photo,attachments=EXCLUDED.attachments,updated_at=now()
+                    RETURNING user_id, log_date''', payload).fetchone()
                 affected.add((row['user_id'], row['log_date']))
             for user_id, log_date in affected:
                 self.conn.execute('DELETE FROM solitary_athlete.workout_logs WHERE user_id=%s AND log_date=%s', (user_id, log_date))
@@ -69,3 +72,15 @@ class Store:
                 ON CONFLICT(channel_id) DO UPDATE SET last_message_id=COALESCE(EXCLUDED.last_message_id,solitary_athlete.sync_state.last_message_id),last_success_at=EXCLUDED.last_success_at''', (channel, cursor, now))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_status(singleton,last_success_at) VALUES(true,%s)
                 ON CONFLICT(singleton) DO UPDATE SET last_success_at=EXCLUDED.last_success_at''', (now,))
+
+    def photo_events(self, after):
+        with self.conn.transaction():
+            return self.conn.execute('''SELECT message_id,channel_id FROM solitary_athlete.workout_events
+                WHERE has_photo AND attachments='[]'::jsonb
+                AND (%s::text IS NULL OR message_id::numeric>%s::numeric)
+                ORDER BY message_id::numeric LIMIT 100''', (after, after)).fetchall()
+
+    def photo_metadata(self, mid, attachments):
+        with self.conn.transaction():
+            self.conn.execute('''UPDATE solitary_athlete.workout_events SET attachments=%s
+                WHERE message_id=%s AND attachments='[]'::jsonb''', (Jsonb(attachments), mid))

@@ -31,5 +31,5 @@ jobs:
       - run: npm test && npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
-      - run: deno check supabase/functions/mukmuk-discord-grass/index.ts supabase/functions/mukmuk-discord-cleanup/index.ts supabase/functions/mukmuk-weekly-code/index.ts
+      - run: deno check supabase/functions/mukmuk-discord-photos/index.ts supabase/functions/mukmuk-discord-grass/index.ts supabase/functions/mukmuk-discord-cleanup/index.ts supabase/functions/mukmuk-weekly-code/index.ts
       - run: scripts/test-db.sh

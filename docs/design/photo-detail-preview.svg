@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
+<title id="title">기록 상세의 사진 지연 조회</title><desc id="desc">예시 화면. 메모 아래 사진 보기 버튼을 누르면 작은 미리보기를 제공한다. 첫 화면에는 사진을 불러오지 않는다.</desc>
+<rect width="720" height="420" fill="#F7F8F2"/>
+<g font-family="Apple SD Gothic Neo, sans-serif" fill="#18271E">
+<text x="24" y="38" font-size="20" font-weight="700">사진은 기록을 펼친 뒤 선택해서</text>
+<rect x="24" y="58" width="672" height="338" rx="12" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="48" y="92" font-size="16" font-weight="600">10월 16일 · 하루 · 사진 포함</text>
+<text x="48" y="121" font-size="14">가볍게 30분 걷기</text>
+<rect x="48" y="140" width="112" height="44" rx="8" fill="#326C43"/>
+<text x="104" y="168" text-anchor="middle" fill="#FFFFFF" font-size="14">사진 보기</text>
+<text x="180" y="168" fill="#57665B" font-size="12">누르기 전 사진 요청 없음</text>
+<rect x="48" y="204" width="128" height="112" rx="8" fill="#E8EDE4"/>
+<text x="112" y="265" text-anchor="middle" font-size="12" fill="#57665B">미리보기</text>
+<text x="196" y="241" font-size="14">보이는 사진만 불러와요.</text>
+<text x="196" y="270" font-size="14">클릭하면 크게 볼 수 있어요.</text>
+<text x="48" y="352" font-size="12" fill="#57665B">사진은 Discord에서 불러옵니다. 원본 삭제 시 표시가 중단될 수 있어요.</text>
+<text x="48" y="378" font-size="12" fill="#57665B">로딩 · 사진 없음 · 원본 삭제 · 오류/재시도 상태를 구분합니다.</text>
+</g></svg>
