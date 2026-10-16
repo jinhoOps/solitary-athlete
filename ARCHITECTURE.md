@@ -260,7 +260,7 @@ Discord 앱·봇 ID는 `1559809751603216444`다. 개발자 포털에서 브랜�
 
 | 용도 | 별칭 | 실제 ID | 자산 |
 | --- | --- | --- | --- |
-| 텍스트 인증 | `mukmuk_grass` | `1559819274187571210` | [기본 잔디 PNG](assets/brand/grass-record.png) |
+| 텍스트 인증 | `mukmuk_grass` | `1560462864618360862` | [기본 잔디 PNG](assets/brand/grass-record.png) |
 | 사진 포함 인증 | `mukmuk_photo` | `1560460656829005866` | [사진 잔디 PNG](assets/brand/grass-photo.png) |
 
 로컬 `.env`에 서버·채널·포럼·앱·공개 서명 키·이모지 ID를 기록했다. `.env.example`은 빈 템플릿으로 유지한다. 봇 토큰은 생성·재설정하지 않았고 Interactions Endpoint는 백엔드가 준비되기 전까지 비워 둔다.
