@@ -23,6 +23,7 @@ jobs:
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           MUKMUK_DATABASE_URL: ${{ secrets.MUKMUK_DATABASE_URL }}
+          DISCORD_ROLE_MEMBER_ID: ${{ vars.DISCORD_ROLE_MEMBER_ID }}
           DISCORD_GUILD_ID: ${{ vars.DISCORD_GUILD_ID }}
           DISCORD_AUTH_CHANNEL_ID: ${{ vars.DISCORD_AUTH_CHANNEL_ID }}
           DISCORD_BOARD_CHANNEL_ID: ${{ vars.DISCORD_BOARD_CHANNEL_ID }}

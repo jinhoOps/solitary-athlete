@@ -4,8 +4,8 @@ from urllib.parse import quote
 import httpx
 
 class DiscordError(RuntimeError):
-    def __init__(self, status):
-        self.status = status
+    def __init__(self, status, code=None, retry_after=None):
+        self.status, self.code, self.retry_after = status, code, retry_after
         super().__init__(f'Discord request failed ({status})')
 
 class Discord:
@@ -30,6 +30,27 @@ class Discord:
             if res.status_code >= 400: raise DiscordError(res.status_code)
             return res.json() if res.content else None
         raise DiscordError('retry-exhausted')
+
+    def once(self, method, path, deadline):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise DiscordError('deadline')
+        try:
+            response = self.client.request(method, f'https://discord.com/api/v10{path}',
+                headers={'Authorization': f'Bot {self.token}'}, timeout=min(5, remaining))
+        except httpx.TransportError:
+            raise DiscordError('network') from None
+        if not response.is_success:
+            try:
+                data = response.json()
+            except ValueError:
+                data = {}
+            code = data.get('code') if isinstance(data.get('code'), int) else None
+            delay = data.get('retry_after')
+            import math
+            delay = float(delay) if isinstance(delay, (int, float)) and math.isfinite(delay) and delay >= 0 else None
+            raise DiscordError(response.status_code, code, delay)
+        return response.json()
 
     def me(self): return self.request('GET', '/users/@me')
     def channel(self, channel): return self.request('GET', f'/channels/{channel}')

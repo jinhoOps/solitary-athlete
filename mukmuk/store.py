@@ -84,3 +84,63 @@ class Store:
         with self.conn.transaction():
             self.conn.execute('''UPDATE solitary_athlete.workout_events SET attachments=%s
                 WHERE message_id=%s AND attachments='[]'::jsonb''', (Jsonb(attachments), mid))
+
+    def claim_refresh(self):
+        with self.conn.transaction():
+            return self.conn.execute('''WITH due AS (
+              SELECT id FROM solitary_athlete.workout_refresh_jobs
+              WHERE status IN ('queued','running') AND next_attempt_at<=now()
+              AND (lease_until IS NULL OR lease_until<=now())
+              ORDER BY processed_at,id::numeric FOR UPDATE SKIP LOCKED LIMIT 1
+            ) UPDATE solitary_athlete.workout_refresh_jobs j SET status='running',
+              lease_until=now()+interval '45 seconds',version=version+1,processed_at=now()
+              FROM due WHERE j.id=due.id RETURNING j.*''').fetchone()
+
+    def refresh_events(self, job):
+        with self.conn.transaction():
+            return self.conn.execute('''SELECT message_id FROM solitary_athlete.workout_events
+              WHERE user_id=%s AND guild_id=%s AND channel_id=%s
+              AND message_id::numeric>%s::numeric AND message_id::numeric<=%s::numeric
+              ORDER BY message_id::numeric LIMIT 20''',
+              (job['target_id'],job['guild_id'],job['channel_id'],job['cursor_id'],job['upper_id'])).fetchall()
+
+    def _refresh_owned(self, job):
+        row = self.conn.execute('''SELECT * FROM solitary_athlete.workout_refresh_jobs
+          WHERE id=%s AND version=%s AND status='running' AND lease_until>now() FOR UPDATE''',
+          (job['id'],job['version'])).fetchone()
+        if not row:
+            raise RuntimeError('refresh_lease_lost')
+        return row
+
+    def apply_refresh(self, job, mid, event):
+        with self.conn.transaction():
+            row = self._refresh_owned(job)
+            if int(mid)<=int(row['cursor_id']):
+                return
+            original = self.conn.execute('''SELECT user_id FROM solitary_athlete.workout_events
+              WHERE message_id=%s AND guild_id=%s AND channel_id=%s FOR UPDATE''',
+              (mid,job['guild_id'],job['channel_id'])).fetchone()
+            if not original or original['user_id']!=job['target_id'] or int(mid)>int(job['upper_id']):
+                raise ValueError('refresh_scope_mismatch')
+            self.save(mid,event)
+            self.conn.execute('''UPDATE solitary_athlete.workout_refresh_jobs
+              SET cursor_id=%s,checked=checked+1,removed=removed+%s,failures=0,error_code=NULL
+              WHERE id=%s''', (mid,int(event is None),job['id']))
+            job['cursor_id']=mid
+
+    def finish_refresh_batch(self, job):
+        with self.conn.transaction():
+            self._refresh_owned(job)
+            remains = bool(self.refresh_events(job))
+            self.conn.execute('''UPDATE solitary_athlete.workout_refresh_jobs
+              SET status=%s,lease_until=NULL,next_attempt_at=now(),processed_at=now(),error_code=NULL
+              WHERE id=%s''', ('queued' if remains else 'done',job['id']))
+
+    def defer_refresh(self, job, code, delay, fatal=False, failure=True):
+        with self.conn.transaction():
+            row = self._refresh_owned(job)
+            failures = row['failures']+int(failure)
+            self.conn.execute('''UPDATE solitary_athlete.workout_refresh_jobs
+              SET status=%s,failures=%s,error_code=%s,lease_until=NULL,processed_at=now(),
+              next_attempt_at=now()+%s*interval '1 second' WHERE id=%s''',
+              ('failed' if fatal or failures>=10 else 'queued',failures,code,delay,job['id']))
