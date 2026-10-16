@@ -220,7 +220,7 @@ function showAuthModal(errorMsg?: string) {
   const box = el('div', 'modal-box');
   box.append(
     el('h3', '', '시크릿 코드 인증'),
-    el('p', '', '고독한 운동가 Discord #공지 채널에 게시된 이번 주 시크릿 코드를 입력해 주세요.')
+    el('p', '', '고독한 운동가 Discord #공지 채널에 게시된 이번 달 시크릿 코드를 입력해 주세요.')
   );
 
   const form = el('form', 'modal-form');

@@ -1,4 +1,4 @@
-export type InternalPurpose='cleanup'|'weekly-code';
+export type InternalPurpose='cleanup'|'weekly-code'|'monthly-code';
 const encoder=new TextEncoder();
 async function keyFor(secret:string) {
   return crypto.subtle.importKey('raw',encoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);

@@ -55,13 +55,13 @@ GitHub 환경 `github-pages`는 main·릴리스 브랜치 배포를 허용한다
 
 채널·서버·이모지 ID와 `DASHBOARD_URL`은 `.env.example`과 같은 이름의 Repository Variables를 사용한다. 현재 필요한 Secrets/Variables는 등록됐다. 등록 스크립트는 서버 `/잔디` 한 개를 upsert하며 다른 명령어를 일괄 삭제하지 않는다.
 
-## Edge Functions·삭제 Cron·주간 시크릿 발급
+## Edge Functions·삭제 Cron·월간 시크릿 발급
 
 | 대상 | 설정 |
 | --- | --- |
 | `mukmuk-discord-grass` | 원문 Ed25519 서명, 서버·앱 검사 후 공개 defer |
 | `mukmuk-discord-cleanup` | POST, 타임스탬프·nonce·HMAC-SHA256 서명 확인 |
-| `mukmuk-weekly-code` | 매주 월요일 00:00 KST, 새 시크릿 코드 발급 및 Discord `#공지` 메시지 전송 |
+| `mukmuk-weekly-code` / `mukmuk-monthly-code` | 매월 1일 00:00 KST, 새 시크릿 코드 발급 및 Discord `#공지` 메시지 전송 |
 | `mukmuk-cleanup-due` | 10초마다 due 여부 확인, 있을 때만 함수 호출 |
 | `mukmuk-cleanup-history` | 앱 Cron 이력만 7일 보존, 다른 앱 이력 유지 |
 
@@ -73,11 +73,11 @@ https://olqdftjssrzqvcindekh.supabase.co/functions/v1/mukmuk-discord-grass
 
 Edge Secrets는 `MUKMUK_DATABASE_URL`, `MUKMUK_REPLY_TOKEN_KEY`, `MUKMUK_CLEANUP_SECRET`, `MUKMUK_DISCORD_PUBLIC_KEY`, `MUKMUK_DISCORD_GUILD_ID`, `MUKMUK_DISCORD_APP_ID`, `MUKMUK_DASHBOARD_URL`, `MUKMUK_GRASS_RECORD_EMOJI_ID`, `MUKMUK_GRASS_PHOTO_EMOJI_ID`, `DISCORD_BOT_TOKEN`, `DISCORD_NOTICE_CHANNEL_ID`다. 값은 문서에 남기지 않는다. `pg_net` 전송 큐를 다른 역할도 읽을 수 있어 장기 비밀값을 HTTP 요청에 넣지 않는다. Vault 키로 계산한 `X-Mukmuk-Timestamp`·`X-Mukmuk-Nonce`·`X-Mukmuk-Signature`만 전송한다. 서명은 30초 유효하며 미래 시각 오차는 최대 5초 허용한다.
 
-## 주간 시크릿 코드 및 대시보드 v2
+## 월간 시크릿 코드 및 대시보드 v2
 
-- **발급 주기**: 매주 월요일 00:00 KST (`pg_cron`: `0 15 * * 0` UTC).
-- **유예 기간**: 다음 KST 월요일 00시까지 정규 사용, 이후 24시간 유예(`expires_at = active_until + 1 day`). 최초 발급이 주중이어도 월요일 경계로 맞춘다. 새 코드가 발급되어도 기존 코드는 24시간 동안 유효하다.
-- **Discord 공지**: `#공지` 채널에 코드블록과 접속 링크를 게시한다. 다음 발급 때 새 안내 전송에 성공한 뒤 이전 묵묵 안내를 삭제한다. 전송 실패 시 이전 안내를 유지하며, 재실행은 현재 코드·안내를 재사용한다. 다른 작성자의 메시지는 삭제하지 않는다.
+- **발급 주기**: 매월 1일 00:00 KST (`pg_cron`: 매일 `0 15 * * *` UTC 실행 후 KST 1일 판정).
+- **유예 기간**: 다음 달 1일 00:00 KST까지 정규 사용, 이후 24시간 유예(`expires_at = active_until + 1 day`). 새 코드가 발급되어도 기존 코드는 24시간 동안 유효하다.
+- **Discord 공지**: `#공지` 채널에 코드블록과 접속 링크를 게시한다. 다음 발급 때 새 안내 전송에 성공한 뒤 이전 묵묵 안내(기존 주간 안내 포함)를 삭제한다. 전송 실패 시 이전 안내를 유지하며, 재실행은 현재 코드·안내를 재사용한다. 다른 작성자의 메시지는 삭제하지 않는다.
 - **RPC 보안**: `solitary_athlete.workout_logs`의 직접 `anon` 조회를 회수하고, `solitary_athlete.get_workout_logs(p_secret_code, p_year)` RPC를 통해서만 유효한 시크릿 코드로 1년 데이터를 조회한다.
 - **대시보드 UI**:
   - 컴팩트 단일 라인 헤더 및 높이가 줄어든 탭 버튼.
@@ -101,7 +101,7 @@ CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref ol
 
 정확히 300초의 밀리초 단위 삭제를 보장하지 않는다. Cron 점검·네트워크·429 때문에 늦어질 수 있다. 장시간 장애로 15분 interaction token이 만료되면 운영자가 남은 메시지를 확인해 정리한다.
 
-내부 서명은 호출 목적도 구분한다. 삭제 요청의 서명 원문은 `mukmuk-cleanup-v1:<timestamp>:<nonce>`, 주간 코드 요청은 `mukmuk-weekly-code-v1:<timestamp>:<nonce>`다. 삭제 큐에서 관측한 서명으로 주간 코드를 발급할 수 없다. 주간 코드 호출자는 해당 목적의 서명을 생성해야 한다.
+내부 서명은 호출 목적도 구분한다. 삭제 요청의 서명 원문은 `mukmuk-cleanup-v1:<timestamp>:<nonce>`, 월간 코드 요청은 `mukmuk-monthly-code-v1:<timestamp>:<nonce>` (기존 `mukmuk-weekly-code-v1` 호환)다. 삭제 큐에서 관측한 서명으로 월간 코드를 발급할 수 없다. 월간 코드 호출자는 해당 목적의 서명을 생성해야 한다.
 
 ### 주간 발급 실서비스 확인 (2026-10-14)
 
@@ -113,7 +113,7 @@ CLI 인증이 있을 때는 `supabase functions deploy <이름> --project-ref ol
 
 ### 코드 포함 링크와 웹 잔디 초점
 
-주간 공지, `/잔디` 결과, 상시 현황판 모두 서버에서 현재 유효한 코드를 조회해 `?code=`가 포함된 웹보드 링크를 만든다. 다른 쿼리와 앵커는 유지하고 기존 code 값은 교체한다. 코드가 없으면 기본 주소로 우회하지 않는다. 주간 공지 재실행 시 같은 코드 안내의 링크 형식도 갱신한다.
+공지 안내, `/잔디` 결과, 상시 현황판 모두 서버에서 현재 유효한 코드를 조회해 `?code=`가 포함된 웹보드 링크를 만든다. 다른 쿼리와 앵커는 유지하고 기존 code 값은 교체한다. 코드가 없으면 기본 주소로 우회하지 않는다. 공지 재실행 시 같은 코드 안내의 링크 형식도 갱신한다.
 
 웹은 링크의 코드를 저장하고 주소창에서는 code만 지운다. 올해 잔디를 그린 뒤 오늘 칸을 가로 영역 가운데에 보여주고, `오늘` 버튼으로 다시 이동할 수 있다. 상세를 열면 선택 칸과 상세 제목을 드러내고 제목으로 초점을 옮긴다. 닫으면 날짜 칸으로 돌리며 화면 폭이 바뀌어도 선택 날짜를 다시 보여준다. 초기 표시에서 페이지의 키보드 초점을 강제로 바꾸지 않는다.
 

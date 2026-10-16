@@ -1,7 +1,7 @@
 import postgres from 'npm:postgres@3.4.9';
 import type { Reply, ReplyDB } from './interactions.ts';
 import type { CleanupDB, CleanupJob } from './cleanup.ts';
-import type { SecretDB } from './weekly_code.ts';
+import type { SecretDB } from './monthly_code.ts';
 import type { WorkoutLog } from '../../../src/types.ts';
 
 export function createDB(url:string, testOnlyNoTLS=false) {
@@ -15,7 +15,7 @@ export function createDB(url:string, testOnlyNoTLS=false) {
     },
     async reserveSecret(code,now,activeUntil,expiresAt) {
       return await sql.begin(async tx=>{
-        await tx`SELECT pg_advisory_xact_lock(hashtext('solitary_athlete.weekly-secret'))`;
+        await tx`SELECT pg_advisory_xact_lock(hashtext('solitary_athlete.monthly-secret'))`;
         const rows=await tx`SELECT secret_code,active_until,expires_at FROM solitary_athlete.channel_access_secrets
           WHERE active_until>${now} ORDER BY issued_at DESC LIMIT 1`;
         if(rows.length)return {code:rows[0].secret_code,activeUntil:new Date(rows[0].active_until),expiresAt:new Date(rows[0].expires_at)};

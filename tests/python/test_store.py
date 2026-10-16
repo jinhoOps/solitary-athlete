@@ -56,7 +56,7 @@ def test_sync_reaction_failure_restarts_without_duplicate_memo_or_cursor_advance
                     {'id':'201','author':{'id':'42'},'content':'🌱 묵묵 · 운동 잔디 현황\n이전 현황'}]
         def react(self,cid,mid):
             if self.fail: raise DiscordError(503)
-        def write(self,cid,content,mid=None):
+        def write(self,cid,content,mid=None,file=None):
             self.writes.append((mid,content)); return {'id':mid or '202'}
     api=API()
     settings={'DISCORD_GUILD_ID':'1559802401802952706','DISCORD_AUTH_CHANNEL_ID':'1559804769327910932','DISCORD_BOARD_CHANNEL_ID':'1559803770744078408'}
