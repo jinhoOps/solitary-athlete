@@ -144,3 +144,7 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 - 수집 실행본은 설치기가 실제 `.env` 경로를 따라가도록 하여 작업 브랜치 디렉터리를 정리해도 환경 설정 경로가 유지된다. 최종 Pages·수집기 배포 상태는 아래 검증 이력에 기록한다.
 
 검증 이력: Vitest 51건, Chromium 31건(화면 밖 미리보기 요청 지연 포함), Python/DB 29건과 Deno DB 4건·함수 타입 검사·프런트 빌드가 통과했다. 리뷰의 느린 페이지·첨부만 삭제된 경우를 회귀 테스트로 고정했다. 맥북 LaunchAgent는 런타임 `091896c10394ab88`로 갱신했으며 5분 주기와 안정적인 원본 `.env` 경로를 유지한다.
+
+### 사진 기능 배포 완료
+
+사용자 승인 후 PR #11을 main에 병합했다(`308fc6a`). [main Checks](https://github.com/jinhoOps/solitary-athlete/actions/runs/38867344424)와 [Pages](https://github.com/jinhoOps/solitary-athlete/actions/runs/38867344454)가 성공했고 실제 release.json의 sourceCommit을 대조했다. 실제 Pages의 390px 모바일 화면에서 첫 접속 사진 요청/링크 조회 0건, 미리보기 이미지 1건·링크 조회 1건, 확대 후 이미지 누적 2건·추가 링크 조회 없음, Escape 닫기와 가로 넘침 없음을 확인했다. 작업 브랜치의 이전 배포 실패는 기존 GitHub 환경 브랜치 보호에 의한 것이며 보호 설정은 변경하지 않았다. 맥북 설치 설정이 main과 동일함도 확인했다.

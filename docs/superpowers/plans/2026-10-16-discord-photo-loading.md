@@ -1,6 +1,6 @@
 # Discord 사진 지연 조회 구현 계획
 
-> 실행자는 executing-plans 스킬로 아래 마일스톤을 순서대로 수행한다. 구현·검증과 운영 DB/Edge/맥북 수집기 반영을 완료했다. Pages 배포 항목은 아래 상태를 따른다.
+> 실행자는 executing-plans 스킬로 아래 마일스톤을 순서대로 수행한다. 구현·검증과 운영 DB/Edge/맥북 수집기·Pages 배포를 완료했다. PR #11은 main에 병합됐다.
 
 **목표:** 첫 화면에서 사진 다운로드 없이, 선택한 기록의 Discord 사진만 필요할 때 표시한다.
 
@@ -54,4 +54,6 @@
 - [x] 구현과 일치하도록 AGENTS.md, README, DESIGN.md, ARCHITECTURE.md, 운영 안내의 기존 사진 미표시 계약을 갱신한다.
 - [x] 마이그레이션·Edge 함수를 적용하고 다른 공용 스키마에 영향이 없는지 확인한다.
 - [x] 수집기 검증 후 uv run python scripts/install_macos_scheduler.py로 로컬 실행본을 갱신한다.
-- [ ] Pages 배포와 실제 멤버 접근·사진 표시를 확인하고 배포 상태를 기록한다. 검증용 메시지의 게시·삭제는 해당 시점 사용자 승인 범위에서 수행한다.
+- [x] Pages 배포와 실제 멤버 접근·사진 표시를 확인하고 배포 상태를 기록한다. 검증용 메시지의 게시·삭제는 해당 시점 사용자 승인 범위에서 수행한다.
+
+완료: [PR #11](https://github.com/jinhoOps/solitary-athlete/pull/11), 배포 소스 `308fc6a`, [Pages 실행 성공](https://github.com/jinhoOps/solitary-athlete/actions/runs/38867344454). 실제 Pages 모바일에서 첫 접속 사진/조회 0건, 미리보기 이미지 1건, 확대 후 이미지 누적 2건·조회 1건, 닫기·가로 넘침 없음 확인.

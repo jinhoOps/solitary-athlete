@@ -17,9 +17,9 @@ it('formats notice message with codeblock and direct link', () => {
   const msg = formatMonthlyNotice('mukmuk-7k2x', 'https://example.com/board');
   expect(msg).toContain('## 이번 달 웹보드 시크릿 코드예요 <:mukmuk_hi:1560534653893353472>');
   expect(msg).toContain('매월 1일에 새로운 코드로 바뀌어요.');
-  expect(msg).toContain('링크로 접속하거나 코드를 한 번 입력해 두면 브라우저에 저장되어서, 유효기간 동안은 매번 입력하지 않아도 바로 열려요 🌱');
+  expect(msg).toContain('링크로 접속하거나 코드를 한 번 입력해 두면 브라우저에 저장되어서, 유효기간 동안은 매번 입력하지 않아도 바로 열려요 <:mukmuk_laugh:1560534699078582284>');
   expect(msg).toContain('```\nmukmuk-7k2x\n```');
-  expect(msg).toContain('👉 [**웹보드 바로 접속하기**](https://example.com/board?code=mukmuk-7k2x)');
+  expect(msg).toContain('<:mukmuk_gogo:1560537048350335136> [**웹보드 바로 접속하기**](https://example.com/board?code=mukmuk-7k2x)');
 
   // formatWeeklyNotice is an alias
   expect(formatWeeklyNotice('mukmuk-7k2x', 'https://example.com/board')).toBe(msg);
