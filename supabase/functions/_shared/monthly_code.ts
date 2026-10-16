@@ -23,7 +23,7 @@ export function generateSecretCode(): string {
 export function formatMonthlyNotice(code: string, dashboardUrl: string): string {
   const url = dashboardLink(dashboardUrl, code);
   return [
-    '## 이번 달 웹보드 시크릿 코드예요 <:mukmuk_hi:1560534653893353472>',
+    '## 이번 달 웹보드 시크릿 코드예요 <:mukmuk_hi:1560559057419509854>',
     '저... 이번 달 시크릿 코드 살포시 두고 갈게요.',
     '매월 1일에 새로운 코드로 바뀌어요. (기존 코드는 24시간 동안 함께 유지돼요)',
     '',
