@@ -2,7 +2,7 @@
 version: "1.1"
 name: mukmuk-design-system
 status: implementation-ready
-updated: "2026-10-15"
+updated: "2026-10-16"
 description: >-
   고독한 운동가의 운동 기록 화면. 밝은 종이색 바탕, 흰 기록 카드,
   짙은 녹색 동작 버튼과 작은 사각형 잔디로 각자의 꾸준함을 보여준다.
@@ -396,6 +396,14 @@ components:
 ### Brand Header & Intro
 
 `{components.brand-header}`는 큰 내비게이션 대신 브랜드와 봇의 역할을 보여준다. 헤더에 가입·가격·관리 메뉴를 추가하지 않는다. `{components.intro}`의 제목은 대표 문장이며 모바일에서는 `{typography.display-sm}`로 바꾼다. 강제 한 줄 축소 대신 자연스럽게 두 줄로 흐르게 한다.
+
+### Mukmuk Mascot
+
+2026-10-16 승인 마스코트는 말랑한 모찌 체형의 너구리 SD 캐릭터다. 따뜻한 크림색 몸, 작은 둥근 귀, 짧은 줄무늬 꼬리, 짙은 갈색 윤곽선과 단순한 눈·입을 유지한다. 볼에 홍조·점·무늬·수염을 추가하지 않는다. 단순한 2D 일러스트를 기준으로 하고 입체적인 재해석으로 얼굴과 몸의 인상을 바꾸지 않는다.
+
+고유 표식은 **초록 운동 아대 위의 작은 아이보리 새싹**이다. 새싹은 짧은 줄기와 두 잎으로 표현하고 아대 방향에 맞춰 그린다. 머리나 볼에 새싹을 옮기지 않는다. 대표 전신·정면 프로필·흰 외곽선 스티커/와펜·만족·결심·지침 여섯 구성을 동일 캐릭터로 유지한다.
+
+[최종 캐릭터 시트](assets/brand/mukmuk/final/2026-10-16/mukmuk-character-sheet-v1.png)와 [파일 안내](assets/brand/mukmuk/final/2026-10-16/README.md)가 승인 형태의 기준이다. 기존 default·emotions·shiny 폴더의 시안과 구분하며 후속 수정은 새 버전으로 저장한다. 기존 새싹 브랜드 마크와 마스코트는 별도 에셋이다.
 
 ### Buttons & Links
 
