@@ -1,0 +1,50 @@
+{
+  "status": "prepared",
+  "uploaded": false,
+  "size": 128,
+  "format": "PNG",
+  "emojis": [
+    {
+      "name": "mukmuk_hi",
+      "label": "인사",
+      "usage": "안녕·출석·반가움",
+      "file": "128/mukmuk_hi.png",
+      "bytes": 19110
+    },
+    {
+      "name": "mukmuk_yes",
+      "label": "좋아",
+      "usage": "동의·확인·잘했어",
+      "file": "128/mukmuk_yes.png",
+      "bytes": 19839
+    },
+    {
+      "name": "mukmuk_thanks",
+      "label": "고마워",
+      "usage": "감사·하트",
+      "file": "128/mukmuk_thanks.png",
+      "bytes": 21417
+    },
+    {
+      "name": "mukmuk_laugh",
+      "label": "웃음",
+      "usage": "웃김·즐거움",
+      "file": "128/mukmuk_laugh.png",
+      "bytes": 22842
+    },
+    {
+      "name": "mukmuk_tired",
+      "label": "지침",
+      "usage": "힘들다·쉬는 중",
+      "file": "128/mukmuk_tired.png",
+      "bytes": 18002
+    },
+    {
+      "name": "mukmuk_fighting",
+      "label": "파이팅",
+      "usage": "운동 시작·응원·결심",
+      "file": "128/mukmuk_fighting.png",
+      "bytes": 22258
+    }
+  ]
+}

@@ -407,6 +407,12 @@ components:
 
 [최종 캐릭터 시트](assets/brand/mukmuk/final/2026-10-16/mukmuk-character-sheet-v1.png)와 [파일 안내](assets/brand/mukmuk/final/2026-10-16/README.md)가 승인 형태의 기준이다. 기존 default·emotions·shiny 폴더의 시안과 구분하며 후속 수정은 새 버전으로 저장한다. 기존 새싹 브랜드 마크와 마스코트는 별도 에셋이다.
 
+### Mukmuk Discord Emoji
+
+[이모지 전용 6종](assets/brand/mukmuk/emojis/README.md)은 인사·좋아·고마워·웃음·지침·파이팅이다. 얼굴을 화면 대부분에 두고 큰 손동작이나 하트 하나로 의미를 구분한다. 전신·다리·꼬리는 제외하고 작은 글씨나 볼 장식을 추가하지 않는다. 원래 마스코트의 크림색·둥근 귀·짙은 윤곽선과 보이는 손목의 초록 새싹 아대를 유지한다.
+
+정사각형 투명 PNG 128px를 등록용으로 제공하며 64px 재사용본을 함께 둔다. 윤곽과 눈·입은 축소를 고려해 두껍게 표현한다. 32px 실제 크기로 밝은 배경과 어두운 배경에서 표정과 손동작을 점검하고 [비교 시트](assets/brand/mukmuk/emojis/preview.png)를 남긴다. 파일 준비와 실제 서버 등록 상태를 혼동하지 않는다.
+
 ### Buttons & Links
 
 `{components.button-primary}`는 조회 실패 후 `다시 불러오기`처럼 그 영역의 주요 동작에 사용한다. `{components.button-secondary}`는 `더 보기`, `{components.button-icon}`은 날짜 상세 닫기에 쓴다. 기본·눌림·비활성·focus-visible 상태를 명시하며 포커스는 `{components.control-focused}`를 공통으로 적용한다. 비활성 버튼은 색뿐 아니라 실제 `disabled` 상태를 사용한다.
