@@ -382,3 +382,8 @@ GitHub 예약은 10월 15일 01:09·05:22·08:32 KST에만 생성돼 매시간 �
 ### 2026-10-16 묵묵 봇 프로필
 
 사용자 요청에 따라 승인 시트에서 분리한 `assets/brand/mukmuk/profile/mukmuk-profile-512.png`를 Discord 묵묵 봇 프로필에 적용했다. 봇 사용자 ID를 앱 ID와 대조한 뒤 아바타만 수정하고 재조회했다. 고독한 운동가 서버의 새싹 아이콘은 전후 해시가 동일함을 확인했다. 공용 mark·banner는 새싹을 유지하며 마스코트 mark·banner는 mukmuk 폴더 안의 봇 전용 에셋이다.
+
+
+### 2026-10-16 Discord 앱 이미지 반영
+
+최종 브랜드 파일을 실제 Discord에 적용했다. 앱 아이콘은 `assets/brand/mukmuk/profile/mukmuk-profile-1024.png`, 봇 아바타는 같은 정면의 512px PNG를 사용한다. 앱 커버(`cover_image`)와 봇 프로필 배너(`banner`)에는 하단 묵묵을 80px로 축소·좌우 반전하고 소개 문구를 400 굵기로 조정한 `assets/brand/banner.png`를 적용했다. 앱 ID와 봇 사용자 ID를 대조하고 이미지 필드만 수정했다. API 재조회와 네 이미지의 CDN HTTP 200 응답을 확인했다. 고독한 운동가 서버 아이콘은 변경 전후 동일함을 검증했다.
