@@ -95,3 +95,59 @@ def test_metadata_backfill_does_not_write_logs_and_only_confirms_404():
     updates=[]
     with pytest.raises(DiscordError): backfill_photos(API(),Store(),'1','2')
     assert len(updates)==2 and updates[1]==('101',[])
+
+def test_sync_reactions_custom_and_fallback_emojis():
+    from mukmuk.sync import run_sync
+    reactions = []
+    reacted_ids = []
+    class API:
+        def channel(self, cid): return {'guild_id': 'guild-1'}
+        def me(self): return {'id': 'bot-1'}
+        def messages(self, cid, before=None): return []
+        def react(self, cid, mid, emoji='✅'):
+            reactions.append((cid, mid, emoji))
+        def write(self, *args, **kwargs): return {'id': 'board-1'}
+    class Store:
+        def state(self, cid): return {'last_message_id': None}
+        def pending_reactions(self):
+            return [
+                {'channel_id': 'auth-1', 'message_id': '101', 'has_photo': False},
+                {'channel_id': 'auth-1', 'message_id': '102', 'has_photo': True},
+            ]
+        def reacted(self, mid): reacted_ids.append(mid)
+        def board_ids(self, *args): pass
+        def logs(self): return []
+        def success(self, *args): pass
+
+    # 1. Custom emoji IDs configured
+    settings = {
+        'DISCORD_GUILD_ID': 'guild-1',
+        'DISCORD_AUTH_CHANNEL_ID': 'auth-1',
+        'DISCORD_BOARD_CHANNEL_ID': 'board-1',
+        'DISCORD_CHECK_EMOJI_ID': '1560537044969725973',
+        'DISCORD_FLEX_EMOJI_ID': '1560537051680604163',
+    }
+    run_sync(API(), Store(), settings, datetime(2026, 10, 16, tzinfo=timezone.utc))
+    assert reactions == [
+        ('auth-1', '101', 'mukmuk_check:1560537044969725973'),
+        ('auth-1', '102', 'mukmuk_check:1560537044969725973'),
+        ('auth-1', '102', 'mukmuk_flex:1560537051680604163'),
+    ]
+    assert reacted_ids == ['101', '102']
+
+    # 2. Fallback when no custom emoji configured
+    reactions.clear()
+    reacted_ids.clear()
+    fallback_settings = {
+        'DISCORD_GUILD_ID': 'guild-1',
+        'DISCORD_AUTH_CHANNEL_ID': 'auth-1',
+        'DISCORD_BOARD_CHANNEL_ID': 'board-1',
+    }
+    run_sync(API(), Store(), fallback_settings, datetime(2026, 10, 16, tzinfo=timezone.utc))
+    assert reactions == [
+        ('auth-1', '101', '✅'),
+        ('auth-1', '102', '✅'),
+        ('auth-1', '102', '💪'),
+    ]
+    assert reacted_ids == ['101', '102']
+
