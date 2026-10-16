@@ -148,3 +148,13 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 ### 사진 기능 배포 완료
 
 사용자 승인 후 PR #11을 main에 병합했다(`308fc6a`). [main Checks](https://github.com/jinhoOps/solitary-athlete/actions/runs/38867344424)와 [Pages](https://github.com/jinhoOps/solitary-athlete/actions/runs/38867344454)가 성공했고 실제 release.json의 sourceCommit을 대조했다. 실제 Pages의 390px 모바일 화면에서 첫 접속 사진 요청/링크 조회 0건, 미리보기 이미지 1건·링크 조회 1건, 확대 후 이미지 누적 2건·추가 링크 조회 없음, Escape 닫기와 가로 넘침 없음을 확인했다. 작업 브랜치의 이전 배포 실패는 기존 GitHub 환경 브랜치 보호에 의한 것이며 보호 설정은 변경하지 않았다. 맥북 설치 설정이 main과 동일함도 확인했다.
+
+
+## 수동 기록 갱신
+
+- `/기록갱신`은 회원님 역할의 본인 기록만 접수한다. 관리/서버 관리 권한은 `유저`로 다른 멤버를 지정할 수 있다. 상태 옵션은 없으며 같은 대상의 진행 중 작업은 재사용한다.
+- 응답은 비공개·표시 후300초 삭제다. 완료 작업의 다음 호출은 새 점검을 시작한다. 장시간 작업 결과를 token 유효기간에 의존해 보내지 않는다.
+- `workout_refresh_jobs`는 서버 전용이다. 접수 시 메시지 상한을 고정하고 기존5분 수집기에서20건/30초씩 처리한다. 없는 작업을 찾기 위한 DB조회 외에 추가 Discord API 호출은 없다. 원본 삭제는 권한 확인과404/10008에 한정한다.
+- 진행·재시도 상태는 DB에서 유지하며 연속 일시 오류10회 또는 권한 회수 시 failed로 종료한다. 재호출로 새 요청을 접수할 수 있다. lease/version과 트랜잭션으로 재시작·중복 저장에 대비한다.
+- 신규 마이그레이션 `20261017000001_mukmuk_workout_refresh.sql`과 Discord 수신 함수·서버 명령 추가 등록이 필요하다. Edge에는 `MUKMUK_DISCORD_ROLE_MEMBER_ID`, `MUKMUK_DISCORD_AUTH_CHANNEL_ID`, 로컬/Actions에는 `DISCORD_ROLE_MEMBER_ID`를 설정한다.
+- 자동 테스트는 회원/관리자·채널 권한·잘못된404/불완전한200·메시지별 재집계/롤백·대상 중복·상한·임대·재시도10회·작업 없음0조회·시간 예산·비공개 권한을 확인한다. 실제 Discord 신규/삭제 테스트 메시지는 별도 승인 없이 만들지 않는다.

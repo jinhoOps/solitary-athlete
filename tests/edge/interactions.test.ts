@@ -99,3 +99,18 @@ it('publishes a direct-entry dashboard link using the currently valid code',asyn
   });
   expect(content).toContain('https://example.com/board/?from=discord&code=mukmuk-fixture#grass');
 });
+
+it('refresh: members can request only themselves, managers may target others, responses are private',async()=>{
+ const calls:unknown[]=[];
+ const own={...body,member:{user:{id:'10',username:'회원'},roles:['member'],permissions:'0'},data:{name:'기록갱신'}};
+ async function run(payload:unknown){
+  const {request,publicKey}=await signed(payload);
+  return handleInteraction(request,{publicKey,guildId:'1',appId:'42',memberRoleId:'member',waitUntil:p=>{calls.push(p)},publish:async()=>{},refresh:async b=>{calls.push(b.targetId);}});
+ }
+ expect(await (await run(own)).json()).toEqual({type:5,data:{flags:64}});
+ await Promise.all(calls.filter(x=>x instanceof Promise));expect(calls).toContain('10');calls.length=0;
+ const other={...own,data:{...body.data,name:'기록갱신',resolved:{...body.data.resolved,members:{'20':{roles:[]}}}}};
+ const rejected=await (await run(other)).json();expect(rejected.type).toBe(4);expect(rejected.data.flags).toBe(64);expect(calls).toEqual([]);
+ expect(await (await run({...other,member:{...own.member,permissions:'32'}})).json()).toEqual({type:5,data:{flags:64}});
+ expect((await (await run({...own,member:{...own.member,roles:[]}})).json()).type).toBe(4);
+});

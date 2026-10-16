@@ -102,3 +102,19 @@ def test_requester_role_removal_stops_worker_without_source_reads(monkeypatch):
     monkeypatch.setattr(reconcile,'verify_permissions',denied)
     reconcile.process_refresh(object(),Store(),{},'bot')
     assert failed[0]['fatal']
+
+
+def test_incomplete_200_source_is_never_treated_as_deletion(monkeypatch):
+    from mukmuk import reconcile
+    deferred=[]
+    class Store:
+        def claim_refresh(self):return {'id':'1','target_id':'123','guild_id':'1','channel_id':'2'}
+        def refresh_events(self,j):return [{'message_id':'100'}]
+        def apply_refresh(self,*args):pytest.fail('malformed 200 must never erase the event')
+        def finish_refresh_batch(self,j):pytest.fail('must defer malformed source')
+        def defer_refresh(self,*args,**kwargs):deferred.append(args[1])
+    class API:
+        def once(self,*args):return {'id':'100','author':{'id':'123'}}
+    monkeypatch.setattr(reconcile,'verify_permissions',lambda *args:None)
+    reconcile.process_refresh(API(),Store(),{},'bot')
+    assert deferred==['invalid_source_response']

@@ -1,6 +1,5 @@
 """Explicit per-member refresh only; never scan without a queued request."""
 import time
-from datetime import datetime, timedelta, timezone
 from .discord import DiscordError
 from .sync import event_from_message
 
@@ -85,6 +84,14 @@ def process_refresh(api, store, settings, bot_id, check_lock=lambda: None, clock
             check_lock()
             try:
                 msg = api.once('GET', f'/channels/{job["channel_id"]}/messages/{row["message_id"]}', deadline)
+                if (not isinstance(msg, dict) or type(msg.get('type')) is not int
+                        or msg['type'] not in (0,19) or not isinstance(msg.get('content'), str)
+                        or not isinstance(msg.get('attachments'), list)
+                        or not isinstance(msg.get('timestamp'), str)
+                        or not isinstance(msg.get('author'), dict)):
+                    raise ValueError('invalid_source_response')
+                if msg.get('channel_id', job['channel_id']) != job['channel_id']:
+                    raise PermissionError('message_channel')
                 if msg.get('id') != row['message_id'] or msg.get('author', {}).get('id') != job['target_id']:
                     raise PermissionError('message_scope')
                 event = event_from_message(msg, job['guild_id'], job['channel_id'])
