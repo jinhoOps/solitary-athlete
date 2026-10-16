@@ -24,3 +24,5 @@
 Discord 권장 업로드 크기와 파일 제한은 [공식 도움말](https://support.discord.com/hc/en-us/articles/360041139231-How-to-Add-Emojis-on-Discord)과 [Emoji API 문서](https://github.com/discord/discord-api-docs/blob/main/developers/resources/emoji.mdx)를 확인했다. 업로드용 여섯 파일의 크기·알파 채널·256 KiB 미만 여부를 검사했다.
 
 상태는 **파일 준비 완료**이며 서버 등록·실제 Discord 표시 확인과 구분한다. 실제 채팅 클라이언트와 운영체제에 따라 축소 표현은 조금 달라질 수 있다.
+
+기호형 기본 6종과 [추가 6종](symbols-extra/README.md)은 서버 공용으로 등록 완료했다. 이 얼굴형 묶음 중에서는 `mukmuk_exclaim`만 공용 등록되었다.

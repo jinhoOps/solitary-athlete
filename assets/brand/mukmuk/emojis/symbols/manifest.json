@@ -1,6 +1,6 @@
 {
-  "status": "prepared",
-  "uploaded": false,
+  "status": "registered",
+  "uploaded": true,
   "size": 128,
   "emojis": [
     {
@@ -8,42 +8,55 @@
       "symbol": "?",
       "usage": "질문·모르겠음",
       "file": "128/mukmuk_question.png",
-      "bytes": 17074
+      "bytes": 17074,
+      "id": "1560537036983771238",
+      "uploaded": true
     },
     {
       "name": "mukmuk_exclaim",
       "symbol": "!",
       "usage": "놀람·감탄",
       "file": "128/mukmuk_exclaim.png",
-      "bytes": 16124
+      "bytes": 16124,
+      "id": "1560537039907061830",
+      "uploaded": true
     },
     {
       "name": "mukmuk_o",
       "symbol": "O",
       "usage": "맞음·가능",
       "file": "128/mukmuk_o.png",
-      "bytes": 19743
+      "bytes": 19743,
+      "id": "1560537041673003079",
+      "uploaded": true
     },
     {
       "name": "mukmuk_x",
       "symbol": "X",
       "usage": "아님·불가",
       "file": "128/mukmuk_x.png",
-      "bytes": 21101
+      "bytes": 21101,
+      "id": "1560537042906124361",
+      "uploaded": true
     },
     {
       "name": "mukmuk_check",
       "symbol": "✓",
       "usage": "확인·완료",
       "file": "128/mukmuk_check.png",
-      "bytes": 16632
+      "bytes": 16632,
+      "id": "1560537044969725973",
+      "uploaded": true
     },
     {
       "name": "mukmuk_thumbsup",
       "symbol": "👍",
       "usage": "좋아·동의",
       "file": "128/mukmuk_thumbsup.png",
-      "bytes": 19576
+      "bytes": 19576,
+      "id": "1560537046756491295",
+      "uploaded": true
     }
-  ]
+  ],
+  "guild_id": "1559802401802952706"
 }

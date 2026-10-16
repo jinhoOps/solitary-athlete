@@ -1,0 +1,62 @@
+{
+  "status": "registered",
+  "uploaded": true,
+  "size": 128,
+  "emojis": [
+    {
+      "name": "mukmuk_gogo",
+      "symbol": "ㄱㄱ",
+      "usage": "출발·진행",
+      "file": "128/mukmuk_gogo.png",
+      "bytes": 12223,
+      "id": "1560537048350335136",
+      "uploaded": true
+    },
+    {
+      "name": "mukmuk_heart",
+      "symbol": "♥",
+      "usage": "응원·애정",
+      "file": "128/mukmuk_heart.png",
+      "bytes": 26169,
+      "id": "1560537049629724726",
+      "uploaded": true
+    },
+    {
+      "name": "mukmuk_flex",
+      "symbol": "💪",
+      "usage": "힘내·운동",
+      "file": "128/mukmuk_flex.png",
+      "bytes": 20432,
+      "id": "1560537051680604163",
+      "uploaded": true
+    },
+    {
+      "name": "mukmuk_eyes",
+      "symbol": "👀",
+      "usage": "관심·지켜봄",
+      "file": "128/mukmuk_eyes.png",
+      "bytes": 20554,
+      "id": "1560537053392011267",
+      "uploaded": true
+    },
+    {
+      "name": "mukmuk_dots",
+      "symbol": "…",
+      "usage": "대기·머쓱함",
+      "file": "128/mukmuk_dots.png",
+      "bytes": 9837,
+      "id": "1560537055430316062",
+      "uploaded": true
+    },
+    {
+      "name": "mukmuk_fire",
+      "symbol": "🔥",
+      "usage": "열정·불타는 중",
+      "file": "128/mukmuk_fire.png",
+      "bytes": 22729,
+      "id": "1560537057070424075",
+      "uploaded": true
+    }
+  ],
+  "guild_id": "1559802401802952706"
+}

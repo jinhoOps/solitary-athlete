@@ -15,3 +15,5 @@
 실제 Discord 앱에도 반영했다. 앱 아이콘은 1024px 정면, 봇 아바타는 512px 정면이며, 앱 커버와 봇 배너는 공용 배너의 최종 버전(`assets/brand/banner.png`)을 사용한다. 앱·봇 이미지 필드를 재조회하고 CDN 응답까지 검증했다. 이 폴더의 별도 `banner.png`는 봇 전용 다른 구성이므로 실제 적용 배너와 구분한다.
 
 - [Discord 이모지 전용 6종](emojis/README.md): 128px 업로드 파일·ZIP·32px 밝은/어두운 배경 비교.
+
+- [추가 기호 이모지 6종 — ㄱㄱ·♥·💪·👀·…·🔥](emojis/symbols-extra/README.md)
