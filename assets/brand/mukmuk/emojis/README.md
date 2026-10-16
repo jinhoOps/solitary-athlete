@@ -1,5 +1,7 @@
 # 묵묵 · Discord 이모지 6종
 
+**기호 중심 ?·!·O·X·✓·👍은 [기호형 6종](symbols/README.md)과 [전용 ZIP](symbols/mukmuk-symbols-upload.zip)을 사용한다.** 기존 `mukmuk_yes`는 `mukmuk_exclaim`(놀람·감탄)으로 교체했다.
+
 전신 스프라이트를 단순 축소하지 않고 얼굴과 큰 손동작 중심으로 새로 만든 이모지 전용 구성이다. 볼 홍조·무늬를 넣지 않고 묵묵의 크림색 얼굴·둥근 귀·짙은 윤곽선·새싹 아대를 유지한다.
 
 [실제 크기 비교 PNG](preview.png) · [브라우저 미리보기](preview.html) · [업로드 파일 ZIP](mukmuk-emojis-upload.zip)
@@ -7,7 +9,7 @@
 | 등록 이름 | 표현 | 자주 쓰는 상황 | 128px 업로드 파일 |
 | --- | --- | --- | --- |
 | `mukmuk_hi` | 인사 | 안녕·출석·반가움 | [PNG](128/mukmuk_hi.png) |
-| `mukmuk_yes` | 좋아 | 동의·확인·잘했어 | [PNG](128/mukmuk_yes.png) |
+| `mukmuk_exclaim` | 놀람·감탄 | 놀람·감탄·오! | [PNG](128/mukmuk_exclaim.png) |
 | `mukmuk_thanks` | 고마워 | 감사·하트 | [PNG](128/mukmuk_thanks.png) |
 | `mukmuk_laugh` | 웃음 | 웃김·즐거움 | [PNG](128/mukmuk_laugh.png) |
 | `mukmuk_tired` | 지침 | 힘들다·쉬는 중 | [PNG](128/mukmuk_tired.png) |

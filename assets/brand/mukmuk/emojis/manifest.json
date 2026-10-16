@@ -12,11 +12,11 @@
       "bytes": 19110
     },
     {
-      "name": "mukmuk_yes",
-      "label": "좋아",
-      "usage": "동의·확인·잘했어",
-      "file": "128/mukmuk_yes.png",
-      "bytes": 19839
+      "name": "mukmuk_exclaim",
+      "label": "놀람·감탄",
+      "usage": "놀람·감탄·오!",
+      "file": "128/mukmuk_exclaim.png",
+      "bytes": 16124
     },
     {
       "name": "mukmuk_thanks",

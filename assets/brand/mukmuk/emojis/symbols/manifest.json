@@ -1,0 +1,49 @@
+{
+  "status": "prepared",
+  "uploaded": false,
+  "size": 128,
+  "emojis": [
+    {
+      "name": "mukmuk_question",
+      "symbol": "?",
+      "usage": "질문·모르겠음",
+      "file": "128/mukmuk_question.png",
+      "bytes": 17074
+    },
+    {
+      "name": "mukmuk_exclaim",
+      "symbol": "!",
+      "usage": "놀람·감탄",
+      "file": "128/mukmuk_exclaim.png",
+      "bytes": 16124
+    },
+    {
+      "name": "mukmuk_o",
+      "symbol": "O",
+      "usage": "맞음·가능",
+      "file": "128/mukmuk_o.png",
+      "bytes": 19743
+    },
+    {
+      "name": "mukmuk_x",
+      "symbol": "X",
+      "usage": "아님·불가",
+      "file": "128/mukmuk_x.png",
+      "bytes": 21101
+    },
+    {
+      "name": "mukmuk_check",
+      "symbol": "✓",
+      "usage": "확인·완료",
+      "file": "128/mukmuk_check.png",
+      "bytes": 16632
+    },
+    {
+      "name": "mukmuk_thumbsup",
+      "symbol": "👍",
+      "usage": "좋아·동의",
+      "file": "128/mukmuk_thumbsup.png",
+      "bytes": 19576
+    }
+  ]
+}
