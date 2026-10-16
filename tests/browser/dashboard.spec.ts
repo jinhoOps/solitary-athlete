@@ -54,7 +54,7 @@ async function fixture(
 test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', async ({ page }) => {
   await fixture(page);
   await expect(page.locator('.brand-name')).toHaveText('고독한 운동가');
-  await expect(page.locator('.brand-sub')).toHaveText('운동기록을 챙기는 묵묵, MUKMUK · WORKOUT JOURNAL');
+  await expect(page.locator('.brand-sub')).toHaveText('잔디 심는 묵묵, MUKMUK · WORKOUT JOURNAL');
 
   const discordLink = page.locator('.brand-header .discord-link');
   await expect(discordLink).toBeVisible();

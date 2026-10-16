@@ -34,7 +34,7 @@ const brandWrap = el('div', 'brand-wrap');
 brandWrap.append(
   el('span', 'brand-name', '고독한 운동가'),
   el('span', 'brand-divider', '·'),
-  el('span', 'brand-sub', '운동기록을 챙기는 묵묵, MUKMUK · WORKOUT JOURNAL')
+  el('span', 'brand-sub', '잔디 심는 묵묵, MUKMUK · WORKOUT JOURNAL')
 );
 
 const status = el('div', 'status-notice');

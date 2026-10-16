@@ -5,7 +5,7 @@
 <p align="center">
   <strong>고독한 운동가</strong><br>
   운동 인증을 모아, 각자의 꾸준함을 잔디로 기록합니다.<br>
-  조용히 기록을 챙기는 봇, <strong>묵묵 <code>mukmuk</code></strong>.
+  조용히 잔디 심는 봇, <strong>묵묵 <code>mukmuk</code></strong>.
 </p>
 
 <p align="center">
