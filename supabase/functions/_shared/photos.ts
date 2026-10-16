@@ -1,10 +1,11 @@
 /** On-demand metadata only; image bytes go directly from Discord to the browser. */
+export const PHOTO_PAGE_SIZE=3;
 export interface PhotoAttachment {attachment_id:string;filename:string;width?:number|null;height?:number|null}
 export interface PhotoEvent {message_id:string;guild_id:string;channel_id:string;attachments:PhotoAttachment[]}
 export interface PhotoDB {
  validCode(code:string):Promise<boolean>;
  events(user:string,date:string,after:string|null):Promise<PhotoEvent[]>;
- removed(message:string):Promise<void>;
+ removed(message:string,attachmentIds?:string[]):Promise<void>;
 }
 interface Options {db:PhotoDB;discord:(method:string,path:string)=>Promise<Response>;guild:string;channel:string;now?:()=>Date}
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'content-type,apikey,authorization','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
@@ -57,12 +58,14 @@ export function createPhotoHandler(options:Options){
    if(!code||code.length>128)return json({error:'invalid_or_expired_secret'},401);
    if(!numeric(b.user_id)||typeof b.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||!Number.isFinite(Date.parse(b.date))||new Date(b.date).toISOString().slice(0,10)!==b.date||(b.after!=null&&!numeric(b.after)))return json({error:'invalid_request'},400);
    if(!await db.validCode(code))return json({error:'invalid_or_expired_secret'},401);
-   const events=await db.events(b.user_id,b.date,b.after??null);
+   const events=(await db.events(b.user_id,b.date,b.after??null)).slice(0,PHOTO_PAGE_SIZE);
    const photos=[];
    for(const event of events){
     if(event.guild_id!==guild||event.channel_id!==channel||!numeric(event.message_id))throw new Error('Invalid stored event');
     const msg=await message(event.message_id);if(!msg)continue;
     if(msg.author?.id!==b.user_id)throw new Error('Author mismatch');
+    const missing=event.attachments.filter(a=>!msg.attachments!.some(live=>live.id===a.attachment_id)).map(a=>a.attachment_id);
+    if(missing.length)await db.removed(event.message_id,missing);
     for(const a of event.attachments){
      const live=msg.attachments?.find(x=>x.id===a.attachment_id);if(!live)continue;
      const full=cdn(live.url,channel,a.attachment_id);if(!full)continue;
@@ -73,7 +76,7 @@ export function createPhotoHandler(options:Options){
       original:`https://discord.com/channels/${guild}/${channel}/${event.message_id}`});
     }
    }
-   return json({photos,next:events.length===10?events.at(-1)!.message_id:null});
+   return json({photos,next:events.length===PHOTO_PAGE_SIZE?events.at(-1)!.message_id:null});
   }catch(e){
    if(e instanceof SyntaxError)return json({error:'invalid_request'},400);
    if((e as {status?:number}).status===429)return json({error:'rate_limited'},429,{'Retry-After':String((e as {retry:number}).retry)});

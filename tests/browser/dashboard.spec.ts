@@ -361,3 +361,76 @@ test('aggregate detail preserves 51 actual people and photo count past opacity s
  await cell.click();await expect(page.locator('.date-detail')).toContainText('전체 51명 중 51명 운동 · 사진 포함 2명');
  await expect(page.locator('.aggregate-entry')).toHaveCount(51);
 });
+
+test('photos stay unloaded until requested and full image loads only after click', async ({page})=>{
+ let lookups=0,previews=0,full=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{
+  lookups++;
+  expect(route.request().postDataJSON()).toMatchObject({user_id:'2',date:today,code:'test-code'});
+  await route.fulfill({json:{photos:[{id:'200',preview:'https://media.discordapp.net/attachments/20/200/a.webp',url:'https://cdn.discordapp.com/attachments/20/200/a.jpg',original:'https://discord.com/channels/10/20/100',width:800,height:600}],next:null}});
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
+ await page.route('https://media.discordapp.net/**',async route=>{previews++;await route.fulfill({body:image,contentType:'image/png'});});
+ await page.route('https://cdn.discordapp.com/**',async route=>{full++;await route.fulfill({body:image,contentType:'image/png'});});
+ await fixture(page);
+ expect(lookups).toBe(0);expect(previews).toBe(0);expect(full).toBe(0);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ expect(lookups).toBe(0);
+ await page.locator(`[data-date="${today}"]`).click();
+ const photos=page.locator('.date-detail .photo-section');
+ expect(lookups).toBe(0);
+ await photos.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(photos.locator('img')).toBeVisible();
+ await expect.poll(()=>previews).toBe(1);expect(full).toBe(0);
+ const opener=photos.getByRole('button',{name:'사진 1 크게 보기'});
+ await opener.click();await expect(page.getByRole('dialog')).toBeVisible();
+ await expect.poll(()=>full).toBe(1);
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(opener).toBeFocused();
+});
+
+test('photo query failure has retry and does not erase exercise details',async({page})=>{
+ let calls=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{calls++;await route.fulfill(calls===1?{status:502,json:{error:'photos_unavailable'}}:{json:{photos:[],next:null}});});
+ await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ const photos=page.locator('.date-detail .photo-section');
+ await photos.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(photos).toContainText('사진을 불러오지 못했어요');
+ await photos.getByRole('button',{name:'다시 불러오기'}).click();
+ await expect(photos).toContainText('표시할 사진이 없어요');
+ await expect(page.locator('.date-detail')).toContainText('하루');
+});
+
+test('photo fallback has no automatic original download and fits mobile',async({page})=>{
+ await page.setViewportSize({width:320,height:740});let images=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>route.fulfill({json:{photos:[{id:'200',preview:null,url:'https://cdn.discordapp.com/attachments/20/200/a.jpg',original:'https://discord.com/channels/10/20/100'}],next:null}}));
+ page.on('request',r=>{if(r.url().includes('cdn.discordapp.com'))images++;});
+ await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ await page.locator('.photo-section').getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(page.getByRole('button',{name:'사진 1 크게 보기'})).toBeVisible();expect(images).toBe(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
+test('closing details discards a late photo response',async({page})=>{
+ let finish:()=>void=()=>{};const gate=new Promise<void>(resolve=>{finish=resolve;});
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{await gate;await route.fulfill({json:{photos:[],next:null}}).catch(()=>{});});
+ await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ await page.locator('.photo-section').getByRole('button',{name:'사진 보기',exact:true}).click();
+ await page.getByRole('button',{name:'날짜 상세 닫기'}).click();finish();
+ await expect(page.locator('.date-detail')).toBeHidden();
+ await expect(page.locator('.photo-dialog')).toHaveCount(0);
+ await expect(page.locator(`[data-date="${today}"]`)).toBeFocused();
+});
+
+test('offscreen photo previews wait for viewport entry',async({page})=>{
+ await page.setViewportSize({width:360,height:640});let downloads=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>route.fulfill({json:{photos:Array.from({length:20},(_,i)=>({id:String(200+i),preview:`https://media.discordapp.net/attachments/20/${200+i}/a.webp`,url:`https://cdn.discordapp.com/attachments/20/${200+i}/a.jpg`,original:'https://discord.com/channels/10/20/100',width:800,height:600})),next:null}}));
+ await page.route('https://media.discordapp.net/**',async route=>{downloads++;await route.fulfill({body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64'),contentType:'image/png'});});
+ await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ await page.locator('.photo-section').getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(page.locator('.photo-preview')).toHaveCount(20);
+ await expect.poll(()=>downloads).toBeGreaterThan(0);expect(downloads).toBeLessThan(20);
+ await expect(page.locator('.photo-preview').last()).not.toHaveAttribute('src');
+ await page.locator('.photo-preview').last().scrollIntoViewIfNeeded();
+ await expect(page.locator('.photo-preview').last()).toHaveAttribute('src',/media.discordapp.net/);
+});

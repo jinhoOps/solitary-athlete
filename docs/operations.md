@@ -131,3 +131,16 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 `~/Library/Logs/mukmuk/sync.log`에는 실행 시각·결과·성공/실패가 남는다(1MB×4 회전). launchd/uv 시작 오류는 같은 폴더의 `launchd-error.log`에서 확인한다. 실행은 240초에 중단되며 중단 시 자식 프로세스도 종료한다. 수동 실행·GitHub와 겹치면 `sync_already_running`으로 건너뛴다. 마지막 정상 수집은 Supabase `sync_status.last_success_at`으로 확인한다.
 
 제거는 `uv run python scripts/install_macos_scheduler.py --uninstall`이다. 이 앱의 LaunchAgent만 제거하며 `.env`, 수집 데이터, 로그, 설치 버전은 보존한다. 미리보기는 `--dry-run`으로 plist를 출력한다.
+
+
+## Discord 사진 지연 조회 (2026-10-16)
+
+- 원본·썸네일은 별도 저장하지 않는다. `workout_events.attachments`에는 서명 링크를 제외한 이미지 첨부 메타데이터만 저장한다. 기존 이벤트의 비공개 권한을 그대로 사용한다.
+- 적용 마이그레이션: `20261016000002_mukmuk_photo_metadata.sql`. `mukmuk-discord-photos`는 매 요청 월간 코드·저장된 서버/채널/메시지/첨부·작성자를 확인한다. 전용 서버 Secrets는 `MUKMUK_DISCORD_BOT_TOKEN`, `MUKMUK_DISCORD_AUTH_CHANNEL_ID`이며 기존 DB·서버 ID 설정도 사용한다.
+- 첫 화면·필터 변경에는 사진 요청이 없다. 기록 상세에서 사진 보기를 눌러 최대 3개 메시지의 사진을 조회하고 사진 더 보기로 이어간다. 미리보기는 화면에 들어올 때, 큰 이미지는 클릭할 때 Discord에서 받는다.
+- 링크 메타데이터 캐시는 최대 60초·500개 메시지이며 코드 검증을 생략하지 않는다. 404 또는 성공 응답에서 없어진 첨부만 비활성화한다. 403·429·일시 오류는 기록 삭제로 처리하지 않는다. 브라우저 캐시의 잔존·CDN 링크 유효 기간 내 전달 가능성은 남는다.
+- 과거 사진 정보만 보완할 때 `uv run python main.py --backfill-photos`를 실행한다. 기존 수집과 같은 잠금을 사용하며 메모·일별 집계·수집 커서·리액션·현황판을 수정하지 않는다. 실패 시 재실행 가능하다. 이미지 파일은 받지 않는다.
+- 운영 DB 컬럼 적용 후 과거 사진 메시지 3건의 첨부 정보를 보완했다. 운영 함수에서 잘못된 코드 HTTP 401, 유효 코드 HTTP 200·사진 1건, Discord WebP 미리보기 HTTP 200을 확인했다. 실제 메시지를 새로 게시하거나 삭제하지 않았다.
+- 수집 실행본은 설치기가 실제 `.env` 경로를 따라가도록 하여 작업 브랜치 디렉터리를 정리해도 환경 설정 경로가 유지된다. 최종 Pages·수집기 배포 상태는 아래 검증 이력에 기록한다.
+
+검증 이력: Vitest 51건, Chromium 31건(화면 밖 미리보기 요청 지연 포함), Python/DB 29건과 Deno DB 4건·함수 타입 검사·프런트 빌드가 통과했다. 리뷰의 느린 페이지·첨부만 삭제된 경우를 회귀 테스트로 고정했다. 맥북 LaunchAgent는 런타임 `091896c10394ab88`로 갱신했으며 5분 주기와 안정적인 원본 `.env` 경로를 유지한다.

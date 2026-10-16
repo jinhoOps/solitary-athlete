@@ -3,6 +3,7 @@ import markUrl from '../assets/brand/mark.svg';
 import { loadDashboard, loadTimeline } from './api';
 import { dayAt, shortDate } from './dates';
 import {el,button} from './dom';
+import {photoSection} from './photo-view';
 import {renderGrassCard} from './grass-card';
 import {renderDashboardControls} from './dashboard-controls';
 import type { DashboardData, WorkoutLog } from './types';
@@ -96,7 +97,7 @@ main.append(kpiSection, filters, yearBar, boardLayout, heading, logList, moreAre
 
 const footer = el('footer', 'footer');
 footer.append(
-  el('p', 'caption', '공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 사진은 Discord에 남습니다.'),
+  el('p', 'caption', '공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 사진은 기록을 펼친 뒤 선택해서 볼 수 있으며, 원본은 Discord에 남습니다.'),
   el('p', 'caption', '인증은 약 5분 간격으로 수집됩니다. 쉬어 간 날도 그대로 둡니다.')
 );
 
@@ -156,7 +157,9 @@ function renderCards() {
   todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();cardReveals.clear();
   const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
-  const card=renderGrassCard({year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats});
+  const card=renderGrassCard({year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,
+    photos:log=>photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,knownMembers.get(log.user_id)??log.username)});
+  cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(card.element);
   cardOpeners.set(selected??'ALL',card.openDate);cardReveals.set(selected??'ALL',card.revealToday);
   requestAnimationFrame(card.revealToday);
@@ -255,6 +258,7 @@ async function init(preserveSelection = false) {
   const request = ++generation;
   const requestedYear = selectedYear;
   app.setAttribute('aria-busy', 'true');
+  cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(el('div', 'loading-placeholder', '운동 기록을 불러오고 있어요.'));
   filters.querySelectorAll<HTMLButtonElement>('button').forEach(b => { b.disabled = true; });
   heading.hidden = true;

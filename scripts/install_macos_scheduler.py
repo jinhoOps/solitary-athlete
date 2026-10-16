@@ -29,7 +29,7 @@ def main():
     uv = shutil.which('uv')
     if not uv:
         raise SystemExit('uv is required')
-    env_file = root / '.env'
+    env_file = (root / '.env').resolve()
     if not env_file.is_file():
         raise SystemExit('Configure the project .env first')
     sources = [root / name for name in ['main.py', 'pyproject.toml', 'uv.lock', 'scripts/macos_sync.py']]
