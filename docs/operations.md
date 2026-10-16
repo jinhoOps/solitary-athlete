@@ -158,3 +158,6 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 - 진행·재시도 상태는 DB에서 유지하며 연속 일시 오류10회 또는 권한 회수 시 failed로 종료한다. 재호출로 새 요청을 접수할 수 있다. lease/version과 트랜잭션으로 재시작·중복 저장에 대비한다.
 - 신규 마이그레이션 `20261017000001_mukmuk_workout_refresh.sql`과 Discord 수신 함수·서버 명령 추가 등록이 필요하다. Edge에는 `MUKMUK_DISCORD_ROLE_MEMBER_ID`, `MUKMUK_DISCORD_AUTH_CHANNEL_ID`, 로컬/Actions에는 `DISCORD_ROLE_MEMBER_ID`를 설정한다.
 - 자동 테스트는 회원/관리자·채널 권한·잘못된404/불완전한200·메시지별 재집계/롤백·대상 중복·상한·임대·재시도10회·작업 없음0조회·시간 예산·비공개 권한을 확인한다. 실제 Discord 신규/삭제 테스트 메시지는 별도 승인 없이 만들지 않는다.
+
+
+2026-10-17 적용: 비공개 큐/함수를 공용 DB에 추가하고 기존 Discord 수신 Edge를 갱신했다. `/기록갱신`을 서버에 등록했으며 실제 옵션은 선택 `유저` 하나임을 확인했다. Edge 회원 역할 ID와 GitHub 변수, 맥북 런타임 `373e98cfe4de11bb`를 적용했다. 새 수집 실행이 exit0으로 끝났고 별도 요청 없이 생긴 갱신 작업은0건이었다. 실제 봇 채널 읽기·서버 소유자 권한 검증, 익명 큐401, 미서명 interaction401을 확인했다. 실제 사용자 인증의 삭제/갱신 작업은 명령을 직접 호출했을 때만 실행된다.
