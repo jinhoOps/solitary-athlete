@@ -15,3 +15,7 @@ verify_jwt = false
 [functions.mukmuk-monthly-code]
 # Authenticated by the purpose-bound monthly-code HMAC, never public JWT bypass alone.
 verify_jwt = false
+
+[functions.mukmuk-discord-photos]
+# Each request validates the member dashboard's monthly code server-side.
+verify_jwt = false
