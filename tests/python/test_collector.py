@@ -67,3 +67,31 @@ def test_sync_stops_board_publish_if_lock_lost_during_board_history():
     with pytest.raises(RuntimeError, match='lock connection lost'):
         run_sync(API(), Store(), {'DISCORD_GUILD_ID': 'guild',
             'DISCORD_AUTH_CHANNEL_ID': 'auth', 'DISCORD_BOARD_CHANNEL_ID': 'board'}, check_lock=check)
+
+
+def test_photo_metadata_omits_urls_and_non_images():
+    m=message(photo=False)
+    m['attachments']=[{'id':'200','filename':'a.jpg','content_type':'image/jpeg','size':100,'width':800,'height':600,'url':'https://secret','proxy_url':'https://secret'},
+                      {'id':'201','filename':'video.jpg','content_type':'video/mp4'},
+                      {'id':'202','filename':'b.PNG','size':200}]
+    e=event_from_message(m,'1','2')
+    assert [a['attachment_id'] for a in e.attachments]==['200','202']
+    assert e.attachments[0]['width']==800
+    assert 'url' not in str(e.attachments)
+
+
+def test_metadata_backfill_does_not_write_logs_and_only_confirms_404():
+    from mukmuk.photos import backfill_photos
+    from mukmuk.discord import DiscordError
+    class Store:
+        def photo_events(self, after):
+            return [{'message_id':str(i),'channel_id':'2'} for i in range(100,103)] if after is None else []
+        def photo_metadata(self, mid, attachments): updates.append((mid,attachments))
+    class API:
+        def message(self, channel, mid):
+            if mid=='101': raise DiscordError(404)
+            if mid=='102': raise DiscordError(403)
+            m=message(mid,photo=True);m['attachments'][0]['id']='200';return m
+    updates=[]
+    with pytest.raises(DiscordError): backfill_photos(API(),Store(),'1','2')
+    assert len(updates)==2 and updates[1]==('101',[])

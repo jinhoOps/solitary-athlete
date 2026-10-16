@@ -94,3 +94,21 @@ def test_sync_lock_excludes_another_connection_and_releases_after_failure():
             raise RuntimeError('fixture failure')
     with sync_lock(url, channel) as next_run:
         assert next_run is not None
+
+
+def test_attachment_metadata_reprocessing_removal_and_transaction_rollback(store):
+    m=message(photo=True)
+    m['attachments'][0].update(id='200',width=800,height=600,size=100)
+    e=event_from_message(m,'1559802401802952706','1559804769327910932')
+    store.save('100',e); store.save('100',e)
+    with store.conn.transaction():
+        row=store.conn.execute('SELECT attachments FROM solitary_athlete.workout_events WHERE message_id=%s',('100',)).fetchone()
+        assert len(row['attachments'])==1 and row['attachments'][0]['attachment_id']=='200'
+    e.guild_id='999'
+    with pytest.raises(psycopg.errors.CheckViolation): store.save('100',e)
+    with store.conn.transaction():
+        assert len(store.conn.execute("SELECT attachments FROM solitary_athlete.workout_events WHERE message_id='100'").fetchone()['attachments'])==1
+    store.save('100',event())
+    with store.conn.transaction():
+        assert store.conn.execute("SELECT attachments FROM solitary_athlete.workout_events WHERE message_id='100'").fetchone()['attachments']==[]
+    assert store.logs()[0]['verification_count']==1

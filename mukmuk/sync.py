@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import PurePath
 from .board import build_board, update_board
@@ -16,16 +16,25 @@ class Event:
     edited_at: datetime | None
     memo: str
     has_photo: bool
+    attachments: list[dict] = field(default_factory=list)
+
+def is_image(attachment):
+    mime = attachment.get('content_type', '')
+    return mime.lower().startswith('image/') if mime else PurePath(attachment.get('filename', '')).suffix.lower() in {'.jpg','.jpeg','.png','.webp','.gif','.heic','.avif'}
 
 def event_from_message(msg, guild, channel):
     author = msg.get('author',{})
     if author.get('bot') or msg.get('type') not in (0,19): return None
-    has_photo = any(a.get('content_type','').lower().startswith('image/') if a.get('content_type') else
-        PurePath(a.get('filename','')).suffix.lower() in {'.jpg','.jpeg','.png','.webp','.gif','.heic','.avif'} for a in msg.get('attachments',[]))
+    images = [a for a in msg.get('attachments', []) if is_image(a)]
+    has_photo = bool(images)
+    attachments = [dict(attachment_id=a['id'], filename=a.get('filename', ''),
+                        content_type=a.get('content_type'), size=a.get('size'),
+                        width=a.get('width'), height=a.get('height'))
+                   for a in images if str(a.get('id', '')).isdigit()]
     memo = msg.get('content','').strip()
     if not memo and not has_photo: return None
     return Event(msg['id'],guild,channel,author['id'],msg.get('member',{}).get('nick') or author.get('global_name') or author['username'],
-        datetime.fromisoformat(msg['timestamp']),datetime.fromisoformat(msg['edited_timestamp']) if msg.get('edited_timestamp') else None,memo,has_photo)
+        datetime.fromisoformat(msg['timestamp']),datetime.fromisoformat(msg['edited_timestamp']) if msg.get('edited_timestamp') else None,memo,has_photo,attachments)
 
 def collect_messages(api, channel, cursor, now):
     result, before, ceiling = [], None, cursor
