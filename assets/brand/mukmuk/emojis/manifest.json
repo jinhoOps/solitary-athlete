@@ -9,8 +9,9 @@
       "label": "인사",
       "usage": "안녕·출석·반가움",
       "file": "128/mukmuk_hi.png",
-      "bytes": 19110,
-      "uploaded": false
+      "bytes": 19683,
+      "uploaded": true,
+      "id": "1560559057419509854"
     },
     {
       "name": "mukmuk_exclaim",
