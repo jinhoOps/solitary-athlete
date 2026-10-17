@@ -194,6 +194,14 @@ components:
     borderColor: "{colors.border}"
     rounded: "{rounded.badge}"
     buttonSize: 34px
+  inception-dialog:
+    maxWidth: 400px
+    rounded: "{rounded.card}"
+    backgroundColor: "{colors.surface-card}"
+    borderColor: "{colors.hairline}"
+    textColor: "{colors.ink}"
+    backdrop: "rgb(24 39 30 / 40%)"
+    characterSize: 88px
   aggregate-grass:
     baseColor: "{colors.grass-empty}"
     overlayColor: "{colors.grass-record}"
@@ -470,7 +478,7 @@ components:
 
 ### Grass Grid & Legend
 
-선택한 **달력 연도의 1월 1일→12월 31일**을 표시한다. 기본 선택은 KST 현재 연도이며, 커뮤니티 개설 연도인 **2026년부터**만 유효한 연도로 제공한다. 연도 탐색은 잔디 제목 바(`year-bar`) 우측에 화살표 스테퍼(`‹ 2026년 ›`)로 배치하여 데스크톱과 모바일에서 동일하고 깔끔한 UX를 제공한다. 현재 연도(2026)에서 다음 연도(`›`)는 비활성화(disabled)되며, 서비스 개설 연도(2026)에서 이전 연도(`‹`)를 누르면 채널 개설일(2026년 10월 14일) 안내와 슬로건을 담은 묵묵 다이얼로그(`inception-dialog`)를 띄운다. 연도 탐색은 날짜 상세를 열어도 제자리에 유지한다.
+선택한 **달력 연도의 1월 1일→12월 31일**을 표시한다. 기본 선택은 KST 현재 연도이며, 커뮤니티 개설 연도인 **2026년부터**만 유효한 연도로 제공한다. 연도 탐색은 잔디 제목 바(`year-bar`) 우측에 화살표 스테퍼(`‹ 2026년 ›`)로 배치하여 데스크톱과 모바일에서 동일하고 깔끔한 UX를 제공한다. 현재 연도(2026)에서 다음 연도(`›`)는 비활성화(disabled)되며, 서비스 개설 연도(2026)에서 이전 연도(`‹`)를 누르면 묵묵 캐릭터 마스코트(`assets/brand/mukmuk/sprites/mukmuk-representative.png`)와 함께 채널 개설일(2026년 10월 14일) 안내와 슬로건을 담은 묵묵 다이얼로그(`inception-dialog`)를 띄운다. 연도 탐색은 날짜 상세를 열어도 제자리에 유지한다.
 
 평년 365일·윤년 366일을 정확하게 표시한다. 일요일→토요일이 행, 오래된 주→새로운 주가 열이다. 연도 앞뒤 정렬용 빈 공간은 실제 기록 없음 셀과 구분하고 선택·탐색에서 제외한다. 올해의 미래 날짜는 옅게 표시하며 비활성화한다. 셀 크기·간격과 텍스트/사진의 녹색 단계는 기존 YAML 토큰을 사용한다.
 

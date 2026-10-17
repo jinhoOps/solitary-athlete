@@ -144,7 +144,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 
 .inception-dialog { width:min(420px,calc(100% - 32px)); padding:28px 24px 24px; border:1px solid var(--border); border-radius:16px; background:white; color:var(--ink); text-align:center; box-shadow:0 12px 32px rgba(24,39,30,.12); }
 .inception-dialog::backdrop { background:rgb(24 39 30 / .4); backdrop-filter:blur(2px); }
-.inception-mark { width:48px; height:48px; margin:0 auto 12px; display:block; }
+.inception-character { width:88px; height:88px; margin:0 auto 12px; display:block; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(24,39,30,.08)); }
 .inception-dialog h2 { font-size:1.125rem; font-weight:700; margin-bottom:8px; color:var(--ink); }
 .inception-desc { font-size:0.9375rem; color:var(--ink); line-height:1.6; margin-bottom:8px; word-break:keep-all; }
 .inception-dialog .caption { font-size:0.8125rem; color:var(--muted); margin-bottom:20px; }

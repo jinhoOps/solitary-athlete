@@ -1,5 +1,5 @@
 import {el,button} from './dom';
-import markUrl from '../assets/brand/mark.svg';
+import mukmukCharacterUrl from '../assets/brand/mukmuk/sprites/mukmuk-representative.png';
 
 export const SERVICE_START_YEAR = 2026;
 export const CHANNEL_INCEPTION_DATE = '2026-10-14';
@@ -89,14 +89,14 @@ export function renderDashboardControls(options:Options):HTMLElement {
 
  const inceptionDialog = el('dialog', 'inception-dialog');
  inceptionDialog.setAttribute('aria-labelledby', 'inception-dialog-title');
- const markImg = el('img', 'inception-mark') as HTMLImageElement;
- markImg.src = markUrl; markImg.alt = ''; markImg.width = 48; markImg.height = 48;
+ const characterImg = el('img', 'inception-character') as HTMLImageElement;
+ characterImg.src = mukmukCharacterUrl; characterImg.alt = '묵묵'; characterImg.width = 88; characterImg.height = 88;
  const inceptionTitle = el('h2', '', '고독한 운동가 · 묵묵'); inceptionTitle.id = 'inception-dialog-title';
  const inceptionDesc = el('p', 'inception-desc', '고독한 운동가(#오운완) 채널은 2026년 10월 14일에 생성되었어요. 그 이전에는 남겨 둔 기록이 없어요.');
  const inceptionSlogan = el('p', 'caption', '오늘도 묵묵히, 잔디 한 칸.');
  const closeBtn = button('확인', () => inceptionDialog.close(), 'button primary inception-close');
  closeBtn.dataset.control = 'inception-close';
- inceptionDialog.append(markImg, inceptionTitle, inceptionDesc, inceptionSlogan, closeBtn);
+ inceptionDialog.append(characterImg, inceptionTitle, inceptionDesc, inceptionSlogan, closeBtn);
 
  let triggerElement: HTMLElement | null = null;
  function showInception(trigger?: HTMLElement) {

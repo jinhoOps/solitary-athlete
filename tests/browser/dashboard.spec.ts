@@ -210,6 +210,9 @@ test('year stepper displays 2026, disables next button for future, and shows inc
   
   const dialog=page.locator('.inception-dialog');
   await expect(dialog).toBeVisible();
+  const character=dialog.locator('img.inception-character');
+  await expect(character).toBeVisible();
+  await expect(character).toHaveAttribute('alt','묵묵');
   await expect(dialog).toContainText('고독한 운동가(#오운완) 채널은 2026년 10월 14일에 생성되었어요. 그 이전에는 남겨 둔 기록이 없어요.');
   await expect(dialog).toContainText('오늘도 묵묵히, 잔디 한 칸.');
   
