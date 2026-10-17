@@ -78,13 +78,12 @@ const cards = el('section', 'cards');
 cards.setAttribute('aria-label', '연도별 운동 잔디');
 const yearBar = el('div', 'year-bar');
 yearBar.hidden = true;
-const yearFilters = el('aside', 'year-filter');
+const yearFilters = el('div', 'year-filter');
 yearFilters.setAttribute('aria-label', '연도 탐색');
-const yearTitle = el('div');
+const yearTitle = el('div', 'year-title');
 const todayCaption = el('p', 'caption');
 yearTitle.append(el('h2', '', '연도별 운동 잔디'), todayCaption);
-yearBar.append(yearTitle);
-const boardLayout=el('div','dashboard-layout');boardLayout.append(cards,yearFilters);
+yearBar.append(yearTitle, yearFilters);
 
 const heading = el('div', 'section-heading');
 heading.append(el('h2', '', '남겨 둔 운동'), el('span', 'caption', '날짜별 기록 · 최신순'));
@@ -93,7 +92,7 @@ const logList = el('section', 'timeline');
 logList.setAttribute('aria-label', '운동 메모');
 
 const moreArea = el('div', 'more-area');
-main.append(kpiSection, filters, yearBar, boardLayout, heading, logList, moreArea, feedback);
+main.append(kpiSection, filters, yearBar, cards, heading, logList, moreArea, feedback);
 
 const footer = el('footer', 'footer');
 footer.append(

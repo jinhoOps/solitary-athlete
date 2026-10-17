@@ -186,14 +186,14 @@ components:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
     borderColor: "{colors.primary}"
-  year-filter:
-    display: flex
-    flexDirection: column
-    width: 96px
-    gap: "{spacing.xxs}"
-    buttonStyle: "{components.member-filter}"
-    activeStyle: "{components.member-filter-active}"
-    minHeight: "{layout.target-min}"
+  year-stepper:
+    display: inline-flex
+    alignItems: center
+    gap: 2px
+    backgroundColor: "{colors.surface-card}"
+    borderColor: "{colors.border}"
+    rounded: "{rounded.badge}"
+    buttonSize: 34px
   aggregate-grass:
     baseColor: "{colors.grass-empty}"
     overlayColor: "{colors.grass-record}"
@@ -470,7 +470,7 @@ components:
 
 ### Grass Grid & Legend
 
-선택한 **달력 연도의 1월 1일→12월 31일**을 표시한다. 기본 선택은 KST 현재 연도이며, 커뮤니티 개설 연도인 **2026년부터**만 유효한 연도로 제공한다. 데스크톱은 그래프 오른쪽 세로 탐색에 `2026년` 등 시작 연도까지의 내림차순 버튼과 `이전 연도` 안내 버튼을 제공한다. `이전 연도`를 누르면 채널 개설일(2026년 10월 14일) 안내와 슬로건을 담은 묵묵 다이얼로그(`inception-dialog`)를 띄운다. 연도 버튼은 멤버 필터와 동일한 선택·포커스 색상을 사용하며 최소 높이 44px, `aria-pressed`로 선택을 알린다. 모바일에서는 그래프 위에 레이블이 있는 네이티브 `연도` 선택기(`2026년 ▾`)를 두고, `이전 연도...` 선택 시 동일하게 채널 개설일 안내 다이얼로그를 표시하며 선택값을 현재 연도로 유지한다. 연도 탐색은 날짜 상세를 열어도 제자리에 유지한다.
+선택한 **달력 연도의 1월 1일→12월 31일**을 표시한다. 기본 선택은 KST 현재 연도이며, 커뮤니티 개설 연도인 **2026년부터**만 유효한 연도로 제공한다. 연도 탐색은 잔디 제목 바(`year-bar`) 우측에 화살표 스테퍼(`‹ 2026년 ›`)로 배치하여 데스크톱과 모바일에서 동일하고 깔끔한 UX를 제공한다. 현재 연도(2026)에서 다음 연도(`›`)는 비활성화(disabled)되며, 서비스 개설 연도(2026)에서 이전 연도(`‹`)를 누르면 채널 개설일(2026년 10월 14일) 안내와 슬로건을 담은 묵묵 다이얼로그(`inception-dialog`)를 띄운다. 연도 탐색은 날짜 상세를 열어도 제자리에 유지한다.
 
 평년 365일·윤년 366일을 정확하게 표시한다. 일요일→토요일이 행, 오래된 주→새로운 주가 열이다. 연도 앞뒤 정렬용 빈 공간은 실제 기록 없음 셀과 구분하고 선택·탐색에서 제외한다. 올해의 미래 날짜는 옅게 표시하며 비활성화한다. 셀 크기·간격과 텍스트/사진의 녹색 단계는 기존 YAML 토큰을 사용한다.
 

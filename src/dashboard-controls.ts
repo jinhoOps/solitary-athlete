@@ -62,10 +62,31 @@ export function renderDashboardControls(options:Options):HTMLElement {
  let lastWidth=-1;
  const observer=new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;requestAnimationFrame(fit);}});observer.observe(list);root.addEventListener('dispose',()=>{observer.disconnect();dialog.remove();});requestAnimationFrame(fit);
 
- const years = el('div', 'year-controls'), desktop = el('nav', 'year-desktop'); desktop.setAttribute('aria-label', '잔디 연도 선택');
- const mobile = el('div', 'year-mobile'), yearLabel = el('label', '', '연도'); yearLabel.htmlFor = 'year-select';
- const select = el('select', 'button secondary'); select.id = 'year-select'; select.dataset.control = 'year-select';
- 
+ const years = el('div', 'year-controls');
+ const stepper = el('div', 'year-stepper');
+ stepper.setAttribute('role', 'group');
+ stepper.setAttribute('aria-label', '잔디 연도 탐색');
+
+ function createIcon(points: string): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '18');
+  svg.setAttribute('height', '18');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.5');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  polyline.setAttribute('points', points);
+  svg.append(polyline);
+  return svg;
+ }
+
+ let selectedYear = options.selectedYear;
+ const current = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()));
+
  const inceptionDialog = el('dialog', 'inception-dialog');
  inceptionDialog.setAttribute('aria-labelledby', 'inception-dialog-title');
  const markImg = el('img', 'inception-mark') as HTMLImageElement;
@@ -98,35 +119,49 @@ export function renderDashboardControls(options:Options):HTMLElement {
   if (!isIn) inceptionDialog.close();
  });
 
- select.onchange = () => {
-  if (select.value === 'older') {
-   select.value = String(selectedYear);
-   showInception(select);
+ const prevBtn = button('', () => onPrev(), 'button stepper-btn year-prev');
+ prevBtn.dataset.control = 'year-prev';
+ prevBtn.setAttribute('aria-label', '이전 연도');
+ prevBtn.append(createIcon('15 18 9 12 15 6'));
+
+ const yearLabel = el('span', 'year-label', `${selectedYear}년`);
+ yearLabel.dataset.control = 'year-current';
+ yearLabel.setAttribute('aria-live', 'polite');
+
+ const nextBtn = button('', () => onNext(), 'button stepper-btn year-next');
+ nextBtn.dataset.control = 'year-next';
+ nextBtn.setAttribute('aria-label', '다음 연도');
+ nextBtn.append(createIcon('9 18 15 12 9 6'));
+
+ function updateStepper() {
+  yearLabel.textContent = `${selectedYear}년`;
+  nextBtn.disabled = selectedYear >= current;
+ }
+
+ function onPrev() {
+  if (selectedYear <= SERVICE_START_YEAR) {
+   showInception(prevBtn);
    return;
   }
-  setYear(Number(select.value));
- };
-
- mobile.append(yearLabel, select); years.append(mobile, desktop, inceptionDialog); root.append(years);
- root.addEventListener('dispose', () => { inceptionDialog.remove(); });
- let selectedYear = options.selectedYear; const current = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()));
- function setYear(year: number) { selectedYear = year; select.value = String(year); desktop.querySelectorAll<HTMLButtonElement>('[data-year]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.year) === year))); options.onYearChange(year); }
- function renderYears() {
-  desktop.replaceChildren(); select.replaceChildren();
-  for (let year = current; year >= SERVICE_START_YEAR; year--) {
-   const b = button(`${year}년`, () => setYear(year), 'filter-button'); b.dataset.year = String(year); b.dataset.control = `year-${year}`; b.setAttribute('aria-pressed', String(year === selectedYear)); desktop.append(b);
-   const option = el('option', '', `${year}년`); option.value = String(year); select.append(option);
-  }
-  const olderBtn = button('이전 연도', () => showInception(olderBtn), 'button secondary year-older');
-  olderBtn.dataset.control = 'year-older';
-  olderBtn.title = '2026년 이전 기록 안내';
-  desktop.append(olderBtn);
-
-  const olderOption = el('option', '', '이전 연도...');
-  olderOption.value = 'older';
-  select.append(olderOption);
-
-  select.value = String(selectedYear);
+  setYear(selectedYear - 1);
  }
- renderYears();return root;
+
+ function onNext() {
+  if (selectedYear < current) {
+   setYear(selectedYear + 1);
+  }
+ }
+
+ function setYear(year: number) {
+  selectedYear = year;
+  updateStepper();
+  options.onYearChange(year);
+ }
+
+ stepper.append(prevBtn, yearLabel, nextBtn);
+ years.append(stepper, inceptionDialog);
+ root.append(years);
+ root.addEventListener('dispose', () => { inceptionDialog.remove(); });
+ updateStepper();
+ return root;
 }

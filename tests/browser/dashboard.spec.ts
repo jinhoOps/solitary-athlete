@@ -193,20 +193,21 @@ test('supports 200 percent text scaling without a page overflow', async ({ page 
   await expect(page.getByRole('button', { name: '전체 멤버' })).toBeVisible();
 });
 
-test('year navigation provides only foundation year 2026 without obsolete older years or expand button',async({page})=>{
+test('year stepper displays 2026, disables next button for future, and shows inception dialog on previous button',async({page})=>{
   await fixture(page);
-  const card=page.locator('.workout-card');
-  await expect(card.locator('[data-date="2026-01-01"]')).toHaveCount(1);
-  await expect(page.getByRole('button',{name:'2026년',exact:true})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('button',{name:'2025년',exact:true})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'이전 연도 더 보기'})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'이전 연도',exact:true})).toHaveCount(1);
-});
-
-test('shows inception dialog with channel creation date when attempting to view older years',async({page})=>{
-  await fixture(page);
-  const olderBtn=page.getByRole('button',{name:'이전 연도',exact:true});
-  await olderBtn.click();
+  const stepper=page.locator('.year-stepper');
+  await expect(stepper).toBeVisible();
+  await expect(stepper.locator('.year-label')).toHaveText('2026년');
+  
+  // Next button is disabled because 2026 is current year
+  const nextBtn=stepper.getByRole('button',{name:'다음 연도'});
+  await expect(nextBtn).toBeDisabled();
+  
+  // Previous button triggers inception dialog
+  const prevBtn=stepper.getByRole('button',{name:'이전 연도'});
+  await expect(prevBtn).toBeEnabled();
+  await prevBtn.click();
+  
   const dialog=page.locator('.inception-dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('고독한 운동가(#오운완) 채널은 2026년 10월 14일에 생성되었어요. 그 이전에는 남겨 둔 기록이 없어요.');
@@ -215,14 +216,14 @@ test('shows inception dialog with channel creation date when attempting to view 
   // Close with confirm button and verify focus restoration
   await dialog.getByRole('button',{name:'확인',exact:true}).click();
   await expect(dialog).toBeHidden();
-  await expect(olderBtn).toBeFocused();
+  await expect(prevBtn).toBeFocused();
 
   // Re-open and verify Escape key closes dialog
-  await olderBtn.click();
+  await prevBtn.click();
   await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await expect(olderBtn).toBeFocused();
+  await expect(prevBtn).toBeFocused();
 });
 
 test('keeps 2026 dashboard stable while viewing members and preserves active states',async({page})=>{
@@ -286,17 +287,21 @@ test('all joint workout king nicknames remain visible without page overflow',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test('mobile year select triggers inception dialog on older option and preserves member search',async({page})=>{
+test('mobile year stepper triggers inception dialog on older navigation and preserves member search',async({page})=>{
  await page.setViewportSize({width:360,height:900});await fixture(page);
  await page.getByRole('button',{name:'하루',exact:true}).click();
- await page.getByLabel('연도', {exact:true}).selectOption('older');
+ await expect(page.locator('.workout-card')).toContainText('하루');
+
+ const prevBtn=page.getByRole('button',{name:'이전 연도'});
+ await prevBtn.click();
  const dialog=page.locator('.inception-dialog');
  await expect(dialog).toBeVisible();
  await expect(dialog).toContainText('2026년 10월 14일');
  await dialog.getByRole('button',{name:'확인',exact:true}).click();
  await expect(dialog).toBeHidden();
- await expect(page.getByLabel('연도', {exact:true})).toHaveValue('2026');
+ await expect(page.locator('.year-label')).toHaveText('2026년');
  await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
+
  await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
  const search=page.getByLabel('멤버 이름 검색');await expect(search).toBeFocused();
  await search.fill('과거');await page.getByRole('dialog').getByRole('button',{name:/과거 전용/}).click();
