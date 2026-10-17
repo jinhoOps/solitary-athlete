@@ -121,7 +121,6 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .date-detail { width: 100%; margin-top: 16px; }
 .aggregate-entry + .aggregate-entry { margin-top: 16px; }
 .aggregate-cell { background: linear-gradient(rgb(75 143 82 / var(--aggregate-opacity)),rgb(75 143 82 / var(--aggregate-opacity))),var(--empty); }
-.aggregate-cell[data-count]:not([data-count="0"]) { box-shadow: inset 0 0 0 1px var(--primary); }
 
 .king-member + .king-member { margin-top: 12px; }
 @media(max-width:767px) { .kpi-card--king { grid-column: 1 / -1; } }
