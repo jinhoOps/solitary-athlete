@@ -193,53 +193,45 @@ test('supports 200 percent text scaling without a page overflow', async ({ page 
   await expect(page.getByRole('button', { name: '전체 멤버' })).toBeVisible();
 });
 
-test('switches full calendar years while preserving selected member and keyboard entry',async({page})=>{
+test('year navigation provides only foundation year 2026 without obsolete older years or expand button',async({page})=>{
   await fixture(page);
   const card=page.locator('.workout-card');
   await expect(card.locator('[data-date="2026-01-01"]')).toHaveCount(1);
-  await expect(card.locator('[data-date="2026-12-31"]')).toBeDisabled();
-  await page.getByRole('button',{name:'하루',exact:true}).click();
-  const request=page.waitForRequest(r=>r.url().includes('/rpc/get_workout_logs_page') && r.postDataJSON()?.p_year===2025);
-  await page.getByRole('button',{name:'2025년',exact:true}).click();
-  await request;
-  await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
-  await expect(card.locator('[data-date="2025-01-01"]')).toHaveCount(1);
-  await expect(card.locator('[data-date="2025-12-31"]')).toHaveAttribute('tabindex','0');
-  await expect(card.locator('[data-date="2025-01-02"]')).toHaveAttribute('data-level','2');
-  await expect(page.locator('.timeline')).toContainText('작년 운동');
-  await page.getByRole('button',{name:'2024년',exact:true}).click();
-  await expect(card.locator('.grass-cell[data-date]')).toHaveCount(366);
-  await expect(card.locator('[data-date="2024-02-29"]')).toHaveCount(1);
-  await expect(card.locator('.grass-cell[tabindex="0"]')).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'2026년',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('button',{name:'2025년',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'이전 연도 더 보기'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'이전 연도',exact:true})).toHaveCount(1);
 });
 
-test('keeps current-month KPIs while viewing a past year and expands older years',async({page})=>{
+test('shows inception dialog with channel creation date when attempting to view older years',async({page})=>{
+  await fixture(page);
+  const olderBtn=page.getByRole('button',{name:'이전 연도',exact:true});
+  await olderBtn.click();
+  const dialog=page.locator('.inception-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('고독한 운동가(#오운완) 채널은 2026년 10월 14일에 생성되었어요. 그 이전에는 남겨 둔 기록이 없어요.');
+  await expect(dialog).toContainText('오늘도 묵묵히, 잔디 한 칸.');
+  
+  // Close with confirm button and verify focus restoration
+  await dialog.getByRole('button',{name:'확인',exact:true}).click();
+  await expect(dialog).toBeHidden();
+  await expect(olderBtn).toBeFocused();
+
+  // Re-open and verify Escape key closes dialog
+  await olderBtn.click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(olderBtn).toBeFocused();
+});
+
+test('keeps 2026 dashboard stable while viewing members and preserves active states',async({page})=>{
   await fixture(page);
   const values=await page.locator('.kpi-value').allTextContents();
-  await page.getByRole('button',{name:'2025년',exact:true}).click();
-  await expect(page.locator('.workout-card').first()).toContainText('2025년 · 1월 1일 — 12월 31일');
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  await expect(page.locator('.workout-card').first()).toContainText('2026년 · 1월 1일 — 12월 31일');
   expect(await page.locator('.kpi-value').allTextContents()).toEqual(values);
-  await page.getByRole('button',{name:'이전 연도 더 보기'}).click();
-  await expect(page.getByRole('button',{name:'2021년',exact:true})).toBeVisible();
-});
-
-test('ignores a slower response for a previously selected year',async({page})=>{
-  await fixture(page);
-  let release!:()=>void;
-  const gate=new Promise<void>(resolve=>{release=resolve;});
-  await page.route('**/rpc/get_workout_logs_page',async route=>{
-    const year=route.request().postDataJSON().p_year;
-    if(year===2025)await gate;
-    await route.fulfill({json:[{...logs[0],log_date:`${year}-01-02`,memo:`${year} 기록`}]});
-  });
-  const pending=page.waitForRequest(r=>r.url().includes('rpc/get_workout_logs_page') && r.postDataJSON().p_year===2025);
-  await page.getByRole('button',{name:'2025년',exact:true}).click();await pending;
-  await page.getByRole('button',{name:'2024년',exact:true}).click();
-  await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
-  const settled=page.waitForResponse(r=>r.url().includes('rpc/get_workout_logs_page') && r.request().postDataJSON().p_year===2025);
-  release();await settled;
-  await expect(page.locator('.workout-card').first()).toContainText('2024년 · 1월 1일 — 12월 31일');
-  await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
 });
 
 test('reveals today automatically without stealing focus, then reveals selected date and detail',async({page})=>{
@@ -294,11 +286,16 @@ test('all joint workout king nicknames remain visible without page overflow',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test('mobile year select preserves member and search finds hidden same-name members',async({page})=>{
+test('mobile year select triggers inception dialog on older option and preserves member search',async({page})=>{
  await page.setViewportSize({width:360,height:900});await fixture(page);
  await page.getByRole('button',{name:'하루',exact:true}).click();
- await page.getByLabel('연도', {exact:true}).selectOption('2025');
- await expect(page.locator('.workout-card')).toContainText('2025년');
+ await page.getByLabel('연도', {exact:true}).selectOption('older');
+ const dialog=page.locator('.inception-dialog');
+ await expect(dialog).toBeVisible();
+ await expect(dialog).toContainText('2026년 10월 14일');
+ await dialog.getByRole('button',{name:'확인',exact:true}).click();
+ await expect(dialog).toBeHidden();
+ await expect(page.getByLabel('연도', {exact:true})).toHaveValue('2026');
  await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
  const search=page.getByLabel('멤버 이름 검색');await expect(search).toBeFocused();
@@ -375,6 +372,7 @@ test('photos stay unloaded until requested and full image loads only after click
  await fixture(page);
  expect(lookups).toBe(0);expect(previews).toBe(0);expect(full).toBe(0);
  await page.getByRole('button',{name:'하루',exact:true}).click();
+ await expect(page.locator('.workout-card')).toContainText('하루');
  expect(lookups).toBe(0);
  await page.locator(`[data-date="${today}"]`).click();
  const photos=page.locator('.date-detail .photo-section');

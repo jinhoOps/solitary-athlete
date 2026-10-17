@@ -1,4 +1,9 @@
 import {el,button} from './dom';
+import markUrl from '../assets/brand/mark.svg';
+
+export const SERVICE_START_YEAR = 2026;
+export const CHANNEL_INCEPTION_DATE = '2026-10-14';
+
 interface Options {
  roster:{id:string;name:string}[];selectedMemberId:string|null;selectedYear:number;
  onMemberChange:(id:string|null)=>void;onYearChange:(year:number)=>void;
@@ -57,24 +62,71 @@ export function renderDashboardControls(options:Options):HTMLElement {
  let lastWidth=-1;
  const observer=new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;requestAnimationFrame(fit);}});observer.observe(list);root.addEventListener('dispose',()=>{observer.disconnect();dialog.remove();});requestAnimationFrame(fit);
 
- const years=el('div','year-controls'),desktop=el('nav','year-desktop');desktop.setAttribute('aria-label','잔디 연도 선택');
- const mobile=el('div','year-mobile'),yearLabel=el('label','','연도');yearLabel.htmlFor='year-select';
- const select=el('select','button secondary');select.id='year-select';select.dataset.control='year-select';select.onchange=()=>setYear(Number(select.value));
- mobile.append(yearLabel,select);years.append(mobile,desktop);root.append(years);
- let selectedYear=options.selectedYear;const current=Number(new Intl.DateTimeFormat('en',{timeZone:'Asia/Seoul',year:'numeric'}).format(new Date()));
- let oldest=Math.min(current-4,selectedYear);
- function setYear(year:number){selectedYear=year;select.value=String(year);desktop.querySelectorAll<HTMLButtonElement>('[data-year]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.year)===year)));options.onYearChange(year);}
- function renderYears(){
-  desktop.replaceChildren();select.replaceChildren();
-  for(let year=current;year>=Math.max(1,oldest);year--){
-   const b=button(`${year}년`,()=>setYear(year),'filter-button');b.dataset.year=String(year);b.dataset.control=`year-${year}`;b.setAttribute('aria-pressed',String(year===selectedYear));desktop.append(b);
-   const option=el('option','',`${year}년`);option.value=String(year);select.append(option);
+ const years = el('div', 'year-controls'), desktop = el('nav', 'year-desktop'); desktop.setAttribute('aria-label', '잔디 연도 선택');
+ const mobile = el('div', 'year-mobile'), yearLabel = el('label', '', '연도'); yearLabel.htmlFor = 'year-select';
+ const select = el('select', 'button secondary'); select.id = 'year-select'; select.dataset.control = 'year-select';
+ 
+ const inceptionDialog = el('dialog', 'inception-dialog');
+ inceptionDialog.setAttribute('aria-labelledby', 'inception-dialog-title');
+ const markImg = el('img', 'inception-mark') as HTMLImageElement;
+ markImg.src = markUrl; markImg.alt = ''; markImg.width = 48; markImg.height = 48;
+ const inceptionTitle = el('h2', '', '고독한 운동가 · 묵묵'); inceptionTitle.id = 'inception-dialog-title';
+ const inceptionDesc = el('p', 'inception-desc', '고독한 운동가(#오운완) 채널은 2026년 10월 14일에 생성되었어요. 그 이전에는 남겨 둔 기록이 없어요.');
+ const inceptionSlogan = el('p', 'caption', '오늘도 묵묵히, 잔디 한 칸.');
+ const closeBtn = button('확인', () => inceptionDialog.close(), 'button primary inception-close');
+ closeBtn.dataset.control = 'inception-close';
+ inceptionDialog.append(markImg, inceptionTitle, inceptionDesc, inceptionSlogan, closeBtn);
+
+ let triggerElement: HTMLElement | null = null;
+ function showInception(trigger?: HTMLElement) {
+  triggerElement = trigger ?? null;
+  inceptionDialog.showModal();
+  closeBtn.focus();
+ }
+ inceptionDialog.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); inceptionDialog.close(); }
+ });
+ inceptionDialog.addEventListener('close', () => {
+  triggerElement?.focus({ preventScroll: true });
+ });
+ inceptionDialog.addEventListener('click', e => {
+  const rect = inceptionDialog.getBoundingClientRect();
+  const isIn = (
+   rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+   rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+  );
+  if (!isIn) inceptionDialog.close();
+ });
+
+ select.onchange = () => {
+  if (select.value === 'older') {
+   select.value = String(selectedYear);
+   showInception(select);
+   return;
   }
-  select.value=String(selectedYear);
-  const extend=()=>{oldest=Math.max(1,oldest-5);renderYears();};
-  if(oldest>1){desktop.append(button('이전 연도 더 보기',()=>{extend();desktop.querySelector<HTMLButtonElement>(`[data-year="${oldest+4}"]`)?.focus();}));
-   const more=button('이전 연도 더 보기',extend);mobile.querySelector('button')?.remove();mobile.append(more);
-  } else mobile.querySelector('button')?.remove();
+  setYear(Number(select.value));
+ };
+
+ mobile.append(yearLabel, select); years.append(mobile, desktop, inceptionDialog); root.append(years);
+ root.addEventListener('dispose', () => { inceptionDialog.remove(); });
+ let selectedYear = options.selectedYear; const current = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()));
+ function setYear(year: number) { selectedYear = year; select.value = String(year); desktop.querySelectorAll<HTMLButtonElement>('[data-year]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.year) === year))); options.onYearChange(year); }
+ function renderYears() {
+  desktop.replaceChildren(); select.replaceChildren();
+  for (let year = current; year >= SERVICE_START_YEAR; year--) {
+   const b = button(`${year}년`, () => setYear(year), 'filter-button'); b.dataset.year = String(year); b.dataset.control = `year-${year}`; b.setAttribute('aria-pressed', String(year === selectedYear)); desktop.append(b);
+   const option = el('option', '', `${year}년`); option.value = String(year); select.append(option);
+  }
+  const olderBtn = button('이전 연도', () => showInception(olderBtn), 'button secondary year-older');
+  olderBtn.dataset.control = 'year-older';
+  olderBtn.title = '2026년 이전 기록 안내';
+  desktop.append(olderBtn);
+
+  const olderOption = el('option', '', '이전 연도...');
+  olderOption.value = 'older';
+  select.append(olderOption);
+
+  select.value = String(selectedYear);
  }
  renderYears();return root;
 }

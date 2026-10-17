@@ -5,7 +5,7 @@ import { dayAt, shortDate } from './dates';
 import {el,button} from './dom';
 import {photoSection} from './photo-view';
 import {renderGrassCard} from './grass-card';
-import {renderDashboardControls} from './dashboard-controls';
+import {renderDashboardControls, SERVICE_START_YEAR} from './dashboard-controls';
 import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -13,7 +13,7 @@ const config = __PUBLIC_CONFIG__;
 let today = dayAt();
 let data: DashboardData;
 const currentYear = Number(today.slice(0, 4));
-let selectedYear = currentYear;
+let selectedYear = Math.max(SERVICE_START_YEAR, currentYear);
 let currentKPIs: DashboardData['kpis'] | undefined;
 const knownMembers = new Map<string, string>();
 let selected: string | null = null;
@@ -256,6 +256,7 @@ function showAuthModal(errorMsg?: string) {
 
 async function init(preserveSelection = false) {
   const request = ++generation;
+  if (selectedYear < SERVICE_START_YEAR) selectedYear = SERVICE_START_YEAR;
   const requestedYear = selectedYear;
   app.setAttribute('aria-busy', 'true');
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));

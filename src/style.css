@@ -139,6 +139,15 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .member-dialog::backdrop { background:rgb(24 39 30 / .4); }
 .member-dialog label { display:block; margin:16px 0 8px; }
 .member-results { display:grid; gap:8px; margin:16px 0; max-height:45dvh; overflow:auto; }
+.year-desktop .year-older { color:var(--muted); border-style:dashed; font-size:0.875rem; }
+.year-desktop .year-older:hover { color:var(--ink); border-style:solid; }
+.inception-dialog { width:min(420px,calc(100% - 32px)); padding:28px 24px 24px; border:1px solid var(--border); border-radius:16px; background:white; color:var(--ink); text-align:center; box-shadow:0 12px 32px rgba(24,39,30,.12); }
+.inception-dialog::backdrop { background:rgb(24 39 30 / .4); backdrop-filter:blur(2px); }
+.inception-mark { width:48px; height:48px; margin:0 auto 12px; display:block; }
+.inception-dialog h2 { font-size:1.125rem; font-weight:700; margin-bottom:8px; color:var(--ink); }
+.inception-desc { font-size:0.9375rem; color:var(--ink); line-height:1.6; margin-bottom:8px; word-break:keep-all; }
+.inception-dialog .caption { font-size:0.8125rem; color:var(--muted); margin-bottom:20px; }
+.inception-dialog button { min-width:96px; margin:0 auto; }
 @media(max-width:767px){
  .dashboard-layout { display:flex; flex-direction:column; }
  .dashboard-layout>.cards { width:100%; order:1; }
