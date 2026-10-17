@@ -5,7 +5,7 @@ import { dayAt, shortDate } from './dates';
 import {el,button} from './dom';
 import {photoSection} from './photo-view';
 import {renderGrassCard} from './grass-card';
-import {renderDashboardControls} from './dashboard-controls';
+import {renderDashboardControls, SERVICE_START_YEAR} from './dashboard-controls';
 import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -13,7 +13,7 @@ const config = __PUBLIC_CONFIG__;
 let today = dayAt();
 let data: DashboardData;
 const currentYear = Number(today.slice(0, 4));
-let selectedYear = currentYear;
+let selectedYear = Math.max(SERVICE_START_YEAR, currentYear);
 let currentKPIs: DashboardData['kpis'] | undefined;
 const knownMembers = new Map<string, string>();
 let selected: string | null = null;
@@ -78,13 +78,12 @@ const cards = el('section', 'cards');
 cards.setAttribute('aria-label', '연도별 운동 잔디');
 const yearBar = el('div', 'year-bar');
 yearBar.hidden = true;
-const yearFilters = el('aside', 'year-filter');
+const yearFilters = el('div', 'year-filter');
 yearFilters.setAttribute('aria-label', '연도 탐색');
-const yearTitle = el('div');
+const yearTitle = el('div', 'year-title');
 const todayCaption = el('p', 'caption');
 yearTitle.append(el('h2', '', '연도별 운동 잔디'), todayCaption);
-yearBar.append(yearTitle);
-const boardLayout=el('div','dashboard-layout');boardLayout.append(cards,yearFilters);
+yearBar.append(yearTitle, yearFilters);
 
 const heading = el('div', 'section-heading');
 heading.append(el('h2', '', '남겨 둔 운동'), el('span', 'caption', '날짜별 기록 · 최신순'));
@@ -93,7 +92,7 @@ const logList = el('section', 'timeline');
 logList.setAttribute('aria-label', '운동 메모');
 
 const moreArea = el('div', 'more-area');
-main.append(kpiSection, filters, yearBar, boardLayout, heading, logList, moreArea, feedback);
+main.append(kpiSection, filters, yearBar, cards, heading, logList, moreArea, feedback);
 
 const footer = el('footer', 'footer');
 footer.append(
@@ -256,6 +255,7 @@ function showAuthModal(errorMsg?: string) {
 
 async function init(preserveSelection = false) {
   const request = ++generation;
+  if (selectedYear < SERVICE_START_YEAR) selectedYear = SERVICE_START_YEAR;
   const requestedYear = selectedYear;
   app.setAttribute('aria-busy', 'true');
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
