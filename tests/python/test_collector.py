@@ -58,6 +58,7 @@ def test_sync_stops_board_publish_if_lock_lost_during_board_history():
             return []
         def write(self, *args): pytest.fail('must not publish without lock')
     class Store:
+        def claim_refresh(self): return None
         def state(self, cid): return {'last_message_id': None}
         def pending_reactions(self): return []
         def logs(self): return []
@@ -108,6 +109,7 @@ def test_sync_reactions_custom_and_fallback_emojis():
             reactions.append((cid, mid, emoji))
         def write(self, *args, **kwargs): return {'id': 'board-1'}
     class Store:
+        def claim_refresh(self): return None
         def state(self, cid): return {'last_message_id': None}
         def pending_reactions(self):
             return [

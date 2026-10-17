@@ -72,6 +72,8 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None):
         check_lock()
         store.save(msg['id'], event_from_message(msg,guild,channel))
     check_emoji, flex_emoji = reaction_emojis(settings)
+    from .reconcile import process_refresh
+    process_refresh(api, store, settings, bot['id'], check_lock=check_lock)
     for pending in store.pending_reactions():
         check_lock()
         try:

@@ -13,7 +13,7 @@ def store():
     url=os.environ.get('TEST_DATABASE_URL')
     if not url: pytest.skip('Use scripts/test-db.sh for the isolated PostgreSQL integration suite')
     with psycopg.connect(url, autocommit=True) as admin:
-        admin.execute('TRUNCATE solitary_athlete.workout_events, solitary_athlete.workout_logs, solitary_athlete.sync_state, solitary_athlete.sync_status, solitary_athlete.reply_cleanup_jobs, solitary_athlete.channel_access_secrets')
+        admin.execute('TRUNCATE solitary_athlete.workout_events, solitary_athlete.workout_logs, solitary_athlete.sync_state, solitary_athlete.sync_status, solitary_athlete.reply_cleanup_jobs, solitary_athlete.channel_access_secrets, solitary_athlete.workout_refresh_jobs')
     with psycopg.connect(url) as conn:
         conn.execute('SET ROLE mukmuk_worker'); conn.commit()
         yield Store(conn)
@@ -118,3 +118,65 @@ def test_attachment_metadata_reprocessing_removal_and_transaction_rollback(store
     with store.conn.transaction():
         assert store.conn.execute("SELECT attachments FROM solitary_athlete.workout_events WHERE message_id='100'").fetchone()['attachments']==[]
     assert store.logs()[0]['verification_count']==1
+
+
+def test_refresh_job_enqueue_deduplicates_target_and_zero_history(store):
+    with store.conn.transaction():store.conn.execute('DELETE FROM solitary_athlete.workout_refresh_jobs')
+    store.save('100',event())
+    def enqueue(i,target='123'):
+        with store.conn.transaction():
+            return store.conn.execute("SELECT * FROM solitary_athlete.enqueue_workout_refresh(%s,'123',%s,'1559802401802952706','1559804769327910932')",(i,target)).fetchone()
+    a=enqueue('900');b=enqueue('901')
+    assert a['id']==b['id']=='900' and a['total']==1 and a['upper_id']=='100'
+    assert enqueue('902','999')['status']=='done'
+
+
+def test_refresh_atomic_removal_scope_snapshot_and_lease_fencing(store):
+    with store.conn.transaction():store.conn.execute('DELETE FROM solitary_athlete.workout_refresh_jobs')
+    store.save('100',event());store.save('101',event('101','',True))
+    with store.conn.transaction():
+        store.conn.execute("SELECT * FROM solitary_athlete.enqueue_workout_refresh('950','123','123','1559802401802952706','1559804769327910932')")
+    job=store.claim_refresh();assert job['total']==2
+    store.save('102',event('102','new'))
+    assert [r['message_id'] for r in store.refresh_events(job)]==['100','101']
+    store.apply_refresh(job,'100',event())
+    store.apply_refresh(job,'101',None)
+    assert store.logs()[0]['memo']=='걷기\nnew' and not store.logs()[0]['has_photo']
+    store.apply_refresh(job,'101',None)
+    with store.conn.transaction():
+        row=store.conn.execute("SELECT checked,removed FROM solitary_athlete.workout_refresh_jobs WHERE id='950'").fetchone()
+        assert row=={'checked':2,'removed':1}
+    stale={**job,'version':job['version']-1}
+    with pytest.raises(RuntimeError,match='lease'):store.apply_refresh(stale,'100',None)
+    store.finish_refresh_batch(job)
+    with store.conn.transaction():assert store.conn.execute("SELECT status FROM solitary_athlete.workout_refresh_jobs WHERE id='950'").fetchone()['status']=='done'
+
+
+def test_refresh_failed_save_rolls_back_cursor_and_counts(store):
+    with store.conn.transaction():store.conn.execute('DELETE FROM solitary_athlete.workout_refresh_jobs')
+    store.save('100',event())
+    with store.conn.transaction():store.conn.execute("SELECT * FROM solitary_athlete.enqueue_workout_refresh('960','123','123','1559802401802952706','1559804769327910932')")
+    job=store.claim_refresh();bad=event();bad.guild_id='999'
+    with pytest.raises(psycopg.errors.CheckViolation):store.apply_refresh(job,'100',bad)
+    assert store.logs()[0]['memo']=='걷기'
+    with store.conn.transaction():
+        row=store.conn.execute("SELECT checked,cursor_id FROM solitary_athlete.workout_refresh_jobs WHERE id='960'").fetchone()
+        assert row=={'checked':0,'cursor_id':'0'}
+
+
+def test_refresh_retry_limit_lease_expiry_and_private_queue(store):
+    with store.conn.transaction():store.conn.execute('DELETE FROM solitary_athlete.workout_refresh_jobs')
+    store.save('100',event())
+    with store.conn.transaction():store.conn.execute("SELECT * FROM solitary_athlete.enqueue_workout_refresh('970','123','123','1559802401802952706','1559804769327910932')")
+    first=store.claim_refresh();assert store.claim_refresh() is None
+    with store.conn.transaction():store.conn.execute("UPDATE solitary_athlete.workout_refresh_jobs SET lease_until=now()-interval '1 second' WHERE id='970'")
+    recovered=store.claim_refresh();assert recovered['version']>first['version']
+    with pytest.raises(RuntimeError):store.defer_refresh(first,'stale',0)
+    for attempt in range(10):
+        store.defer_refresh(recovered,'network',0)
+        if attempt<9:recovered=store.claim_refresh()
+    assert store.claim_refresh() is None and store.logs()[0]['memo']=='걷기'
+    with store.conn.transaction():assert store.conn.execute("SELECT status FROM solitary_athlete.workout_refresh_jobs WHERE id='970'").fetchone()['status']=='failed'
+    with psycopg.connect(os.environ['TEST_DATABASE_URL']) as anon:
+        anon.execute('SET ROLE anon')
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):anon.execute('SELECT * FROM solitary_athlete.workout_refresh_jobs')

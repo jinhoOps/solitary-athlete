@@ -426,7 +426,11 @@ test('offscreen photo previews wait for viewport entry',async({page})=>{
  await page.setViewportSize({width:360,height:640});let downloads=0;
  await page.route('**/functions/v1/mukmuk-discord-photos',async route=>route.fulfill({json:{photos:Array.from({length:20},(_,i)=>({id:String(200+i),preview:`https://media.discordapp.net/attachments/20/${200+i}/a.webp`,url:`https://cdn.discordapp.com/attachments/20/${200+i}/a.jpg`,original:'https://discord.com/channels/10/20/100',width:800,height:600})),next:null}}));
  await page.route('https://media.discordapp.net/**',async route=>{downloads++;await route.fulfill({body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64'),contentType:'image/png'});});
- await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ await fixture(page);
+ // Keyboard activation avoids racing the initial horizontal reveal animation frame.
+ const day=page.locator(`[data-date="${today}"]`);
+ await day.focus();await day.press('Enter');
+ await expect(page.locator('.date-detail')).toBeVisible();
  await page.locator('.photo-section').getByRole('button',{name:'사진 보기',exact:true}).click();
  await expect(page.locator('.photo-preview')).toHaveCount(20);
  await expect.poll(()=>downloads).toBeGreaterThan(0);expect(downloads).toBeLessThan(20);

@@ -21,6 +21,7 @@ function unhex(hex: string, size: number): Uint8Array<ArrayBuffer> | null {
   return Uint8Array.from(hex.match(/../g)!, b => parseInt(b,16));
 }
 export async function handleInteraction(req: Request, deps: { publicKey:string; guildId:string; appId:string;
+  memberRoleId?:string; refresh?:(body:Reply & {requesterId:string})=>Promise<void>;
   waitUntil:(p:Promise<unknown>)=>void; publish:(body:Reply)=>Promise<void> }): Promise<Response> {
   if (req.method !== 'POST') return new Response('Method not allowed', {status:405});
   const timestamp = req.headers.get('X-Signature-Timestamp') ?? '';
@@ -36,7 +37,7 @@ export async function handleInteraction(req: Request, deps: { publicKey:string; 
   try { body=JSON.parse(raw); } catch { return new Response('Invalid JSON',{status:400}); }
   if (body.type===1) return Response.json({type:1});
   if (body.guild_id!==deps.guildId || body.application_id!==deps.appId) return new Response('Unsupported guild',{status:403});
-  if (body.type!==2 || body.data?.name!=='잔디') return new Response('Unsupported interaction',{status:400});
+  if (body.type!==2 || !['잔디','기록갱신'].includes(body.data?.name)) return new Response('Unsupported interaction',{status:400});
   const caller=body.member?.user;
   const option=body.data.options?.find((o:{name:string})=>o.name==='유저');
   const targetId=option?.value ?? caller?.id;
@@ -45,10 +46,21 @@ export async function handleInteraction(req: Request, deps: { publicKey:string; 
   const member=option ? body.data.resolved?.members?.[targetId] : body.member;
   const reply:Reply={id:body.id,token:body.token,application_id:body.application_id,targetId,
     targetName:member?.nick || target.global_name || target.username || '운동가'};
+  if(body.data.name==='기록갱신') {
+    const deny=(content:string)=>Response.json({type:4,data:{content,flags:64,allowed_mentions:{parse:[]}}});
+    let manager=false;
+    try {manager=(BigInt(body.member.permissions??'0') & 40n)!==0n;}catch{return deny('권한을 확인하지 못했어요.');}
+    const ownMember=!!deps.memberRoleId&&Array.isArray(body.member.roles)&&body.member.roles.includes(deps.memberRoleId)&&caller?.id===targetId;
+    if(!manager&&!ownMember)return deny('회원님은 본인 기록만 갱신할 수 있어요.');
+    if(!deps.refresh || (option&&!member))return deny('이 서버의 멤버만 갱신할 수 있어요.');
+    if(body.data.options?.some((o:{name:string})=>o.name!=='유저'))return deny('유저 옵션만 사용할 수 있어요.');
+    deps.waitUntil(deps.refresh({...reply,requesterId:caller.id}).catch(()=>console.error('mukmuk_refresh_failed')));
+    return Response.json({type:5,data:{flags:64}});
+  }
   deps.waitUntil(deps.publish(reply).catch(()=>console.error('mukmuk_publish_failed')));
   return Response.json({type:5});
 }
-export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;dashboardUrl:string;db:ReplyDB;discord:DiscordCall;emojis?:[string|undefined,string|undefined];sleep?:(ms:number)=>Promise<void>}) {
+export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;dashboardUrl:string;db:ReplyDB;discord:DiscordCall;emojis?:[string|undefined,string|undefined];sleep?:(ms:number)=>Promise<void>;render?:()=>Promise<string>}) {
   const path=`/webhooks/${body.application_id}/${body.token}/messages/@original`;
   try {
     const cipher=await encryptToken(body.token,deps.key,body.id);
@@ -59,9 +71,12 @@ export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;d
   }
   let content: string;
   try {
+    if(deps.render)content=await deps.render();
+    else {
     const [rows,lastSuccess,code]=await Promise.all([deps.db.daily(body.targetId),deps.db.lastSuccess(),
       deps.dashboardUrl ? deps.db.activeSecret?.(deps.now()) ?? null : null]);
     content=formatGrass(body.targetName,rows,dayAt(deps.now()),lastSuccess,dashboardLink(deps.dashboardUrl,code),deps.emojis);
+    }
   } catch {
     content='기록을 불러오지 못했어요. 잠시 뒤 다시 조회해 주세요.\n이 메시지는 5분 뒤 사라져요.';
     console.error('mukmuk_query_failed');

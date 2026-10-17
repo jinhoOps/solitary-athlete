@@ -95,5 +95,9 @@ export function createDB(url:string, testOnlyNoTLS=false) {
         AND (${attempt??null}::integer IS NULL OR attempts=${attempt??null})`;
     },
   };
-  return {db,sql};
+  async function enqueueRefresh(id:string,requester:string,target:string,guild:string,channel:string) {
+    const rows=await sql`SELECT * FROM solitary_athlete.enqueue_workout_refresh(${id},${requester},${target},${guild},${channel})`;
+    return rows[0] as unknown as {id:string;status:string;total:number;checked:number;removed:number};
+  }
+  return {db,sql,enqueueRefresh};
 }
