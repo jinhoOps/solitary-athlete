@@ -56,7 +56,7 @@ async function fixture(
 test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', async ({ page }) => {
   await fixture(page);
   await expect(page.locator('.brand-name')).toHaveText('고독한 운동가');
-  await expect(page.locator('.brand-sub')).toHaveText('잔디 심는 묵묵, MUKMUK · WORKOUT JOURNAL');
+  await expect(page.locator('.brand-sub')).toHaveText('묵묵 · 운동 기록');
 
   const discordLink = page.locator('.brand-header .discord-link');
   await expect(discordLink).toBeVisible();
@@ -188,11 +188,17 @@ for (const width of [320, 360, 768, 1280]) {
   });
 }
 
-test('supports 200 percent text scaling without a page overflow', async ({ page }) => {
-  await page.setViewportSize({ width: 768, height: 900 }); await fixture(page);
+for (const width of [320,360,768,1280]) test(`supports 200 percent text scaling at ${width}px in details and timeline`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 }); await fixture(page);
   await page.addStyleTag({ content: 'html { font-size: 200%; }' });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.getByRole('button', { name: '전체 멤버' })).toBeVisible();
+  const fits=()=>page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  expect(await fits()).toBe(true);
+  const cell=page.locator(`[data-date="${today}"]`);
+  await cell.focus();await cell.press('Enter');
+  await expect(page.locator('.date-detail')).toBeVisible();expect(await fits()).toBe(true);
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  await expect(page.locator('.timeline-item').first()).toBeVisible();expect(await fits()).toBe(true);
+  await page.screenshot({path:`test-results/dashboard-${width}-text-200.png`});
 });
 
 test('year stepper displays 2026, disables next button for future, and shows inception dialog on previous button',async({page})=>{
@@ -562,4 +568,66 @@ test('year arrows reveal on desktop hover and keyboard focus, stay visible on mo
  await page.getByRole('button',{name:'전체 멤버',exact:true}).focus();
  await expect(previous).toHaveCSS('opacity','1');
  await expect(stepper).toHaveCSS('border-top-width','0px');
+});
+
+test('grass preview clears after hover and focus leave, and restores a focused date after hover',async({page})=>{
+ await fixture(page);
+ const preview=page.locator('.grass-preview'),day=page.locator(`[data-date="${today}"]`);
+ await expect(preview).toBeEmpty();
+ await day.hover();await expect(preview).toContainText(today);
+ await page.mouse.move(0,0);await expect(preview).toBeEmpty();
+ await day.focus();await expect(preview).toContainText(today);
+ const other=page.locator('[data-date="2026-10-13"]');
+ await other.hover();await expect(preview).toContainText('2026-10-13');
+ await page.mouse.move(0,0);await expect(preview).toContainText(today);
+ await page.getByRole('button',{name:'전체 멤버',exact:true}).focus();
+ await expect(preview).toBeEmpty();
+});
+
+test('aggregate and personal photo-only details omit redundant body labels and preserve mixed memos',async({page})=>{
+ await fixture(page);
+ await page.locator(`[data-date="${today}"]`).click();
+ const detail=page.locator('.date-detail'),entry=detail.locator('.aggregate-entry');
+ await expect(entry.getByRole('heading')).toHaveText('하루');
+ await expect(entry.locator('.memo')).toHaveCount(0);
+ await expect(entry.getByRole('button',{name:'사진 보기',exact:true})).toBeVisible();
+ await page.locator('[data-date="2026-10-13"]').click();
+ await expect(detail.locator('.memo')).toHaveText('가볍게 30분 걷기\n스트레칭');
+ await expect(detail.getByRole('button',{name:'사진 보기',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await expect(page.locator('.grass-grid')).toHaveAttribute('aria-label', /하루의/);
+ const personalDay=page.locator(`[data-date="${today}"]`);
+ await personalDay.focus();await personalDay.press('Enter');
+ await expect(detail.locator('.detail-heading')).toContainText('사진 포함 인증');
+ await expect(detail.locator('.memo')).toHaveCount(0);
+ await expect(detail.getByRole('button',{name:'사진 보기',exact:true})).toBeVisible();
+});
+
+test('loaded photos leave only pagination controls and keep loading, empty, and retry states',async({page})=>{
+ let finish:()=>void=()=>{};const gate=new Promise<void>(resolve=>{finish=resolve;});let calls=0;
+ const photo={id:'200',preview:null,url:'https://cdn.discordapp.com/attachments/20/200/a.jpg',original:'https://discord.com/channels/10/20/100'};
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{
+  calls++;
+  if(calls===1){await gate;await route.fulfill({json:{photos:[photo],next:'100'}});}
+  else if(calls===2)await route.fulfill({status:502,json:{error:'photos_unavailable'}});
+  else {expect(route.request().postDataJSON().after).toBe('100');await route.fulfill({json:{photos:[],next:null}});}
+ });
+ await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ const photos=page.locator('.date-detail .photo-section');
+ await photos.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(photos).toContainText('사진을 불러오고 있어요.');finish();
+ await expect(photos.getByRole('button',{name:'사진 더 보기',exact:true})).toBeVisible();
+ await expect(photos.locator('.photo-controls p')).toHaveCount(0);
+ await expect(photos.getByRole('button',{name:'사진 새로고침',exact:true})).toHaveCount(0);
+ await photos.getByRole('button',{name:'사진 더 보기',exact:true}).click();
+ await expect(photos).toContainText('사진을 불러오지 못했어요.');
+ await expect(photos.getByRole('button',{name:'사진 1 크게 보기'})).toBeVisible();
+ await photos.getByRole('button',{name:'다시 불러오기',exact:true}).click();
+ await expect(photos.locator('.photo-controls')).toBeEmpty();
+ await expect(photos.getByRole('button',{name:'사진 1 크게 보기'})).toBeVisible();
+ await photos.getByRole('button',{name:'사진 접기',exact:true}).click();
+ await page.route('**/functions/v1/mukmuk-discord-photos',route=>route.fulfill({json:{photos:[],next:null}}));
+ await photos.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(photos).toContainText('표시할 사진이 없어요.');
+ await expect(photos.getByRole('button',{name:'사진 새로고침',exact:true})).toBeVisible();
 });
