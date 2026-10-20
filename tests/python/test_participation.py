@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 import os
 import psycopg
 import pytest
@@ -74,13 +74,20 @@ def test_snapshot_requires_secret_and_denies_direct_anonymous_access(store):
     with psycopg.connect(os.environ['TEST_DATABASE_URL'], autocommit=True) as admin:
         admin.execute("INSERT INTO solitary_athlete.channel_access_secrets(secret_code,issued_at,active_until,expires_at) VALUES ('grass-fixture',now(),now()+interval '1 day',now()+interval '2 days') ON CONFLICT DO NOTHING")
         try:
+            admin.execute("INSERT INTO solitary_athlete.channel_access_secrets(secret_code,issued_at,active_until,expires_at) VALUES ('grass-expired',now()-interval '3 days',now()-interval '2 days',now()-interval '1 day') ON CONFLICT DO NOTHING")
+            for role in ['authenticated', 'service_role']:
+                admin.execute(f'SET ROLE {role}')
+                with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                    admin.execute('SELECT * FROM solitary_athlete.mukmuk_monthly_grass_snapshots')
+                admin.execute('RESET ROLE')
             admin.execute('SET ROLE anon')
             with pytest.raises(psycopg.errors.InsufficientPrivilege):
                 admin.execute('SELECT * FROM solitary_athlete.mukmuk_monthly_grass_snapshots')
             with pytest.raises(psycopg.errors.InsufficientPrivilege):
                 admin.execute("SELECT solitary_athlete.capture_monthly_grass_snapshot(now())")
-            with pytest.raises(psycopg.errors.RaiseException, match='invalid_or_expired_secret'):
-                admin.execute("SELECT * FROM solitary_athlete.get_monthly_grass_participation('wrong','2026-10-01')")
+            for code in ['wrong', 'grass-expired']:
+                with pytest.raises(psycopg.errors.RaiseException, match='invalid_or_expired_secret'):
+                    admin.execute("SELECT * FROM solitary_athlete.get_monthly_grass_participation(%s,'2026-10-01')", (code,))
             rows = admin.execute("SELECT * FROM solitary_athlete.get_monthly_grass_participation('  GRASS-FIXTURE  ','2026-10-01')").fetchall()
             assert len(rows) == 1
             assert admin.execute("SELECT * FROM solitary_athlete.get_monthly_grass_participation('grass-fixture','2026-11-01')").fetchall() == []
@@ -88,4 +95,14 @@ def test_snapshot_requires_secret_and_denies_direct_anonymous_access(store):
                 admin.execute("SELECT * FROM solitary_athlete.get_monthly_grass_participation('grass-fixture','2026-10-02')")
         finally:
             admin.execute('RESET ROLE')
-            admin.execute("DELETE FROM solitary_athlete.channel_access_secrets WHERE secret_code='grass-fixture'")
+            admin.execute("DELETE FROM solitary_athlete.channel_access_secrets WHERE secret_code IN ('grass-fixture','grass-expired')")
+
+
+def test_monthly_snapshot_aggregates_more_than_a_page_without_annual_color_saturation(store):
+    with store.conn.transaction():
+        store.conn.execute("""INSERT INTO solitary_athlete.workout_logs(user_id,username,log_date,memo,has_photo,verification_count)
+          SELECT (100000+u)::text,'동명이인',date '2026-10-01'+d,'',false,1
+          FROM generate_series(1,501) u CROSS JOIN generate_series(0,1) d""")
+    store.success(CHANNEL, None, at('2026-10-14T09:00:00+00:00'))
+    row = snapshot(store)
+    assert (row['member_count'], row['workout_days'], row['elapsed_days']) == (501, 1002, 14)

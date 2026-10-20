@@ -1,10 +1,13 @@
 import { dayAt, sundayIndex, shiftDay, stats } from './dates';
 import { calculateMonthlyKPIs } from './metrics';
+import {parseGrassParticipation} from './grass-participation';
+import type {GrassParticipation} from './types';
 import type { DashboardData, Member, PublicConfig, WorkoutLog } from './types';
 
 type Fetcher = typeof fetch;
 
-async function rpc<T>(config: PublicConfig, func: string, body: Record<string, unknown>, fetcher: Fetcher): Promise<T> {
+async function rpc<T>(config: PublicConfig, func: string, body: Record<string, unknown>, fetcher: Fetcher,
+  authErrors:'status-or-code'|'code-only'='status-or-code'): Promise<T> {
   if (!config.url || !config.key) throw new Error('Public configuration missing');
   const url = `${config.url.replace(/\/+$/, '')}/rest/v1/rpc/${func}`;
   const res = await fetcher(url, {
@@ -24,7 +27,7 @@ async function rpc<T>(config: PublicConfig, func: string, body: Record<string, u
       const err = await res.json();
       errCode = err.message || err.details || err.code || '';
     } catch { /* empty */ }
-    if (errCode.includes('invalid_or_expired_secret') || res.status === 400 || res.status === 401 || res.status === 403) {
+    if (errCode.includes('invalid_or_expired_secret') || (authErrors==='status-or-code' && [400,401,403].includes(res.status))) {
       throw new Error('invalid_or_expired_secret');
     }
     throw new Error(`Public RPC failed (${res.status})`);
@@ -87,10 +90,18 @@ export async function loadDashboard(
   const now = new Date(), today = dayAt(now);
   const currentYear = Number(today.slice(0, 4));
   const targetYear=year??currentYear;
-  const [logs, roster, status, currentLogs] = await Promise.all([
+  const month=`${today.slice(0,7)}-01`;
+  const participation=rpc<unknown[]>(config,'get_monthly_grass_participation',{
+    p_secret_code:normalizedCode,p_month:month,
+  },fetcher,'code-only').then(rows=>parseGrassParticipation(rows,month)).catch((error):GrassParticipation=>{
+    if(error instanceof Error&&error.message.includes('invalid_or_expired_secret'))throw error;
+    return {status:'unavailable'};
+  });
+  const [logs, roster, status, currentLogs, grassParticipation] = await Promise.all([
     annual(targetYear),allMembers(),
     read<{last_success_at:string|null}>(config,'sync_status',{select:'last_success_at'},fetcher).catch(()=>[{last_success_at:null}]),
     targetYear===currentYear?Promise.resolve(null):annual(currentYear),
+    participation,
   ]);
 
   const members = new Map<string, Member>();
@@ -148,6 +159,7 @@ export async function loadDashboard(
     logs,
     lastSuccess: status[0]?.last_success_at ?? null,
     kpis,
+    grassParticipation,
     currentStats,
   };
 }

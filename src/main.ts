@@ -6,6 +6,7 @@ import {el,button} from './dom';
 import {photoSection} from './photo-view';
 import {renderGrassCard} from './grass-card';
 import {renderDashboardControls, SERVICE_START_YEAR} from './dashboard-controls';
+import {grassParticipationView} from './grass-participation';
 import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -141,15 +142,18 @@ function renderKPIs() {
     }
   }
   kpiSection.append(king);
-  const items = [
+  const grass=grassParticipationView(data.grassParticipation);
+  const items: {title:string;value:string;change?:string;description?:string}[] = [
     { title: '이번 달 고운', value: `${kpis.activeMembers}명` },
-    { title: '총 운동 일수', value: `${kpis.totalWorkoutDays}일` },
+    { title: '함께 심은 잔디', value: grass.value, change:grass.change, description:grass.description },
     { title: '가장 푸른 요일', value: kpis.mostActiveWeekday },
     { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일` },
   ];
   for (const item of items) {
     const card = el('div', 'kpi-card');
     card.append(el('div', 'kpi-title', item.title), el('div', 'kpi-value', item.value));
+    if(item.change)card.append(el('div','caption kpi-change',item.change));
+    if(item.description)card.title=item.description;
     kpiSection.append(card);
   }
   kpiSection.hidden = selected !== null;

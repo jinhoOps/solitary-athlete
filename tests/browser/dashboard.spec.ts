@@ -33,6 +33,12 @@ async function fixture(
     if(url.pathname.endsWith('rpc/get_dashboard_members')) {
       await route.fulfill({json:mode==='empty'?[]:[{user_id:'1',username:preview?'산책하는 고운':dangerous},{user_id:'2',username:'하루'},{user_id:'3',username:'과거 전용'}]});return;
     }
+    if(url.pathname.endsWith('rpc/get_monthly_grass_participation')) {
+      const month=route.request().postDataJSON().p_month.slice(0,7);
+      const count=mode==='empty'?0:1,days=mode==='empty'?0:14;
+      await route.fulfill({json:[{month_start:`${month}-01`,collected_at:`${month}-14T08:17:00Z`,member_count:count,workout_days:days,elapsed_days:14,
+       previous_collected_at:`${month}-14T08:12:00Z`,previous_member_count:count,previous_workout_days:mode==='empty'?0:13,previous_elapsed_days:14}]});return;
+    }
     if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       if (mode === 'error') {
         await route.fulfill({ status: 503, json: { message: 'unavailable' } });
@@ -1082,4 +1088,33 @@ test('desktop refits two chip rows after text growth and shrink',async({page})=>
    await expect(list.locator('[data-member-id="129"]')).toBeVisible();
   }).toPass({timeout:5000});
  }
+});
+
+
+test('monthly grass participation replaces the sum and stays monthly while annual grass changes year',async({page})=>{
+ await fixture(page,'normal',true,true,'2027-01-05T09:00:00Z');
+ const kpi=page.locator('.kpi-card').filter({has:page.getByText('함께 심은 잔디',{exact:true})});
+ await expect(kpi.locator('.kpi-value')).toHaveText('100%');
+ await expect(kpi).toContainText('직전 수집 대비 +7.1%p');
+ await expect(page.getByText('총 운동 일수',{exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'이전 연도'}).click();
+ await expect(page.locator('.year-label')).toHaveText('2026년');
+ await expect(kpi.locator('.kpi-value')).toHaveText('100%');
+ await expect(page.locator('.workout-card .metrics')).toContainText('전체 멤버3명');
+});
+
+for(const state of ['first','pending','error','sql-error','permission-error'] as const)test(`monthly grass participation shows honest ${state} state`,async({page})=>{
+ await fixture(page);
+ const status=state==='error'?503:state==='sql-error'?400:state==='permission-error'?403:0;
+ await page.route('**/rest/v1/rpc/get_monthly_grass_participation',r=>status?r.fulfill({status,json:{message:status===400?'invalid_month':'unavailable'}}):r.fulfill({json:state==='pending'?[]:[{
+  month_start:'2026-10-01',collected_at:'2026-10-14T08:17:00Z',member_count:2,workout_days:3,elapsed_days:14,
+  previous_collected_at:null,previous_member_count:null,previous_workout_days:null,previous_elapsed_days:null,
+ }]}));
+ await page.reload();
+ const kpi=page.locator('.kpi-card').filter({has:page.getByText('함께 심은 잔디',{exact:true})});
+ await expect(kpi.locator('.kpi-value')).toHaveText(state==='first'?'10.7%':'—');
+ await expect(kpi).toContainText(state==='first'?'비교 기록 없음':state==='pending'?'수집 대기':'집계 불러오기 실패');
+ await expect(page.locator('.workout-card')).toHaveCount(1);
+ await expect(page.locator('.modal-box')).toHaveCount(0);
+ expect(await page.evaluate(()=>localStorage.getItem('mukmuk_secret_code'))).toBe('test-code');
 });
