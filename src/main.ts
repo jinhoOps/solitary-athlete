@@ -11,7 +11,7 @@ import type { DashboardData, WorkoutLog } from './types';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const config = __PUBLIC_CONFIG__;
 let today = dayAt();
-let data: DashboardData;
+let data: DashboardData | undefined;
 const currentYear = Number(today.slice(0, 4));
 let selectedYear = Math.max(SERVICE_START_YEAR, currentYear);
 let currentKPIs: DashboardData['kpis'] | undefined;
@@ -20,6 +20,7 @@ let selected: string | null = null;
 let timeline: WorkoutLog[] = [];
 let more = false;
 let generation = 0;
+let dashboardReady = false;
 const cardReveals = new Map<string, () => void>();
 const cardOpeners = new Map<string, (date: string, log?: WorkoutLog) => void>();
 
@@ -103,6 +104,7 @@ footer.append(
 app.replaceChildren(header, main, footer);
 
 function updateStatus() {
+  if(!data)return;
   status.className = 'status-notice';
   if (!data.lastSuccess) {
     status.textContent = '아직 인증을 수집하지 않았어요.';
@@ -125,6 +127,7 @@ function updateStatus() {
 }
 
 function renderKPIs() {
+  if(!data)return;
   kpiSection.replaceChildren();
   const kpis = currentKPIs ?? data.kpis;
   const king=el('div','kpi-card kpi-card--king');
@@ -153,6 +156,7 @@ function renderKPIs() {
 }
 
 function renderCards() {
+  if(!data)return;
   todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();cardReveals.clear();
   const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
@@ -203,6 +207,7 @@ function renderTimeline(reset = true) {
 }
 
 function fetchTimeline(append: boolean) {
+  if(!data)return;
   if (!selected) {
     timeline = [];
     more = false;
@@ -217,12 +222,16 @@ function fetchTimeline(append: boolean) {
   feedback.textContent = `${timeline.length}개의 기록일을 표시합니다.`;
 }
 
-function renderFilters() {
-  const focused=(document.activeElement as HTMLElement)?.dataset.control;
+function renderFilters(focused=(document.activeElement as HTMLElement)?.dataset.control) {
+  if(!data)return;
   filters.firstElementChild?.dispatchEvent(new Event('dispose'));
   const controls=renderDashboardControls({
     roster:data.roster,selectedMemberId:selected,selectedYear,
-    onMemberChange:id=>{selected=id;renderKPIs();renderCards();fetchTimeline(false);},
+    onMemberChange:id=>{
+      selected=id;
+      if(!dashboardReady){void init(true);return;}
+      renderKPIs();renderCards();fetchTimeline(false);
+    },
     onYearChange:year=>{selectedYear=year;void init(true);},
   });
   filters.replaceChildren(controls);
@@ -268,6 +277,12 @@ function showAuthModal(errorMsg?: string) {
 
 async function init(preserveSelection = false) {
   const request = ++generation;
+  const focusedControl=(document.activeElement as HTMLElement)?.dataset.control;
+  dashboardReady = false;
+  const locked = new Map<HTMLButtonElement, boolean>();
+  for(const container of [filters,yearFilters]) {
+    container.querySelectorAll<HTMLButtonElement>('button').forEach(b=>{locked.set(b,b.disabled);b.disabled=true;});
+  }
   if (selectedYear < SERVICE_START_YEAR) selectedYear = SERVICE_START_YEAR;
   const requestedYear = selectedYear;
   app.setAttribute('aria-busy', 'true');
@@ -275,7 +290,8 @@ async function init(preserveSelection = false) {
   logList.replaceChildren();
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(el('div', 'loading-placeholder', '운동 기록을 불러오고 있어요.'));
-  filters.querySelectorAll<HTMLButtonElement>('button').forEach(b => { b.disabled = true; });
+  cardReveals.clear();cardOpeners.clear();
+  kpiSection.hidden = true;
   heading.hidden = true;
   logList.hidden = true;
   moreArea.hidden = true;
@@ -304,6 +320,7 @@ async function init(preserveSelection = false) {
     const loaded = await loadDashboard(config, code, requestedYear);
     if (request !== generation) return;
     data = loaded;
+    dashboardReady = true;
     currentKPIs = data.kpis;
     knownMembers.clear();
     for (const member of data.roster) {
@@ -313,7 +330,7 @@ async function init(preserveSelection = false) {
     yearBar.hidden = false;
     updateStatus();
     renderKPIs();
-    renderFilters();
+    renderFilters(focusedControl);
     renderCards();
     fetchTimeline(false);
     feedback.textContent = '운동 기록을 불러왔어요.';
@@ -329,6 +346,9 @@ async function init(preserveSelection = false) {
     const isSecretError = err?.message?.includes('invalid_or_expired_secret');
     if (isSecretError) {
       localStorage.removeItem('mukmuk_secret_code');
+      // Clear the old roster too: a new authentication must not resurrect it.
+      data = undefined;currentKPIs=undefined;knownMembers.clear();
+      selected=null;timeline=[];more=false;
       yearBar.hidden = true;
       yearFilters.replaceChildren();cards.replaceChildren();
       showAuthModal('시크릿 코드가 올바르지 않거나 만료되었습니다.');
@@ -338,10 +358,18 @@ async function init(preserveSelection = false) {
         el('p', '', '기록을 불러오지 못했어요.'),
         button('다시 불러오기', () => void init(true), 'button primary')
       );
-      cards.replaceChildren(error);
+      if(data){
+        renderFilters(focusedControl);
+        yearBar.querySelector('.metrics')?.remove();
+        yearBar.hidden=false;
+        cards.replaceChildren(yearBar,error);
+      } else cards.replaceChildren(error);
     }
   } finally {
-    if (request === generation) app.setAttribute('aria-busy', 'false');
+    if (request === generation) {
+      for(const [control,disabled] of locked)if(control.isConnected)control.disabled=disabled;
+      app.setAttribute('aria-busy', 'false');
+    }
   }
 }
 

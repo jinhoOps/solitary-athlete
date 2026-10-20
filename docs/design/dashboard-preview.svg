@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920" role="img" aria-labelledby="title desc">
-<title id="title">묵묵 · 2차 컴팩트 웹보드</title><desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 140ms 피드백·160ms 등장은 구현 DOM에서 확인한다.</desc>
+<title id="title">묵묵 · 2차 컴팩트 웹보드</title><desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 선택 상태는 즉시 표시하며 스크롤 방향 페이드와 확대 시 라벨 정렬은 구현 DOM에서 확인한다.</desc>
 <defs>
     <linearGradient id="scroll-fade-right" x1="0%" x2="100%">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0" />
@@ -9,7 +9,10 @@
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
     </linearGradient>
-  </defs>
+  <clipPath id="member-chips"><rect x="1174" y="168" width="124" height="44"/></clipPath>
+<linearGradient id="member-fade-left"><stop stop-color="#F7F8F2"/><stop offset="1" stop-color="#F7F8F2" stop-opacity="0"/></linearGradient>
+<linearGradient id="member-fade-right"><stop stop-color="#F7F8F2" stop-opacity="0"/><stop offset="1" stop-color="#F7F8F2"/></linearGradient>
+</defs>
 
 <rect width="1440" height="920" fill="#E8EDE4"/>
 <g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif">
@@ -21,8 +24,9 @@
 <text x="54" y="89" font-size="18" fill="#57665B" font-weight="400">🌱</text>
 <text x="88" y="88" font-size="18" fill="#18271E" font-weight="700">고독한 운동가</text>
 <text x="214" y="88" font-size="13" fill="#57665B" font-weight="400">· 묵묵 · 운동 기록</text>
-<rect x="718" y="69" width="242" height="26" rx="13" fill="#D9E9D9" stroke="none"/>
-<text x="730" y="87" font-size="12" fill="#57665B" font-weight="400">마지막 수집 · 10월 20일 09:25 KST</text>
+<rect x="610" y="52" width="350" height="58" rx="10" fill="#FFF4DD" stroke="none"/>
+<text x="626" y="74" font-size="12" fill="#8A5A13">마지막 수집 · 10월 20일 06:25 KST</text>
+<text x="626" y="96" font-size="12" fill="#8A5A13">새 인증의 반영이 늦어지고 있어요.</text>
 <path d="M48 112h912" stroke="#D3DBD0"/>
 <rect x="48.0" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="60.0" y="147" font-size="12" fill="#57665B" font-weight="400">운동왕 👑</text>
@@ -56,7 +60,7 @@
 <text x="300" y="279" font-size="14" fill="#18271E" font-weight="700">20명</text>
 <text x="348" y="279" font-size="12" fill="#57665B" font-weight="400">누적</text>
 <text x="378" y="279" font-size="14" fill="#18271E" font-weight="700">143일</text>
-<defs><clipPath id="desktop-grass"><rect x="69" y="296" width="870" height="166"/></clipPath></defs><g clip-path="url(#desktop-grass)">
+<defs><clipPath id="desktop-grass"><rect x="69" y="296" width="870" height="166"/></clipPath></defs><g clip-path="url(#desktop-grass)"><g transform="translate(4 0)">
 <text x="93" y="311" font-size="12" fill="#57665B" font-weight="400">1월</text>
 <text x="173" y="311" font-size="12" fill="#57665B" font-weight="400">2월</text>
 <text x="253" y="311" font-size="12" fill="#57665B" font-weight="400">3월</text>
@@ -440,7 +444,7 @@
 <rect x="1029" y="396" width="14" height="14" rx="3" fill="#A1C49E" stroke="none"/>
 <rect x="1029" y="414" width="14" height="14" rx="3" fill="#A1C49E" stroke="none"/>
 <rect x="1029" y="432" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none"/>
-<text x="71" y="335" font-size="12" fill="#57665B" font-weight="400">일</text>
+</g><text x="71" y="335" font-size="12" fill="#57665B" font-weight="400">일</text>
 <text x="71" y="353" font-size="12" fill="#57665B" font-weight="400">월</text>
 <text x="71" y="371" font-size="12" fill="#57665B" font-weight="400">화</text>
 <text x="71" y="389" font-size="12" fill="#57665B" font-weight="400">수</text>
@@ -484,8 +488,16 @@
 <path d="M1070 154h332" stroke="#D3DBD0"/>
 <rect x="1070" y="168" width="98" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="1082" y="195.0" font-size="13" fill="#57665B" font-weight="500">전체 멤버</text>
-<rect x="1174" y="168" width="62" height="44" rx="8" fill="#326C43" stroke="#D3DBD0"/>
-<text x="1186" y="195.0" font-size="13" fill="#FFFFFF" font-weight="500">하루</text>
+<g clip-path="url(#member-chips)">
+<rect x="1116" y="168" width="62" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1128" y="195" font-size="13" fill="#57665B">산책</text>
+<rect x="1189" y="168" width="62" height="44" rx="8" fill="#326C43" stroke="#326C43"/>
+<text x="1201" y="195" font-size="13" fill="#FFFFFF" font-weight="600">하루</text>
+<rect x="1266" y="168" width="62" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1278" y="195" font-size="13" fill="#57665B">한결</text>
+</g>
+<rect x="1174" y="168" width="12" height="44" fill="url(#member-fade-left)"/>
+<rect x="1286" y="168" width="12" height="44" fill="url(#member-fade-right)"/>
 <rect x="1304" y="168" width="98" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="1316" y="195.0" font-size="13" fill="#57665B" font-weight="500">멤버 찾기</text>
 <rect x="1070" y="226" width="332" height="269" rx="16" fill="#FFFFFF" stroke="#D3DBD0"/>
@@ -497,7 +509,7 @@
 <text x="1203" y="281" font-size="14" fill="#18271E" font-weight="700">4일</text>
 <text x="1248" y="281" font-size="12" fill="#57665B" font-weight="400">2026년 운동</text>
 <text x="1318" y="281" font-size="14" fill="#18271E" font-weight="700">32일</text>
-<defs><clipPath id="mobile-grass"><rect x="1086" y="292" width="300" height="150"/></clipPath></defs><g clip-path="url(#mobile-grass)">
+<defs><clipPath id="mobile-grass"><rect x="1086" y="292" width="300" height="150"/></clipPath></defs><g clip-path="url(#mobile-grass)"><g transform="translate(4 0)">
 <text x="1110" y="306" font-size="12" fill="#57665B" font-weight="400">8월</text>
 <text x="1184" y="306" font-size="12" fill="#57665B" font-weight="400">9월</text>
 <text x="1258" y="306" font-size="12" fill="#57665B" font-weight="400">10월</text>
@@ -621,14 +633,14 @@
 <rect x="1398" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none"/>
 <rect x="1398" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none"/>
 <rect x="1398" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none"/>
-<text x="1088" y="329" font-size="12" fill="#57665B" font-weight="400">일</text>
+</g><text x="1088" y="329" font-size="12" fill="#57665B" font-weight="400">일</text>
 <text x="1088" y="347" font-size="12" fill="#57665B" font-weight="400">월</text>
 <text x="1088" y="365" font-size="12" fill="#57665B" font-weight="400">화</text>
 <text x="1088" y="383" font-size="12" fill="#57665B" font-weight="400">수</text>
 <text x="1088" y="401" font-size="12" fill="#57665B" font-weight="400">목</text>
 <text x="1088" y="419" font-size="12" fill="#57665B" font-weight="400">금</text>
 <text x="1088" y="437" font-size="12" fill="#57665B" font-weight="400">토</text>
-<rect x="1100" y="318" width="12" height="122" fill="url(#scroll-fade-left)" pointer-events="none" />
+<rect x="1102" y="318" width="12" height="122" fill="url(#scroll-fade-left)" pointer-events="none" />
 <rect x="1374" y="318" width="12" height="122" fill="url(#scroll-fade-right)" pointer-events="none" />
 </g>
 <rect x="1086" y="448" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none"/>

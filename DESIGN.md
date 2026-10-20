@@ -128,12 +128,22 @@ motion:
   animatedProperties: color, background-color, border-color
   enterProperty: opacity
   pressed: immediate
+  selection: immediate
+  disabled: immediate
   focusOutline: immediate
   reducedMotion:
     feedback: 0s
     enter: none
 
 grass:
+  labels:
+    fontSize: .75rem
+    lineHeight: 1.1666667
+    rowHeight: max(14px, .875rem)
+    weekdayWidth: calc(.75rem + 4px)
+    weekdayGap: 12px
+    monthOffset: weekday-width-plus-gap
+    monthClip: sticky-weekday-gutter
   detail:
     backgroundColor: "{colors.surface-card}"
     messageBackgroundColor: "{colors.surface-message}"
@@ -229,7 +239,14 @@ components:
     gap: 6px
     padding: 6px 12px
     marginBottom: 14px
+    feedback: immediate
     findButton: same-as-filter-chip
+    mobileWrap: when-controls-cannot-fit
+    scrollFadeWidth: 12px
+    scrollFadeColor: "{colors.canvas}"
+    scrollEdgeTolerance: 1px
+    scrollPaddingInline: 15px
+    scrollFadeFocusWithin: hidden
   member-filter-active:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -255,6 +272,14 @@ components:
     padding: 0px
     minHeight: 28px
     mobileMinHeight: 32px
+  dialog-surface:
+    shadow: none
+    backdropFilter: none
+    characterFilter: none
+    actionsAlign: flex-end
+    actionsGap: 8px
+    actionsWrap: true
+    actionsVariant: secondary
   inception-dialog:
     maxWidth: 400px
     rounded: "{rounded.card}"
@@ -385,6 +410,8 @@ components:
     textColor: "{colors.warning}"
     rounded: "{rounded.control}"
     padding: "{spacing.md}"
+    maxWidth: 100%
+    messagePlacement: next-line
   status-notice-error:
     backgroundColor: "{colors.error-soft}"
     textColor: "{colors.error}"
@@ -477,7 +504,7 @@ components:
 
 ### Grid & Container
 
-콘텐츠는 최대 `{layout.content-max}` 중앙 정렬이다. 768px 이상은 좌우 `{layout.gutter-desktop}`, 그 이하는 `{layout.gutter-mobile}` 여백을 둔다. 전체·개인 모두 그래프 카드 하나를 표시한다. 연도 탐색은 그래프 스크롤 영역 밖의 카드 상단 오른쪽에 둔다. 연간 그래프의 14px 셀은 유지하고 부족한 폭은 그래프 내부에서만 스크롤한다.
+콘텐츠는 최대 `{layout.content-max}` 중앙 정렬이다. 768px 이상은 좌우 `{layout.gutter-desktop}`, 그 이하는 `{layout.gutter-mobile}` 여백을 둔다. 전체·개인 모두 그래프 카드 하나를 표시한다. 연도 탐색은 그래프 스크롤 영역 밖의 카드 상단 오른쪽에 둔다. 연간 그래프의 14px 셀은 유지하고 부족한 폭은 그래프 내부에서만 스크롤한다. 요일과 셀은 동일한 `max(14px, .875rem)` 행 트랙 가운데에 정렬한다. 기본 14px 행은 200% 글자에서 28px가 되어 요일이 겹치지 않는다. 월 시작 여백은 요일 폭(`.75rem + 4px`)과 12px 간격의 합을 사용하며 스크롤 중 월 라벨이 고정 요일 영역을 침범하지 않게 가린다.
 
 ### Page Composition
 
@@ -500,7 +527,7 @@ components:
 | 날짜 상세 | 종이색 바탕, 카드 안의 별도 영역 |
 | 키보드 포커스 | 2px 녹색 outline, 2px offset |
 
-카드에는 그림자·그라디언트·유리 효과를 쓰지 않는다. 원근감 대신 여백·면·타이포그래피로 계층을 만든다. 포커스 윤곽선을 카드 overflow로 잘라내지 않는다.
+카드와 인증·멤버 검색·개설 안내·사진 확대 다이얼로그에는 그림자·유리 효과·backdrop blur를 쓰지 않는다. 개설 안내 캐릭터에도 drop-shadow를 붙이지 않는다. 사진 확대의 검정 60% backdrop과 다른 다이얼로그의 녹색 40% backdrop은 기존 대비를 유지한다. 다이얼로그의 닫기·원문 링크는 secondary 버튼으로 오른쪽 정렬하고 공간이 부족하면 줄바꿈한다. 카드에는 장식용 그라디언트를 쓰지 않는다. 잔디와 멤버 목록의 12px 가장자리 페이드는 스크롤 방향을 안내하는 기능성 예외이며 포커스를 가리지 않는다. 원근감 대신 여백·면·타이포그래피로 계층을 만든다. 포커스 윤곽선을 카드 overflow로 잘라내지 않는다.
 
 ## Shapes
 
@@ -540,7 +567,7 @@ components:
 
 ### Member Filter
 
-`{components.member-filter}`는 44px 이상 높이의 일반 버튼이다. 그래프 바로 위에 `전체 멤버`를 첫 번째로 고정하고 개인은 가나다순으로 배치한다. 초기 선택은 전체, 선택 상태는 `{components.member-filter-active}`와 `aria-pressed`로 알린다. 데스크톱은 최대 두 줄까지 개인 버튼을 표시하고 넘치는 멤버는 `멤버 찾기`로 접근한다. 모바일은 전체 버튼과 멤버 찾기를 고정하고 가운데 개인 버튼 목록만 가로 스크롤한다. 긴 이름은 버튼 안에서 줄바꿈하며 페이지 가로 넘침을 만들지 않는다.
+`{components.member-filter}`는 44px 이상 높이의 일반 버튼이다. 그래프 바로 위에 `전체 멤버`를 첫 번째로 고정하고 개인은 가나다순으로 배치한다. 초기 선택은 전체, 선택 상태는 `{components.member-filter-active}`와 `aria-pressed`로 알린다. 선택 변경은 즉시 칠하며 선택 칩은 hover·누름·일시 비활성 중에도 같은 녹색을 유지한다. 선택 해제 후에도 중간색이 남지 않도록 필터 칩의 hover·누름·선택·비활성은 모두 즉시 적용한다. 다른 컨트롤의 140ms 피드백은 유지한다. 데스크톱은 최대 두 줄까지 개인 버튼을 표시하고 넘치는 멤버는 `멤버 찾기`로 접근한다. 모바일은 전체 버튼과 멤버 찾기를 고정하고 가운데 개인 버튼 목록만 가로 스크롤한다. 목록 양끝에는 페이지 바탕색의 12px 페이드를 두며 끝에 도달한 방향은 숨긴다. 선택 칩은 양끝 15px 여유로 노출하고 키보드 포커스가 목록 안에 있으면 페이드를 즉시 투명하게 한다. 200% 글자 등으로 세 영역이 들어가지 않으면 제어 영역의 줄바꿈을 허용한다. 긴 이름은 버튼 안에서 줄바꿈하며 페이지 가로 넘침을 만들지 않는다.
 
 `멤버 찾기`는 이름 검색과 전체 멤버 목록을 제공하는 대화상자다. 제목과 입력 레이블을 제공하며 열면 검색 입력으로 초점을 이동한다. 이름이 같아도 별도 멤버로 유지하고 선택은 사용자 ID로 관리한다. 결과 없음 안내, Escape·닫기, 내부 초점 순환과 닫은 뒤 실행 버튼으로 초점 복귀를 제공한다. 개인을 선택하면 대화상자를 닫고 해당 버튼이 목록에 드러나게 한다. 선택된 개인이 두 줄 범위 밖이면 표시 목록에 포함시킨다.
 
@@ -598,7 +625,7 @@ components:
 
 ### Status & Footer
 
-`{components.status-notice}`는 마지막 수집 시각을 표시하고, 2시간 이상 지연되면 경고 변형을 쓴다. `{components.loading-placeholder}`는 정적 자리표시자다. 초기 로딩은 `aria-busy`, 재조회 결과는 짧은 `aria-live="polite"` 안내를 제공하고 메모 전체를 반복해서 읽지 않는다.
+`{components.status-notice}`는 마지막 수집 시각을 표시하고, 2시간 이상 지연되면 경고 변형을 쓴다. 경고는 반경 10px·패딩 16px의 박스로 표시하고 지연 설명은 다음 줄에 둔다. 정상 수집 배지의 알약 형태는 유지한다. `{components.loading-placeholder}`는 정적 자리표시자다. 초기 로딩은 `aria-busy`, 재조회 결과는 짧은 `aria-live="polite"` 안내를 제공하고 메모 전체를 반복해서 읽지 않는다.
 
 `{components.footer}`는 밝은 바탕에서 공개 범위를 안내한다. `공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 표시명·운동 날짜·텍스트 메모와 선택한 기록의 사진을 볼 수 있습니다. 사진은 Discord에서 불러오며, 원본 삭제 시 표시가 중단될 수 있어요.`를 읽을 수 있어야 한다. 색상 반전을 위한 큰 어두운 푸터를 만들지 않는다.
 
@@ -699,7 +726,7 @@ components:
 ## Known Gaps & Validation
 
 - [정적 SVG 시안](docs/design/dashboard-preview.svg)은 데스크톱·360px 구성을 보여준다. 구현 DOM은 Chromium에서 320·360·768·1280px, 클릭 상세·화살표·Escape·200% 글자 확대·긴 이름과 메모·조회 실패를 검증했다. 다른 OS의 글꼴과 실제 모바일 브라우저 확인은 추가 검증 대상이다.
-- 요일·월 라벨, 365·366개 실제 날짜와 정렬 빈 공간, 긴 멤버명·메모·많은 필터를 실제 데이터 크기로 검증해야 한다.
+- 2026·2027·2028년의 365·366개 날짜, 월·요일 텍스트의 비겹침과 중심 정렬, 멤버 30명의 스크롤·검색 선택을 가상 데이터로 검증한다. 실제 사용자 기록이나 시크릿 코드를 검증 캡처에 사용하지 않는다.
 - 색상 대비는 본문·보조 문구·버튼·경고·오류의 실제 조합으로 확인한다. 잔디는 텍스트 범례·접근 가능한 이름·상세를 함께 검증한다.
 - 로딩·빈 상태·오류·지연·추가 조회 실패·사진만 있는 인증을 모두 확인한다.
 - 한국어 운영체제 글꼴에 따라 글자 폭이 달라질 수 있으므로 macOS와 Windows·모바일에서 줄바꿈을 확인한다.

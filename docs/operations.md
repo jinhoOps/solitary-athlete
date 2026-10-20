@@ -31,7 +31,7 @@ uv run register_cmd.py
 
 ## GitHub Pages
 
-`Publish Pages`는 main 또는 현재 릴리스 브랜치 `mukmuk/db-foundation`의 화면 변경 시 실행한다. 단위 테스트·타입 검사·빌드·브라우저 검사 후 Pages artifact를 배포한다. 공개 설정 두 개만 빌드에 전달한다.
+`Publish Pages`는 main의 화면 변경 시 자동 실행한다. 허용된 릴리스 브랜치 `mukmuk/db-foundation`은 `gh workflow run pages.yml --ref mukmuk/db-foundation`으로 수동 배포한다. 단위 테스트·타입 검사·빌드·브라우저 검사 후 Pages artifact를 배포한다. 공개 설정 두 개만 빌드에 전달한다.
 
 | Repository Variables | 용도 |
 | --- | --- |
@@ -161,3 +161,17 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 
 
 2026-10-17 적용: 비공개 큐/함수를 공용 DB에 추가하고 기존 Discord 수신 Edge를 갱신했다. `/기록갱신`을 서버에 등록했으며 실제 옵션은 선택 `유저` 하나임을 확인했다. Edge 회원 역할 ID와 GitHub 변수, 맥북 런타임 `373e98cfe4de11bb`를 적용했다. 새 수집 실행이 exit0으로 끝났고 별도 요청 없이 생긴 갱신 작업은0건이었다. 실제 봇 채널 읽기·서버 소유자 권한 검증, 익명 큐401, 미서명 interaction401을 확인했다. 실제 사용자 인증의 삭제/갱신 작업은 명령을 직접 호출했을 때만 실행된다.
+
+
+## 웹보드 시각·조작감 보완 배포 (2026-10-20)
+
+사용자의 구현·배포 요청으로 릴리스 소스 `2be1d316382bcb08c8776d5d72a93c9292180852`를 배포했다. [Pages 배포](https://github.com/jinhoOps/solitary-athlete/actions/runs/39378622253)와 [Checks](https://github.com/jinhoOps/solitary-athlete/actions/runs/39378622026)가 성공했다. 공개 `release.json`의 sourceCommit과 일치한다. 기존 허용 릴리스 브랜치를 사용했고 환경 보호 설정·DB·Edge·수집기는 변경하지 않았다. main 병합은 수행하지 않았다.
+
+- 연도 조회 실패 후 멤버 선택·연도 탐색·재시도를 복구하고, 이전 연도 기록을 실패한 연도의 기록으로 표시하지 않는다. 코드 만료 시 이전 목록·통계·사진을 제거한다.
+- 선택·선택 해제 모두 즉시 반영한다. 최종 리뷰에서 선택 해제의 140ms 잔류를 재현해 수정했다. 필터 칩 hover도 즉시 반영하고 다른 컨트롤의 모션은 유지한다.
+- 모바일 멤버 칩에 방향별 페이드와 선택 노출 여유를 추가했다. 큰 글자로 공간이 부족하면 컨트롤이 줄바꿈한다. 검색 선택의 포커스는 dialog close 이벤트에서 복귀한다.
+- 14px 잔디 셀을 유지하면서 200% 글자의 요일 행을 28px로 늘리고 월 gutter를 공유한다. 모달의 그림자·블러를 제거하고 secondary 액션과 경고 박스를 통일했다.
+- 로컬 `npm test` 57개, `npm run build`, `npm run test:browser` 88개, 상대 링크·SVG XML·`git diff --check`를 확인했다. 네 화면 폭(320/360/768/1280px), 100/200% 글자, 전체/개인 화면 16조합과 SVG 4종을 Chromium으로 렌더 확인했다.
+- 실제 Pages 산출물에서도 일반 오류의 재시도·연도 이동·멤버 전환, 360px 잔디 라벨, 사진 다이얼로그, 200% 정렬의 6개 브라우저 검사가 통과했다. 데이터·사진 API는 가상 응답으로 대체했으며 실제 사용자 기록·월간 코드를 사용하지 않았다. 별도의 무인증 접속은 HTTP 200·코드 입력 모달·데이터 API 요청 0건·page error 0건을 확인했다.
+
+검증 중 기존 브라우저 테스트 두 경로에서 초기 잔디 reveal과 클릭 좌표가 경합했다. fixture는 `aria-busy=false`와 두 번의 레이아웃 프레임을 기다리도록 정리했다. 실사용 코드에 대기 시간을 추가하지 않았다. 기존 HTTP 400/401/403의 인증 만료 분류는 이번 범위에서 변경하지 않았으며, 직접 호출이 불가능한 중복 요청을 강제로 만드는 대신 실제 진입점 잠금과 기존 generation 가드 보존을 검토했다. macOS Chromium 이외 OS·실기기 브라우저는 별도 확인 대상이다.

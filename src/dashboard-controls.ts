@@ -13,6 +13,28 @@ export function renderDashboardControls(options:Options):HTMLElement {
  let selected=options.selectedMemberId;
  const all=button('전체 멤버',()=>choose(null),'filter-button member-all');all.dataset.control='member-all';
  const list=el('div','member-options');const personal:HTMLButtonElement[]=[];
+ const viewport=el('div','member-options-viewport');
+ const leftFade=el('span','member-scroll-fade member-scroll-fade--left');
+ const rightFade=el('span','member-scroll-fade member-scroll-fade--right');
+ for(const fade of [leftFade,rightFade]){fade.setAttribute('aria-hidden','true');fade.hidden=true;}
+ viewport.append(list,leftFade,rightFade);
+ let disposed=false;
+ function updateMemberFades(){
+  if(disposed||!nav.isConnected)return;
+  const mobile=matchMedia('(max-width:767px)').matches;
+  const remaining=list.scrollWidth-list.clientWidth;
+  leftFade.hidden=!mobile||list.scrollLeft<=1;
+  rightFade.hidden=!mobile||remaining-list.scrollLeft<=1;
+ }
+ function revealMember(target:HTMLElement){
+  const a=target.getBoundingClientRect(),b=list.getBoundingClientRect();
+  if(a.left<b.left+15)list.scrollLeft+=a.left-b.left-15;
+  else if(a.right>b.right-15)list.scrollLeft+=a.right-b.right+15;
+  updateMemberFades();
+ }
+ list.addEventListener('scroll',updateMemberFades,{passive:true});
+ const onFocus=(event:FocusEvent)=>{if(matchMedia('(max-width:767px)').matches&&event.target instanceof HTMLButtonElement)revealMember(event.target);};
+ list.addEventListener('focusin',onFocus);
  const roster=[...options.roster].sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
  function updatePressed(){all.setAttribute('aria-pressed',String(selected===null));for(const b of personal)b.setAttribute('aria-pressed',String(b.dataset.memberId===selected));}
  function choose(id:string|null){selected=id;updatePressed();fit();options.onMemberChange(id);}
@@ -26,20 +48,22 @@ export function renderDashboardControls(options:Options):HTMLElement {
  const title=el('h2','','멤버 찾기');title.id='member-search-title';
  const label=el('label','','멤버 이름 검색');label.htmlFor='member-search';
  const input=el('input','modal-input');input.id='member-search';input.type='text';input.autocomplete='off';
+ let searchFocusTarget:HTMLButtonElement|undefined;
  const found=el('div','member-results');found.setAttribute('aria-live','polite');
  function results(){
   found.replaceChildren();const matches=roster.filter(m=>m.name.toLocaleLowerCase('ko').includes(input.value.trim().toLocaleLowerCase('ko')));
   if(!matches.length)found.append(el('p','caption','일치하는 멤버가 없어요.'));
-  for(const m of matches){const b=button(`${m.name} · ID: ${m.id}`,()=>{dialog.close();choose(m.id);personal.find(b=>b.dataset.memberId===m.id)?.focus();},'filter-button');found.append(b);}
+  for(const m of matches){const b=button(`${m.name} · ID: ${m.id}`,()=>{searchFocusTarget=personal.find(b=>b.dataset.memberId===m.id);dialog.close();choose(m.id);},'filter-button');found.append(b);}
  }
  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();dialog.close();find.focus();}});
- input.oninput=results;dialog.addEventListener('close',()=>find.focus({preventScroll:true}));
- dialog.append(title,label,input,found,button('닫기',()=>dialog.close()));
- nav.append(all,list,find);root.append(nav,dialog);
+ input.oninput=results;dialog.addEventListener('close',()=>{(searchFocusTarget??find).focus({preventScroll:true});searchFocusTarget=undefined;});
+ const actions=el('div','dialog-actions');actions.append(button('닫기',()=>dialog.close(),'button secondary'));
+ dialog.append(title,label,input,found,actions);
+ nav.append(all,viewport,find);root.append(nav,dialog);
  updatePressed();
  // Hide overflow from the keyboard too; always reserve a visible slot for the selection.
  function fit(){
-  if(!nav.isConnected)return;
+  if(disposed||!nav.isConnected)return;
   const mobile=matchMedia('(max-width:767px)').matches;
   personal.forEach(b=>b.hidden=false);
   if(!mobile){
@@ -56,11 +80,12 @@ export function renderDashboardControls(options:Options):HTMLElement {
    }
   } else {
    const chosen=personal.find(b=>b.dataset.memberId===selected);
-   if(chosen){const a=chosen.getBoundingClientRect(),b=list.getBoundingClientRect();if(a.left<b.left)list.scrollLeft+=a.left-b.left;else if(a.right>b.right)list.scrollLeft+=a.right-b.right;}
+   if(chosen)revealMember(chosen);
   }
+  updateMemberFades();
  }
  let lastWidth=-1;
- const observer=new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;requestAnimationFrame(fit);}});observer.observe(list);root.addEventListener('dispose',()=>{observer.disconnect();dialog.remove();});requestAnimationFrame(fit);
+ const observer=new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;requestAnimationFrame(fit);}});observer.observe(list);root.addEventListener('dispose',()=>{disposed=true;observer.disconnect();list.removeEventListener('scroll',updateMemberFades);list.removeEventListener('focusin',onFocus);dialog.remove();});requestAnimationFrame(fit);
 
  const years = el('div', 'year-controls');
  const stepper = el('div', 'year-stepper');

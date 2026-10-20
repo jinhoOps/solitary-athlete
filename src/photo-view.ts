@@ -34,12 +34,13 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
  function enlarge(photo:Photo,opener:HTMLButtonElement){
   dialog?.remove();
   const modal=el('dialog','photo-dialog');dialog=modal;
-  const close=button('닫기',()=>modal.close(),'button');
+  const close=button('닫기',()=>modal.close(),'button secondary');
   const image=el('img','photo-full');image.alt=`${date} · ${name}님의 사진`;image.src=photo.url;image.referrerPolicy='no-referrer';
   image.onerror=()=>{image.remove();modal.append(el('p','','사진 링크가 만료되었거나 원본을 볼 수 없어요. 사진 목록을 다시 불러와 주세요.'));};
   modal.setAttribute('aria-label',`${date} · ${name}님의 사진 크게 보기`);
-  const source=el('a','button','Discord 원문 보기');source.href=photo.original;source.target='_blank';source.rel='noopener noreferrer';
-  modal.append(close,image,source);
+  const source=el('a','button secondary','Discord 원문 보기');source.href=photo.original;source.target='_blank';source.rel='noopener noreferrer';
+  const actions=el('div','dialog-actions');actions.append(source,close);
+  modal.append(image,actions);
   modal.onclose=()=>{modal.remove();if(opener.isConnected)opener.focus({preventScroll:true});};
   document.body.append(modal);modal.showModal();close.focus();
  }

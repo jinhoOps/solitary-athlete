@@ -51,6 +51,9 @@ async function fixture(
     await route.fulfill({ json: [] });
   });
   await page.goto('./');
+  await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  // Initial reveal and ResizeObserver both schedule layout work on animation frames.
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
 }
 
 test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', async ({ page }) => {
@@ -640,6 +643,8 @@ test('surface motion respects reduced motion and never delays closing or focus r
  await expect(detail).toBeHidden();await expect(day).toBeFocused();
  await page.emulateMedia({reducedMotion:'reduce'});
  await day.press('Enter');await expect(detail).toHaveCSS('animation-name','none');
+ // Opening the detail deliberately focuses its heading on the next layout frame.
+ await expect(detail.locator('.detail-heading h4')).toBeFocused();
  const close=detail.getByRole('button',{name:'날짜 상세 닫기',exact:true});
  await close.focus();await expect(close).toHaveCSS('outline-style','solid');
  await expect(close).toHaveCSS('transition-duration',/^0s(?:, 0s)*$/);
@@ -778,4 +783,209 @@ test('loaded photos leave only pagination controls and keep loading, empty, and 
  await photos.getByRole('button',{name:'사진 보기',exact:true}).click();
  await expect(photos).toContainText('표시할 사진이 없어요.');
  await expect(photos.getByRole('button',{name:'사진 새로고침',exact:true})).toBeVisible();
+});
+
+for (const recovery of ['retry','year','member'] as const) test(`year reload failure keeps controls usable via ${recovery}`, async ({page}) => {
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await page.route('**/rest/v1/rpc/get_workout_logs_page', route => route.fulfill({status:503,json:{message:'unavailable'}}));
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('.error-state')).toBeVisible();
+ const member=page.locator('.member-filter [data-member-id="2"]');
+ await expect(member).toHaveAttribute('aria-pressed','true');await expect(member).toBeEnabled();
+ await expect(page.locator('.year-label')).toHaveText('2026년');
+ await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeEnabled();
+ await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+ await expect(page.locator('.workout-card')).toHaveCount(0);await expect(page.locator('.timeline')).toBeHidden();
+ if(recovery==='member') {
+  // Changing selection while the API still fails must never render old logs.
+  await page.getByRole('button',{name:'전체 멤버',exact:true}).click();
+  await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  await expect(page.locator('.error-state')).toBeVisible();await expect(page.locator('.workout-card')).toHaveCount(0);
+ }
+ await page.unroute('**/rest/v1/rpc/get_workout_logs_page');
+ if(recovery==='year')await page.getByRole('button',{name:'다음 연도',exact:true}).click();
+ else await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();
+ await expect(page.locator('.workout-card')).toHaveCount(1);await expect(page.locator('.error-state')).toHaveCount(0);
+ await expect(page.locator('.year-label')).toHaveText(recovery==='year'?'2027년':'2026년');
+ await expect(page.locator('.member-filter [aria-pressed="true"]')).toHaveText(recovery==='member'?'전체 멤버':'하루');
+ if(recovery==='retry')await expect(page.locator('.timeline-item').first()).toBeVisible();
+ if(recovery==='year')await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeDisabled();
+ else await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeEnabled();
+});
+
+for(const motion of ['no-preference','reduce'] as const)test(`control feedback locks year reload and preserves selection with ${motion}`,async({page})=>{
+ await page.emulateMedia({reducedMotion:motion});
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ const member=page.getByRole('button',{name:'하루',exact:true});await member.click();
+ // Read immediately after selection, without a CSS-settling sleep or polling.
+ expect(await member.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(50, 108, 67)');
+ await member.hover();await page.mouse.down();
+ expect(await member.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(50, 108, 67)');
+ await page.mouse.up();
+ let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/rest/v1/rpc/get_workout_logs_page',async route=>{await gate;await route.fallback();});
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('#app')).toHaveAttribute('aria-busy','true');await expect(member).toBeDisabled();
+ expect(await member.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(50, 108, 67)');
+ const detachedYearDisabled=await page.evaluate(()=>{
+  // The heading is moved out of view during loading; detached controls are also locked.
+  return document.querySelectorAll('.year-filter button:not(:disabled)').length;
+ });expect(detachedYearDisabled).toBe(0);
+ release();await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+ await expect(member).toBeEnabled();await expect(member).toHaveAttribute('aria-pressed','true');
+ await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeEnabled();
+});
+
+test('year reload secret expiry removes prior member data before reauthentication',async({page})=>{
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await page.route('**/rest/v1/rpc/get_workout_logs_page',route=>route.fulfill({status:400,json:{message:'invalid_or_expired_secret'}}));
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('.modal-error')).toBeVisible();
+ await expect(page.locator('.member-filter')).toHaveCount(0);await expect(page.locator('.kpi-card')).toHaveCount(0);
+ await expect(page.locator('.photo-section')).toHaveCount(0);await expect(page.locator('.workout-card')).toHaveCount(0);
+ await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+ await page.unroute('**/rest/v1/rpc/get_workout_logs_page');
+ await page.locator('.modal-input').fill('test-code');await page.getByRole('button',{name:'확인',exact:true}).click();
+ await expect(page.locator('.workout-card')).toHaveCount(1);await expect(page.locator('.member-all')).toHaveAttribute('aria-pressed','true');
+});
+
+for(const width of [320,360,390])test(`member chip scroll preserves selected chip and focus at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ const roster=Array.from({length:30},(_,i)=>({user_id:String(100+i),username:`산책하는 멤버 ${String(i).padStart(2,'0')}`}));
+ await page.route('**/rest/v1/rpc/get_dashboard_members',route=>route.fulfill({json:roster}));await page.reload();
+ const list=page.locator('.member-options'),left=page.locator('.member-scroll-fade--left'),right=page.locator('.member-scroll-fade--right');
+ await expect(list.locator('button')).toHaveCount(30);await list.evaluate(e=>{e.scrollLeft=0;});
+ await expect(left).toBeHidden();await expect(right).toBeVisible();
+ await list.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+ await expect(left).toBeVisible();await expect(right).toBeVisible();
+ for(const scale of [100,200]){
+  await page.addStyleTag({content:`html{font-size:${scale}%}`});
+  await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
+  await page.locator('#member-search').fill('29');
+  await page.locator('.member-results button').click();
+  const chosen=list.locator('[data-member-id="129"]');await expect(chosen).toBeFocused();
+  await expect(chosen).toHaveAttribute('aria-pressed','true');
+  await expect(async()=>{
+   const a=(await chosen.boundingBox())!,b=(await list.boundingBox())!;
+   expect(a.x).toBeGreaterThanOrEqual(b.x+2);expect(a.x+a.width).toBeLessThanOrEqual(b.x+b.width-2);
+  }).toPass();
+  await expect(left).toHaveCSS('opacity','0');await expect(right).toHaveCSS('opacity','0');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+ await list.evaluate(e=>{e.scrollLeft=e.scrollWidth;});await expect(right).toBeHidden();
+ await page.setViewportSize({width:768,height:900});await expect(left).toBeHidden();await expect(right).toBeHidden();
+ await expect(list.locator('[data-member-id="129"]')).toBeVisible();
+});
+
+for(const width of [320,360,768,1280])test(`grass label geometry remains legible at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page,'normal',true,false,'2029-01-05T09:00:00Z');
+ for(const year of [2028,2027,2026]){
+  await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+  await expect(page.locator('.year-label')).toHaveText(`${year}년`);
+  await expect(page.locator('.grass-cell[data-date]')).toHaveCount(year===2028?366:365);
+  for(const scale of [200,100]){
+   await page.addStyleTag({content:`html{font-size:${scale}%}`});
+   const labels=await page.locator('.weekday-labels > span').evaluateAll(nodes=>nodes.map(n=>{
+    const r=n.getBoundingClientRect();const range=document.createRange();range.selectNodeContents(n);const text=range.getBoundingClientRect();
+    return {top:r.top,bottom:r.bottom,center:(r.top+r.bottom)/2,textTop:text.top,textBottom:text.bottom};
+   }));
+   for(let i=1;i<labels.length;i++){
+    expect(labels[i].top).toBeGreaterThanOrEqual(labels[i-1].bottom-.1);
+    expect(labels[i].textTop).toBeGreaterThanOrEqual(labels[i-1].textBottom-.1);
+   }
+   const dates=await page.locator('.grass-cell[data-date]').evaluateAll(nodes=>nodes.slice(0,7).map(n=>{
+    const r=n.getBoundingClientRect();return {date:(n as HTMLElement).dataset.date!,center:r.y+r.height/2,width:r.width,height:r.height};
+   }));
+   for(const d of dates){expect(d.width).toBe(14);expect(d.height).toBe(14);expect(Math.abs(d.center-labels[new Date(`${d.date}T00:00:00Z`).getUTCDay()].center)).toBeLessThan(1);}
+   const months=await page.locator('.month-labels > span').evaluateAll(nodes=>nodes.filter(n=>n.textContent?.trim()).map(n=>{
+    const range=document.createRange();range.selectNodeContents(n);const r=range.getBoundingClientRect();return {left:r.left,right:r.right};
+   }));
+   expect(months).toHaveLength(12);for(let i=1;i<months.length;i++)expect(months[i].left).toBeGreaterThanOrEqual(months[i-1].right);
+   const scroll=page.locator('.grass-scroll');await scroll.evaluate(e=>{e.scrollLeft=0;});
+   const firstMonth=(await page.locator('.month-labels').boundingBox())!,grid=(await page.locator('.grass-grid').boundingBox())!;
+   expect(Math.abs(firstMonth.x-grid.x)).toBeLessThan(1);
+   await scroll.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+   await expect(page.locator('.month-labels')).not.toHaveCSS('clip-path','none');
+   await scroll.evaluate(e=>{e.scrollLeft=e.scrollWidth;});
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  }
+ }
+});
+
+for(const kind of ['auth','member','inception','photo'] as const)test(`flat dialog and warning keep ${kind} surface readable`,async({page})=>{
+ await page.setViewportSize({width:360,height:900});
+ if(kind==='photo'){
+  await page.route('**/functions/v1/mukmuk-discord-photos',route=>route.fulfill({json:{photos:[{id:'200',preview:null,url:'https://cdn.discordapp.com/attachments/20/200/a.jpg',original:'https://discord.com/channels/10/20/100'}],next:null}}));
+  await page.route('https://cdn.discordapp.com/**',route=>route.fulfill({body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64'),contentType:'image/png'}));
+ }
+ await fixture(page,'normal',kind!=='auth');
+ let surface=page.locator('.modal-box');
+ if(kind==='member'){await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();surface=page.locator('.member-dialog');}
+ if(kind==='inception'){await page.getByRole('button',{name:'이전 연도',exact:true}).click();surface=page.locator('.inception-dialog');}
+ if(kind==='photo'){
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  await page.locator('.timeline-item').first().getByRole('button',{name:'사진 보기',exact:true}).click();
+  await page.getByRole('button',{name:'사진 1 크게 보기',exact:true}).click();surface=page.locator('.photo-dialog');
+ }
+ await expect(surface).toBeVisible();await expect(surface).toHaveCSS('box-shadow','none');
+ if(kind==='auth')await expect(page.locator('.modal-backdrop')).toHaveCSS('backdrop-filter','none');
+ else expect(await surface.evaluate(e=>getComputedStyle(e,'::backdrop').backdropFilter)).toBe('none');
+ if(kind==='inception')await expect(surface.locator('.inception-character')).toHaveCSS('filter','none');
+ if(kind==='photo'||kind==='member'){
+  const close=surface.getByRole('button',{name:'닫기',exact:true});await expect(close).toHaveClass(/secondary/);
+  if(kind==='photo')await expect(surface.getByRole('link',{name:'Discord 원문 보기'})).toHaveClass(/secondary/);
+  await page.addStyleTag({content:'html{font-size:200%}'});
+  const box=(await surface.boundingBox())!,buttons=await surface.locator('.dialog-actions > *').all();
+  expect(buttons.length).toBeGreaterThan(0);
+  for(const b of buttons){const r=(await b.boundingBox())!;expect(r.x).toBeGreaterThanOrEqual(box.x);expect(r.x+r.width).toBeLessThanOrEqual(box.x+box.width);expect(r.height).toBeGreaterThanOrEqual(44);}
+  await close.click();if(kind==='member')await expect(page.getByRole('button',{name:'멤버 찾기',exact:true})).toBeFocused();
+ }
+});
+
+for(const width of [320,360,768,1280])test(`flat dialog and warning notice wraps within header at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page,'normal',true,false,'2026-10-14T12:00:00Z');
+ const notice=page.locator('.status-notice.warning');await expect(notice).toContainText('새 인증의 반영이 늦어지고 있어요.');
+ await expect(notice).toHaveCSS('border-radius','10px');await expect(notice).toHaveCSS('padding-top','16px');
+ for(const scale of [100,200]){
+  await page.addStyleTag({content:`html{font-size:${scale}%}`});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const rect=(await notice.boundingBox())!,header=(await page.locator('.brand-header').boundingBox())!;
+  expect(rect.x).toBeGreaterThanOrEqual(header.x);expect(rect.x+rect.width).toBeLessThanOrEqual(header.x+header.width);
+ }
+});
+
+for(const width of [320,360,768,1280])for(const scale of [100,200])test(`visual review matrix ${width}px text ${scale}% preserves outer alignment`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page,'normal',true,true);
+ await page.addStyleTag({content:`html{font-size:${scale}%}`});
+ for(const member of ['전체 멤버','하루']){
+  await page.getByRole('button',{name:member,exact:true}).click();
+  const header=(await page.locator('.brand-header').boundingBox())!;
+  for(const selector of ['.member-filter','.workout-card','.footer',...(member==='전체 멤버'?['.kpi-section']:[])]){
+   const box=(await page.locator(selector).boundingBox())!;
+   expect(Math.abs(box.x-header.x)).toBeLessThan(1);expect(Math.abs(box.x+box.width-header.x-header.width)).toBeLessThan(1);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  if(process.env.MUKMUK_CAPTURE_DIR){
+   await page.evaluate(()=>document.fonts.ready);
+   await page.locator('.workout-card').screenshot({path:`${process.env.MUKMUK_CAPTURE_DIR}/grass-${width}-${scale}-${member==='하루'?'member':'all'}.png`});
+   await page.evaluate(()=>scrollTo(0,0));
+   await page.screenshot({path:`${process.env.MUKMUK_CAPTURE_DIR}/board-${width}-${scale}-${member==='하루'?'member':'all'}.png`,fullPage:true});
+  }
+ }
+});
+
+for(const motion of ['no-preference','reduce'] as const)test(`control feedback clears previous selection immediately with ${motion}`,async({page})=>{
+ await page.emulateMedia({reducedMotion:motion});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ const paints=await page.locator('.member-filter').evaluate(nav=>{
+  return ['member-all','member-2'].map(id=>{
+   const node=nav.querySelector<HTMLButtonElement>(`[data-control="${id}"]`)!;const style=getComputedStyle(node);
+   return {pressed:node.getAttribute('aria-pressed'),background:style.backgroundColor,color:style.color,duration:style.transitionDuration};
+  });
+ });
+ expect(paints[0]).toMatchObject({pressed:'false',background:'rgb(255, 255, 255)',color:'rgb(87, 102, 91)'});
+ expect(paints[0].duration).toMatch(/^0s(?:, 0s)*$/);
+ expect(paints[1].pressed).toBe('true');expect(paints[1].background).toBe('rgb(50, 108, 67)');expect(paints[1].color).toBe('rgb(255, 255, 255)');
 });

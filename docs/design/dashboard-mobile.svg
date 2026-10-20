@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="850" viewBox="1056 44 360 850" role="img" aria-labelledby="title desc">
   <title id="title">묵묵 · 모바일 웹보드</title>
-  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 140ms 피드백·160ms 등장은 구현 DOM에서 확인한다.</desc>
+  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 선택 상태는 즉시 표시하며 스크롤 방향 페이드와 확대 시 라벨 정렬은 구현 DOM에서 확인한다.</desc>
   <defs>
     <linearGradient id="scroll-fade-right" x1="0%" x2="100%">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0" />
@@ -10,7 +10,10 @@
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
     </linearGradient>
-  </defs>
+  <clipPath id="member-chips"><rect x="1174" y="168" width="124" height="44"/></clipPath>
+<linearGradient id="member-fade-left"><stop stop-color="#F7F8F2"/><stop offset="1" stop-color="#F7F8F2" stop-opacity="0"/></linearGradient>
+<linearGradient id="member-fade-right"><stop stop-color="#F7F8F2" stop-opacity="0"/><stop offset="1" stop-color="#F7F8F2"/></linearGradient>
+</defs>
   <g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif">
     <text x="1056" y="28" font-size="14" fill="#57665B" font-weight="400">MOBILE · 360px · 하루</text>
     <rect x="1056" y="44" width="360" height="850" rx="16" fill="#F7F8F2" stroke="none" />
@@ -23,8 +26,16 @@
     <path d="M1070 154h332" stroke="#D3DBD0" />
     <rect x="1070" y="168" width="98" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0" />
     <text x="1082" y="195.0" font-size="13" fill="#57665B" font-weight="500">전체 멤버</text>
-    <rect x="1174" y="168" width="62" height="44" rx="8" fill="#326C43" stroke="#D3DBD0" />
-    <text x="1186" y="195.0" font-size="13" fill="#FFFFFF" font-weight="500">하루</text>
+    <g clip-path="url(#member-chips)">
+<rect x="1116" y="168" width="62" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1128" y="195" font-size="13" fill="#57665B">산책</text>
+<rect x="1189" y="168" width="62" height="44" rx="8" fill="#326C43" stroke="#326C43"/>
+<text x="1201" y="195" font-size="13" fill="#FFFFFF" font-weight="600">하루</text>
+<rect x="1266" y="168" width="62" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="1278" y="195" font-size="13" fill="#57665B">한결</text>
+</g>
+<rect x="1174" y="168" width="12" height="44" fill="url(#member-fade-left)"/>
+<rect x="1286" y="168" width="12" height="44" fill="url(#member-fade-right)"/>
     <rect x="1304" y="168" width="98" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0" />
     <text x="1316" y="195.0" font-size="13" fill="#57665B" font-weight="500">멤버 찾기</text>
     <rect x="1070" y="226" width="332" height="269" rx="16" fill="#FFFFFF" stroke="#D3DBD0" />
@@ -41,7 +52,7 @@
         <rect x="1086" y="292" width="300" height="150" />
       </clipPath>
     </defs>
-    <g clip-path="url(#mobile-grass)">
+    <g clip-path="url(#mobile-grass)"><g transform="translate(4 0)">
       <text x="1110" y="306" font-size="12" fill="#57665B" font-weight="400">8월</text>
       <text x="1184" y="306" font-size="12" fill="#57665B" font-weight="400">9월</text>
       <text x="1258" y="306" font-size="12" fill="#57665B" font-weight="400">10월</text>
@@ -165,14 +176,14 @@
       <rect x="1398" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
       <rect x="1398" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
       <rect x="1398" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
-      <text x="1088" y="329" font-size="12" fill="#57665B" font-weight="400">일</text>
+      </g><text x="1088" y="329" font-size="12" fill="#57665B" font-weight="400">일</text>
       <text x="1088" y="347" font-size="12" fill="#57665B" font-weight="400">월</text>
       <text x="1088" y="365" font-size="12" fill="#57665B" font-weight="400">화</text>
       <text x="1088" y="383" font-size="12" fill="#57665B" font-weight="400">수</text>
       <text x="1088" y="401" font-size="12" fill="#57665B" font-weight="400">목</text>
       <text x="1088" y="419" font-size="12" fill="#57665B" font-weight="400">금</text>
       <text x="1088" y="437" font-size="12" fill="#57665B" font-weight="400">토</text>
-      <rect x="1100" y="318" width="12" height="122" fill="url(#scroll-fade-left)" pointer-events="none" />
+      <rect x="1102" y="318" width="12" height="122" fill="url(#scroll-fade-left)" pointer-events="none" />
       <rect x="1374" y="318" width="12" height="122" fill="url(#scroll-fade-right)" pointer-events="none" />
     </g>
     <rect x="1086" y="448" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none" />

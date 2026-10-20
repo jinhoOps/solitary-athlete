@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="850" viewBox="24 44 960 850" role="img" aria-labelledby="title desc">
   <title id="title">묵묵 · 데스크톱 웹보드</title>
-  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 140ms 피드백·160ms 등장은 구현 DOM에서 확인한다.</desc>
+  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 선택 상태는 즉시 표시하며 스크롤 방향 페이드와 확대 시 라벨 정렬은 구현 DOM에서 확인한다.</desc>
   <defs>
     <linearGradient id="scroll-fade-right" x1="0%" x2="100%">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0" />
@@ -18,8 +18,9 @@
     <text x="54" y="89" font-size="18" fill="#57665B" font-weight="400">🌱</text>
     <text x="88" y="88" font-size="18" fill="#18271E" font-weight="700">고독한 운동가</text>
     <text x="214" y="88" font-size="13" fill="#57665B" font-weight="400">· 묵묵 · 운동 기록</text>
-    <rect x="718" y="69" width="242" height="26" rx="13" fill="#D9E9D9" stroke="none" />
-    <text x="730" y="87" font-size="12" fill="#57665B" font-weight="400">마지막 수집 · 10월 20일 09:25 KST</text>
+    <rect x="610" y="52" width="350" height="58" rx="10" fill="#FFF4DD" stroke="none"/>
+    <text x="626" y="74" font-size="12" fill="#8A5A13">마지막 수집 · 10월 20일 06:25 KST</text>
+<text x="626" y="96" font-size="12" fill="#8A5A13">새 인증의 반영이 늦어지고 있어요.</text>
     <path d="M48 112h912" stroke="#D3DBD0" />
     <rect x="48.0" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0" />
     <text x="60.0" y="147" font-size="12" fill="#57665B" font-weight="400">운동왕 👑</text>
@@ -58,7 +59,7 @@
         <rect x="69" y="296" width="870" height="166" />
       </clipPath>
     </defs>
-    <g clip-path="url(#desktop-grass)">
+    <g clip-path="url(#desktop-grass)"><g transform="translate(4 0)">
       <text x="93" y="311" font-size="12" fill="#57665B" font-weight="400">1월</text>
       <text x="173" y="311" font-size="12" fill="#57665B" font-weight="400">2월</text>
       <text x="253" y="311" font-size="12" fill="#57665B" font-weight="400">3월</text>
@@ -442,7 +443,7 @@
       <rect x="1029" y="396" width="14" height="14" rx="3" fill="#A1C49E" stroke="none" />
       <rect x="1029" y="414" width="14" height="14" rx="3" fill="#A1C49E" stroke="none" />
       <rect x="1029" y="432" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
-      <text x="71" y="335" font-size="12" fill="#57665B" font-weight="400">일</text>
+      </g><text x="71" y="335" font-size="12" fill="#57665B" font-weight="400">일</text>
       <text x="71" y="353" font-size="12" fill="#57665B" font-weight="400">월</text>
       <text x="71" y="371" font-size="12" fill="#57665B" font-weight="400">화</text>
       <text x="71" y="389" font-size="12" fill="#57665B" font-weight="400">수</text>
