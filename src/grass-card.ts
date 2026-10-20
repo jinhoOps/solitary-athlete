@@ -223,12 +223,19 @@ export function renderGrassCard(options: {
   let disposed = false;
   function updateScrollFades() {
     if (disposed || !card.isConnected) return;
-    months.style.clipPath = `inset(0 0 0 ${Math.max(0,grassScroll.scrollLeft)}px)`;
     const remaining = grassScroll.scrollWidth - grassScroll.clientWidth;
     leftFade.hidden = grassScroll.scrollLeft <= 1;
     rightFade.hidden = remaining - grassScroll.scrollLeft <= 1;
     const bounds = viewport.getBoundingClientRect();
     const rows = grid.getBoundingClientRect();
+    const monthBounds = months.getBoundingClientRect();
+    const scrollBounds = grassScroll.getBoundingClientRect();
+    const monthLeft = Math.max(0, weekdays.getBoundingClientRect().right - monthBounds.left);
+    const monthRight = scrollBounds.right - monthBounds.left;
+    // Mask the label row separately so the cell fades retain their original geometry.
+    const start = leftFade.hidden ? 'black 0px' : `transparent ${monthLeft}px, black ${monthLeft + 12}px`;
+    const end = rightFade.hidden ? 'black 100%' : `black ${monthRight - 12}px, transparent ${monthRight}px`;
+    months.style.maskImage = `linear-gradient(to right, ${start}, ${end})`;
     leftFade.style.left = `${weekdays.getBoundingClientRect().right - bounds.left}px`;
     for (const fade of [leftFade, rightFade]) {
       fade.style.top = `${rows.top - bounds.top}px`;
