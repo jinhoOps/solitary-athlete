@@ -237,7 +237,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .filter-button[aria-pressed="true"] {
  background:var(--primary); color:white; border-color:var(--primary); transition-duration:0s;
 }
-.filter-button:disabled { transition-duration:0s; }
+.filter-button { transition-duration:0s; }
 
 .dialog-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
 .dialog-actions > .button { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; max-width:100%; overflow-wrap:anywhere; }

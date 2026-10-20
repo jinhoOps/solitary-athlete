@@ -973,3 +973,17 @@ for(const width of [320,360,768,1280])for(const scale of [100,200])test(`visual 
   }
  }
 });
+
+for(const motion of ['no-preference','reduce'] as const)test(`control feedback clears previous selection immediately with ${motion}`,async({page})=>{
+ await page.emulateMedia({reducedMotion:motion});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ const paints=await page.locator('.member-filter').evaluate(nav=>{
+  return ['member-all','member-2'].map(id=>{
+   const node=nav.querySelector<HTMLButtonElement>(`[data-control="${id}"]`)!;const style=getComputedStyle(node);
+   return {pressed:node.getAttribute('aria-pressed'),background:style.backgroundColor,color:style.color,duration:style.transitionDuration};
+  });
+ });
+ expect(paints[0]).toMatchObject({pressed:'false',background:'rgb(255, 255, 255)',color:'rgb(87, 102, 91)'});
+ expect(paints[0].duration).toMatch(/^0s(?:, 0s)*$/);
+ expect(paints[1].pressed).toBe('true');expect(paints[1].background).toBe('rgb(50, 108, 67)');expect(paints[1].color).toBe('rgb(255, 255, 255)');
+});
