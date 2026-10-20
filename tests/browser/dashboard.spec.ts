@@ -845,3 +845,31 @@ test('year reload secret expiry removes prior member data before reauthenticatio
  await page.locator('.modal-input').fill('test-code');await page.getByRole('button',{name:'확인',exact:true}).click();
  await expect(page.locator('.workout-card')).toHaveCount(1);await expect(page.locator('.member-all')).toHaveAttribute('aria-pressed','true');
 });
+
+for(const width of [320,360,390])test(`member chip scroll preserves selected chip and focus at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ const roster=Array.from({length:30},(_,i)=>({user_id:String(100+i),username:`산책하는 멤버 ${String(i).padStart(2,'0')}`}));
+ await page.route('**/rest/v1/rpc/get_dashboard_members',route=>route.fulfill({json:roster}));await page.reload();
+ const list=page.locator('.member-options'),left=page.locator('.member-scroll-fade--left'),right=page.locator('.member-scroll-fade--right');
+ await expect(list.locator('button')).toHaveCount(30);await list.evaluate(e=>{e.scrollLeft=0;});
+ await expect(left).toBeHidden();await expect(right).toBeVisible();
+ await list.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+ await expect(left).toBeVisible();await expect(right).toBeVisible();
+ for(const scale of [100,200]){
+  await page.addStyleTag({content:`html{font-size:${scale}%}`});
+  await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
+  await page.locator('#member-search').fill('29');
+  await page.locator('.member-results button').click();
+  const chosen=list.locator('[data-member-id="129"]');await expect(chosen).toBeFocused();
+  await expect(chosen).toHaveAttribute('aria-pressed','true');
+  await expect(async()=>{
+   const a=(await chosen.boundingBox())!,b=(await list.boundingBox())!;
+   expect(a.x).toBeGreaterThanOrEqual(b.x+2);expect(a.x+a.width).toBeLessThanOrEqual(b.x+b.width-2);
+  }).toPass();
+  await expect(left).toHaveCSS('opacity','0');await expect(right).toHaveCSS('opacity','0');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+ await list.evaluate(e=>{e.scrollLeft=e.scrollWidth;});await expect(right).toBeHidden();
+ await page.setViewportSize({width:768,height:900});await expect(left).toBeHidden();await expect(right).toBeHidden();
+ await expect(list.locator('[data-member-id="129"]')).toBeVisible();
+});
