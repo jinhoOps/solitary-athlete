@@ -1,10 +1,10 @@
 import {el,button} from './dom';
-import {calendarYear,sundayIndex,shortDate,stats} from './dates';
+import {calendarYear,sundayIndex,stats} from './dates';
 import {aggregateDays} from './aggregate';
 import type {Member,WorkoutLog,DashboardData} from './types';
 
 export function renderGrassCard(options: {
- year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
+ heading?:HTMLElement;year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
  photos?:(log:WorkoutLog)=>HTMLElement;
  logs:WorkoutLog[];currentStats?:DashboardData['currentStats'];
 }) {
@@ -17,9 +17,9 @@ export function renderGrassCard(options: {
   const member=options.member??{id:'ALL',name:'전체 멤버',dates:new Set(daily.keys()),photos:new Set<string>()};
   const data={logs,currentStats:options.currentStats};
   const card = el('article', 'workout-card');
-  const top = el('div', 'card-heading');
+  const top = options.heading ?? el('div', 'card-heading');
   const cells = calendarYear(selectedYear);
-  top.append(el('h3', '', `${member.name}${aggregate?' · '+selectedYear+'년':''}`), el('span', 'caption', `${selectedYear}년 · 1월 1일 — 12월 31일`));
+  if (!options.heading) top.append(el('span', 'caption', `오늘 · ${today} KST`));
 
   const metrics = el('dl', 'metrics');
   const counts = stats(member.dates, today);

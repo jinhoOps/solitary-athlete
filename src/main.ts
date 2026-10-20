@@ -76,13 +76,13 @@ const filters = el('div', 'controls-slot');
 
 const cards = el('section', 'cards');
 cards.setAttribute('aria-label', '연도별 운동 잔디');
-const yearBar = el('div', 'year-bar');
+const yearBar = el('div', 'card-heading');
 yearBar.hidden = true;
 const yearFilters = el('div', 'year-filter');
 yearFilters.setAttribute('aria-label', '연도 탐색');
 const yearTitle = el('div', 'year-title');
 const todayCaption = el('p', 'caption');
-yearTitle.append(el('h2', '', '연도별 운동 잔디'), todayCaption);
+yearTitle.append(todayCaption);
 yearBar.append(yearTitle, yearFilters);
 
 const heading = el('div', 'section-heading');
@@ -92,7 +92,7 @@ const logList = el('section', 'timeline');
 logList.setAttribute('aria-label', '운동 메모');
 
 const moreArea = el('div', 'more-area');
-main.append(kpiSection, filters, yearBar, cards, heading, logList, moreArea, feedback);
+main.append(kpiSection, filters, cards, heading, logList, moreArea, feedback);
 
 const footer = el('footer', 'footer');
 footer.append(
@@ -156,7 +156,7 @@ function renderCards() {
   todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();cardReveals.clear();
   const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
-  const card=renderGrassCard({year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,
+  const card=renderGrassCard({heading:yearBar,year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,
     photos:log=>photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,knownMembers.get(log.user_id)??log.username)});
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(card.element);

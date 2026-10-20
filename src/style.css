@@ -43,7 +43,6 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .filter-button[aria-pressed="true"] { background: var(--primary); color: white; border-color: var(--primary); font-weight: 600; }
 .filter-button:active, .primary:active { background: var(--active); color: white; }
 
-.year-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
 .year-filter { display: flex; flex-wrap: wrap; gap: 6px; }
 .year-filter .filter-button, .year-filter .button { min-height: 44px; }
 .grass-cell:disabled { opacity: .35; }

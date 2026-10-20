@@ -32,5 +32,5 @@ export function calendarYear(year: number): (string | null)[] {
   return calendar(end, days);
 }
 export function shortDate(date: string): string {
-  return `${Number(date.slice(5, 7))}월 ${Number(date.slice(8, 10))}일`;
+  return `${Number(date.slice(5, 7))}월 ${Number(date.slice(8, 10))}일 (${['일', '월', '화', '수', '목', '금', '토'][sundayIndex(date)]})`;
 }
