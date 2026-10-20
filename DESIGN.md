@@ -193,7 +193,12 @@ components:
     backgroundColor: "{colors.surface-card}"
     borderColor: "{colors.border}"
     rounded: "{rounded.badge}"
-    buttonSize: 34px
+    padding: 1px
+    shadow: none
+    buttonSize: 28px
+    visualHeight: 32px
+    mobileTargetSize: 44px
+    fontSize: 13px
   inception-dialog:
     maxWidth: 400px
     rounded: "{rounded.card}"
@@ -234,8 +239,9 @@ components:
     borderColor: "{colors.hairline}"
     borderWidth: 1px
     rounded: "{rounded.card}"
-    padding: "{spacing.lg}"
-    gap: "{spacing.lg}"
+    padding: 20px
+    mobilePadding: 16px
+    gap: 12px
     shadow: none
   stat-metric:
     textColor: "{colors.ink}"
@@ -270,15 +276,21 @@ components:
     rounded: "{rounded.control}"
     padding: "{spacing.md}"
   timeline-item:
-    backgroundColor: "{colors.surface-card}"
+    backgroundColor: transparent
     textColor: "{colors.ink}"
-    metaColor: "{colors.muted}"
-    typography: "{typography.body-md}"
-    metaTypography: "{typography.body-sm}"
-    rounded: "{rounded.card}"
-    borderColor: "{colors.hairline}"
-    padding: "{spacing.md}"
-    minHeight: "{layout.target-min}"
+    typography: "{typography.body-sm}"
+    borderWidth: 0px
+    padding: 0px
+    gap: 12px
+  timeline-message:
+    backgroundColor: "#EDF1E9"
+    rounded: 8px
+    padding: 8px 12px
+    fontSize: 14px
+    lineHeight: 1.6
+  timeline-month:
+    gap: 24px
+    headingFontSize: 13px
   status-notice:
     textColor: "{colors.muted}"
     typography: "{typography.body-sm}"
@@ -494,9 +506,9 @@ components:
 
 ### Timeline
 
-멤버 선택 시 「남겨 둔 운동」의 날짜 버튼은 `10월 20일 (화)`처럼 한국어 요일을 함께 표시한다. 요일은 기록 날짜 자체에서 계산하며 브라우저 시간대에 영향받지 않는다.
+멤버 선택 시 「남겨 둔 운동」은 월별로 묶고 날짜 버튼은 `20일 (화)`처럼 일·요일을 표시한다. 접근 가능한 이름에는 연·월·일·요일 전체를 포함한다. 요일은 기록 날짜 자체에서 계산하며 브라우저 시간대에 영향받지 않는다.
 
-`{components.timeline-item}`은 날짜·멤버명·여러 줄 운동 메모를 보여준다. 사진만 있는 날은 `사진 인증`으로 표시한다. 사진은 기록 상세의 사진 보기 동작으로만 불러오며 파일은 별도 저장하지 않는다. 날짜가 최신인 항목부터 보여주며 최초 30개의 **일별 기록** 이후 `더 보기`로 늘린다. 추가 조회 실패 시 기존 목록을 유지하고 재시도를 제공한다. 상세를 여는 동작과 길고 선택 가능한 메모 본문을 겹치게 만들지 않는다.
+`{components.timeline-item}`은 월별 영역 안에서 날짜와 작은 메시지 면의 메모를 보여준다. 선택된 멤버의 이름은 매 기록마다 반복하지 않는다. 사진만 있는 날은 본문 문구를 중복하지 않고 `사진 보기` 버튼을 제공한다. 사진은 타임라인 또는 날짜 상세에서 한 번 눌러 불러오며 파일은 별도 저장하지 않는다. 날짜가 최신인 항목부터 보여주며 최초 30개의 **일별 기록** 이후 `더 보기`로 늘린다. 추가 조회 실패 시 기존 목록을 유지하고 재시도를 제공한다. 상세를 여는 동작과 길고 선택 가능한 메모 본문을 겹치게 만들지 않는다.
 
 ### Status & Footer
 
@@ -579,7 +591,7 @@ components:
 | --- | --- |
 | Compact · 360px 미만 | 16px 바깥 여백, 소개·필터·통계 자연 줄바꿈, 잔디 안쪽만 필요 시 가로 스크롤 |
 | Mobile · 360–767px | 제목 28px, 바깥·카드 안쪽 16px, 통계 세 칸, 전체 멤버 고정·개인 버튼 가로 스크롤, 연도 선택기 |
-| Desktop · 768px 이상 | 제목 40px, 바깥 32px·카드 안쪽 24px, 콘텐츠 최대 960px, 단일 그래프·오른쪽 연도 탐색·아래 날짜 상세 |
+| Desktop · 768px 이상 | 제목 40px, 바깥 32px·카드 안쪽 20px, 콘텐츠 최대 960px, 단일 그래프·오른쪽 연도 탐색·아래 날짜 상세 |
 
 큰 화면에서 열 수를 늘리는 대신 여백을 늘린다. 320·360·768·1280px와 200% 확대에서 페이지 전체 가로 넘침이 없어야 한다. 통계의 긴 값은 줄바꿈할 수 있으며 자르지 않는다. 잔디만 스크롤하더라도 범례·상세 패널은 화면 폭에 맞게 유지한다.
 
@@ -637,7 +649,7 @@ components:
 - 반영 지연 안내는 다음 수집부터 나누어 처리한다는 내용으로 짧게 제공한다. 권한·통신 오류를 사용자의 삭제나 운동 취소로 표시하지 않는다. 새 레이아웃·색·컴포넌트 토큰은 필요하지 않다.
 
 
-## 카드 밀도·타임라인 사진 개선 설계 (2026-10-20 · 구현 예정)
+## 카드 밀도·타임라인 사진 개선 (2026-10-20 · 구현 반영)
 
 ### 카드 내부 밀도
 
@@ -673,4 +685,4 @@ components:
 1. 카드 전용 연도 컨트롤 스타일과 통계 여백을 적용하고 320/360/768/1280px 및 200% 확대에서 확인한다. 공통 버튼 크기 변경이 사진·멤버 필터에 번지지 않게 한다.
 2. 월별 대화형 목록과 사진 컴포넌트의 펼침/접기·요청 수명 처리를 구현한다. 월 경계를 넘는 더 보기, 같은 월 병합, 펼친 사진 유지와 기존 날짜 상세 경로도 회귀 검증한다.
 3. 첫 화면 사진 요청 0건, 목록에서 1회 클릭 후 선택한 기록만 요청, 뷰포트 밖 썸네일 요청 0건, 확대 전 원본 요청 0건을 브라우저 테스트로 검증한다. 접기/전환 중 늦은 응답·중복 클릭·실패 재시도·원본 삭제도 확인한다.
-4. 타입 검사·정적 빌드·관련 단위/브라우저 검증 후 기능 단위로 커밋·푸시한다. 이 절은 현재 구현을 설명하는 규칙을 대체하는 후속 설계이며, 적용 시 본문 토큰·컴포넌트 규칙을 함께 갱신하고 구현 예정 표시를 해제한다.
+4. 타입 검사·정적 빌드·관련 단위/브라우저 검증 후 기능 단위로 커밋·푸시한다. 본문 토큰·컴포넌트 규칙과 이 절은 함께 유지한다.

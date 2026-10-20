@@ -165,3 +165,34 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .photo-dialog { max-width: min(960px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 16px; border-radius: 12px; border: 1px solid var(--border); background: white; color: #18271E; }
 .photo-dialog::backdrop { background: rgb(0 0 0 / 60%); }
 .photo-full { display: block; max-width: 100%; max-height: 75dvh; object-fit: contain; margin-block: 8px; }
+
+/* Compact journal card and monthly conversation */
+.workout-card { padding:20px; }
+.card-heading { gap:8px; margin-bottom:12px; }
+.metrics { gap:12px; margin-bottom:16px; }
+.metrics dd { margin-top:2px; font-size:1.25rem; }
+.year-stepper { padding:1px; border-radius:6px; box-shadow:none; gap:0; }
+.year-filter .stepper-btn { width:28px; height:28px; min-height:28px; padding:0; border:0; border-radius:4px; }
+.year-label { min-width:54px; padding:0 4px; font-size:.8125rem; font-weight:600; }
+.timeline { gap:24px; }
+.month-heading { display:flex; align-items:center; gap:12px; font-size:.8125rem; color:var(--muted); margin-bottom:12px; }
+.month-heading::after { content:''; height:1px; background:var(--border); flex:1; }
+.month-records { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
+.timeline-item { padding:0; border:0; border-radius:0; background:transparent; display:grid; grid-template-columns:82px minmax(0,1fr); gap:12px; align-items:start; }
+.timeline-item .date-button { min-height:32px; padding:4px 0; text-align:left; font-size:.8125rem; }
+.timeline-message { min-width:0; width:fit-content; max-width:100%; padding:8px 12px; border-radius:8px; background:#EDF1E9; }
+.timeline-message .memo { font-size:.875rem; line-height:1.6; }
+.timeline-message .photo-section { margin-top:8px; }
+.timeline-message .photo-section:first-child { margin-top:0; }
+.photo-toggle { font-size:.8125rem; padding:4px 10px; background:white; color:var(--primary); }
+.photo-grid:not(:empty) { margin-top:8px; }
+.timeline-message:has(.photo-preview) { width:100%; }
+@media(max-width:767px) {
+ .workout-card { padding:16px; }
+ .year-stepper { position:relative; border:0; background:transparent; isolation:isolate; }
+ .year-stepper::before { content:''; position:absolute; inset:6px 0; border:1px solid var(--border); border-radius:6px; background:white; z-index:-1; }
+ .year-filter .stepper-btn { width:44px; height:44px; min-height:44px; }
+ .year-filter .stepper-btn:hover:not(:disabled) { background:transparent; }
+ .timeline-item { grid-template-columns:64px minmax(0,1fr); gap:8px; }
+ .timeline-item .date-button { min-height:44px; }
+}

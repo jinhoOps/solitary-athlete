@@ -164,7 +164,11 @@ function renderCards() {
   requestAnimationFrame(card.revealToday);
 }
 
-function renderTimeline() {
+function renderTimeline(reset = true) {
+  if(reset){
+    logList.querySelectorAll('.photo-section').forEach(e=>e.dispatchEvent(new Event('dispose')));
+    logList.replaceChildren();
+  }
   const isMemberSelected = selected !== null;
   heading.hidden = !isMemberSelected;
   logList.hidden = !isMemberSelected;
@@ -172,17 +176,26 @@ function renderTimeline() {
 
   if (!isMemberSelected) return;
 
-  logList.replaceChildren();
   for (const log of timeline) {
-    const item = el('article', 'timeline-item');
-    const name = data.members.find(m => m.id === log.user_id)?.name ?? log.username;
-    const top = el('div', 'timeline-meta');
-    top.append(
-      button(shortDate(log.log_date), () => cardOpeners.get(log.user_id)?.(log.log_date, log), 'date-button'),
-      el('span', 'caption', `${name}${log.has_photo ? ' · 사진 포함' : ''}`)
-    );
-    item.append(top, el('p', 'memo', log.memo || '사진 인증'));
-    logList.append(item);
+    const key = `${log.user_id}:${log.log_date}`;
+    if ([...logList.querySelectorAll<HTMLElement>('.timeline-item')].some(item=>item.dataset.key===key)) continue;
+    const month = log.log_date.slice(0,7);
+    let group = logList.querySelector<HTMLElement>(`[data-month="${month}"]`);
+    if (!group) {
+      group = el('section','timeline-month');group.dataset.month=month;
+      const title=el('h3','month-heading',`${month.slice(0,4)}년 ${Number(month.slice(5))}월`);
+      title.id=`month-${month}`;group.setAttribute('aria-labelledby',title.id);
+      group.append(title,el('ol','month-records'));logList.append(group);
+    }
+    const item = el('li', 'timeline-item');item.dataset.key=key;
+    const name = knownMembers.get(log.user_id) ?? log.username;
+    const date = button(shortDate(log.log_date).replace(/^\d+월 /,''), () => cardOpeners.get(log.user_id)?.(log.log_date, log), 'date-button');
+    date.setAttribute('aria-label',`${log.log_date.slice(0,4)}년 ${shortDate(log.log_date).replace(/\((.)\)/,'$1요일')}`);
+    const message=el('div','timeline-message');
+    if(log.memo)message.append(el('p','memo',log.memo));
+    if(log.has_photo)message.append(photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,name));
+    else if(!log.memo)message.append(el('p','memo','텍스트 인증'));
+    item.append(date,message);group.querySelector('ol')!.append(item);
   }
   if (!timeline.length) logList.append(el('p', 'secondary-text', '아직 남긴 운동 기록이 없어요.'));
   moreArea.replaceChildren();
@@ -200,7 +213,7 @@ function fetchTimeline(append: boolean) {
   const rows = loadTimeline(data.logs, selected, offset, 30);
   timeline = append ? [...timeline, ...rows] : rows;
   more = offset + rows.length < data.logs.filter(l => l.user_id === selected).length;
-  renderTimeline();
+  renderTimeline(!append);
   feedback.textContent = `${timeline.length}개의 기록일을 표시합니다.`;
 }
 
@@ -258,6 +271,8 @@ async function init(preserveSelection = false) {
   if (selectedYear < SERVICE_START_YEAR) selectedYear = SERVICE_START_YEAR;
   const requestedYear = selectedYear;
   app.setAttribute('aria-busy', 'true');
+  logList.querySelectorAll('.photo-section').forEach(e=>e.dispatchEvent(new Event('dispose')));
+  logList.replaceChildren();
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(el('div', 'loading-placeholder', '운동 기록을 불러오고 있어요.'));
   filters.querySelectorAll<HTMLButtonElement>('button').forEach(b => { b.disabled = true; });

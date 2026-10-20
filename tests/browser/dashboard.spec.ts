@@ -14,9 +14,11 @@ const logs = Array.from({ length: 45 }, (_, n) => ({
 async function fixture(
   page: Page,
   mode: 'normal' | 'empty' | 'error' | 'invalid-secret' = 'normal',
-  provideSecret = true
+  provideSecret = true,
+  preview = false,
+  at = '2026-10-14T09:00:00Z'
 ) {
-  await page.clock.install({ time: new Date('2026-10-14T09:00:00Z') });
+  await page.clock.install({ time: new Date(at) });
   if (provideSecret) {
     await page.addInitScript(() => {
       localStorage.setItem('mukmuk_secret_code', 'test-code');
@@ -29,7 +31,7 @@ async function fixture(
       return;
     }
     if(url.pathname.endsWith('rpc/get_dashboard_members')) {
-      await route.fulfill({json:mode==='empty'?[]:[{user_id:'1',username:dangerous},{user_id:'2',username:'하루'},{user_id:'3',username:'과거 전용'}]});return;
+      await route.fulfill({json:mode==='empty'?[]:[{user_id:'1',username:preview?'산책하는 고운':dangerous},{user_id:'2',username:'하루'},{user_id:'3',username:'과거 전용'}]});return;
     }
     if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       if (mode === 'error') {
@@ -43,7 +45,7 @@ async function fixture(
       const year=route.request().postDataJSON()?.p_year ?? 2026;
       const annualLogs=year===2025?[{...logs[0],log_date:'2025-01-02',memo:'작년 운동'}]:logs.filter(l=>l.log_date.startsWith(String(year)));
       const list = mode === 'empty' ? [] : annualLogs;
-      await route.fulfill({ json: list });
+      await route.fulfill({ json: preview?list.map((log,i)=>({...log,username:log.user_id==='2'?'하루':'산책하는 고운',memo:i===0?'등 운동 40분. 오늘도 한 칸.':i%3===0?'퇴근하고 천천히 3km 달리기':'가볍게 30분 걷기\n마무리 스트레칭'})):list });
       return;
     }
     await route.fulfill({ json: [] });
@@ -86,7 +88,7 @@ test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', 
   await expect(page.locator('.timeline')).toBeVisible();
   await expect(page.locator('.timeline-item')).toHaveCount(30);
   await expect(page.getByRole('button', { name: '하루', exact: true })).toBeFocused();
-  await expect(page.locator('.timeline-item').first()).toContainText('사진 인증');
+  await expect(page.locator('.timeline-item').first().getByRole('button',{name:'사진 보기',exact:true})).toBeVisible();
 });
 
 test('one tab stop per grass grid and keyboard date detail with focus restoration', async ({ page }) => {
@@ -439,6 +441,7 @@ test('offscreen photo previews wait for viewport entry',async({page})=>{
  await expect(page.locator('.date-detail')).toBeVisible();
  await page.locator('.photo-section').getByRole('button',{name:'사진 보기',exact:true}).click();
  await expect(page.locator('.photo-preview')).toHaveCount(20);
+ await page.locator('.photo-preview').first().scrollIntoViewIfNeeded();
  await expect.poll(()=>downloads).toBeGreaterThan(0);expect(downloads).toBeLessThan(20);
  await expect(page.locator('.photo-preview').last()).not.toHaveAttribute('src');
  await page.locator('.photo-preview').last().scrollIntoViewIfNeeded();
@@ -455,9 +458,93 @@ test('compact card header and member timeline weekday', async ({page}) => {
  await expect(page.getByRole('heading',{name:'연도별 운동 잔디'})).toHaveCount(0);
  await expect(header.locator('h3')).toHaveCount(0);
  await page.getByRole('button',{name:'하루',exact:true}).click();
- await expect(page.locator('.date-button').first()).toHaveText('10월 14일 (수)');
+ await expect(page.locator('.date-button').first()).toHaveText('14일 (수)');
  await page.locator('.date-button').first().click();
  await expect(page.locator('.date-detail')).toBeVisible();
  await expect(header.locator('.year-filter')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+
+test('monthly conversation loads photos directly and preserves expanded entries on more',async({page})=>{
+ let calls=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{calls++;await route.fulfill({json:{photos:[],next:null}});});
+ await fixture(page,'normal',true,!!process.env.MUKMUK_CAPTURE_DIR);await page.getByRole('button',{name:'하루',exact:true}).click();
+ await expect(page.locator('.timeline-month')).toHaveCount(2);
+ await expect(page.locator('.timeline-month').first().getByRole('heading')).toHaveText('2026년 10월');
+ await expect(page.locator('.timeline-item')).toHaveCount(30);
+ expect(calls).toBe(0);
+ if(process.env.MUKMUK_CAPTURE_DIR){
+  for(const [label,width,height] of [['desktop',1280,900],['mobile',390,844]] as const){
+   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
+   await page.screenshot({path:`${process.env.MUKMUK_CAPTURE_DIR}/${label}-board.png`});
+   await page.getByRole('heading',{name:'남겨 둔 운동',exact:true}).evaluate(e=>e.scrollIntoView({block:'start'}));
+   await page.screenshot({path:`${process.env.MUKMUK_CAPTURE_DIR}/${label}-timeline.png`});
+  }
+ }
+ const first=page.locator('.timeline-item').first();
+ await first.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(first).toContainText('표시할 사진이 없어요');
+ expect(calls).toBe(1);
+ await page.getByRole('button',{name:'더 보기',exact:true}).click();
+ await expect(page.locator('.timeline-item')).toHaveCount(35);
+ await expect(page.locator('.timeline-month')).toHaveCount(2);
+ await expect(first).toContainText('표시할 사진이 없어요');expect(calls).toBe(1);
+ await first.getByRole('button',{name:'사진 접기',exact:true}).click();
+ await expect(first.locator('.photo-grid')).toBeHidden();
+});
+
+
+test('timeline photo button requests only its record and loads no full image before enlargement',async({page})=>{
+ let queries=0,previews=0,originals=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{
+  queries++;expect(route.request().postDataJSON()).toMatchObject({user_id:'2',date:today});
+  await route.fulfill({json:{photos:[{id:'200',preview:'https://media.discordapp.net/attachments/20/200/a.webp',url:'https://cdn.discordapp.com/attachments/20/200/a.jpg',original:'https://discord.com/channels/10/20/100',width:800,height:600}],next:null}});
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
+ await page.route('https://media.discordapp.net/**',async route=>{previews++;await route.fulfill({body:image,contentType:'image/png'});});
+ await page.route('https://cdn.discordapp.com/**',async route=>{originals++;await route.fulfill({body:image,contentType:'image/png'});});
+ await fixture(page);await page.getByRole('button',{name:'하루',exact:true}).click();
+ expect(queries).toBe(0);expect(previews).toBe(0);
+ const item=page.locator('.timeline-item').first();
+ await item.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(item.locator('.photo-preview')).toBeVisible();
+ await expect.poll(()=>previews).toBe(1);expect(queries).toBe(1);expect(originals).toBe(0);
+ await expect(page.locator('.date-detail')).toBeHidden();
+ await item.getByRole('button',{name:'사진 1 크게 보기'}).click();
+ await expect.poll(()=>originals).toBe(1);
+ await page.keyboard.press('Escape');
+ await item.getByRole('button',{name:'사진 접기',exact:true}).click();
+ await expect(item.locator('.photo-preview')).toHaveCount(0);
+});
+
+test('timeline collapse cancels pending photos and a late response cannot reopen them',async({page})=>{
+ let finish:()=>void=()=>{};const gate=new Promise<void>(resolve=>{finish=resolve;});let calls=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{
+  calls++;await gate;await route.fulfill({json:{photos:[],next:null}}).catch(()=>{});
+ });
+ await fixture(page);await page.getByRole('button',{name:'하루',exact:true}).click();
+ const item=page.locator('.timeline-item').first();
+ await item.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect.poll(()=>calls).toBe(1);
+ await item.getByRole('button',{name:'사진 접기',exact:true}).click();finish();
+ await expect(item.locator('.photo-toggle')).toHaveAttribute('aria-expanded','false');
+ await expect(item.locator('.photo-controls')).toBeHidden();
+ await item.getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(item).toContainText('표시할 사진이 없어요');expect(calls).toBe(2);
+});
+
+
+test('failed year reload disposes pending timeline photos immediately',async({page})=>{
+ let finish:()=>void=()=>{};const gate=new Promise<void>(resolve=>{finish=resolve;});
+ await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{await gate;await route.fulfill({json:{photos:[],next:null}}).catch(()=>{});});
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('.year-label')).toHaveText('2026년');
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await page.locator('.timeline-item').first().getByRole('button',{name:'사진 보기',exact:true}).click();
+ await page.route('**/rest/v1/rpc/get_workout_logs_page',async route=>route.fulfill({status:503,json:{error:'unavailable'}}));
+ await page.getByRole('button',{name:'다음 연도',exact:true}).click();
+ await expect(page.locator('.error-state')).toBeVisible();finish();
+ await expect(page.locator('.timeline .photo-section')).toHaveCount(0);
 });
