@@ -476,3 +476,8 @@ GitHub 예약은 10월 15일 01:09·05:22·08:32 KST에만 생성돼 매시간 �
 명령을 사용하지 않은 대상은 건드리지 않는다. 사진 Edge는 사진 표시만 비활성화하며 인증 취소의 별도 진입점으로 사용하지 않는다. 수집·현황판·집계 기본 동작과 맥북 240초 전체 제한을 유지한다.
 
 근거: [Discord 메시지 조회와 권한](https://github.com/discord/discord-api-docs/blob/main/developers/resources/message.mdx#get-channel-messages), [Discord 오류 코드](https://github.com/discord/discord-api-docs/blob/main/developers/topics/opcodes-and-status-codes.mdx#json-json-error-codes).
+
+
+### 2026-10-20 월간 함께 심은 잔디 운영 DB·수집기 반영
+
+Orca의 로그인된 Supabase SQL Editor에서 `20261020000001_mukmuk_monthly_grass.sql`을 적용했다. 새 테이블·집계 함수·코드 검증 조회 RPC의 생성과 RLS를 확인했고, 익명·service-role 직접 읽기와 익명 capture 실행이 차단되며 익명 조회 RPC만 코드 검증 후 실행됨을 재검증했다. 유효한 월간 코드의 RPC 응답과 잘못된 코드의 거부도 확인했다. 로컬 수집기 런타임 `4602fd522b3125f8`을 배포해 두 번의 정상 종료 코드 0과 현재·직전 월간 집계, 공개 성공 시각의 일치를 확인했다. 실제 인증 RPC 응답을 웹의 파서·참여율·증감 표시 함수까지 통과시켜 검증했다. 마이그레이션은 묵묵 전용 집계만 추가했고 다른 앱의 스키마·권한은 변경하지 않았다. 웹의 main 병합·Pages 배포는 아직 수행하지 않았다.
