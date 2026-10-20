@@ -28,14 +28,14 @@ const header = el('header', 'brand-header');
 const logo = el('img', 'brand-mark');
 logo.src = markUrl;
 logo.alt = '';
-logo.width = 36;
-logo.height = 36;
+logo.width = 28;
+logo.height = 28;
 
 const brandWrap = el('div', 'brand-wrap');
 brandWrap.append(
   el('span', 'brand-name', '고독한 운동가'),
   el('span', 'brand-divider', '·'),
-  el('span', 'brand-sub', '잔디 심는 묵묵, MUKMUK · WORKOUT JOURNAL')
+  el('span', 'brand-sub', '묵묵 · 운동 기록')
 );
 
 const status = el('div', 'status-notice');
@@ -86,7 +86,7 @@ yearTitle.append(todayCaption);
 yearBar.append(yearTitle, yearFilters);
 
 const heading = el('div', 'section-heading');
-heading.append(el('h2', '', '남겨 둔 운동'), el('span', 'caption', '날짜별 기록 · 최신순'));
+heading.append(el('h2', '', '남겨 둔 운동'));
 
 const logList = el('section', 'timeline');
 logList.setAttribute('aria-label', '운동 메모');
@@ -96,7 +96,7 @@ main.append(kpiSection, filters, cards, heading, logList, moreArea, feedback);
 
 const footer = el('footer', 'footer');
 footer.append(
-  el('p', 'caption', '공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 사진은 기록을 펼친 뒤 선택해서 볼 수 있으며, 원본은 Discord에 남습니다.'),
+  el('p', 'caption', '공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 표시명·운동 날짜·텍스트 메모와 선택한 기록의 사진을 볼 수 있습니다. 사진은 Discord에서 불러오며, 원본 삭제 시 표시가 중단될 수 있어요.'),
   el('p', 'caption', '인증은 약 5분 간격으로 수집됩니다. 쉬어 간 날도 그대로 둡니다.')
 );
 

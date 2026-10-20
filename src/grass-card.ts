@@ -49,7 +49,9 @@ export function renderGrassCard(options: {
   const details = el('section', 'date-detail');
   details.hidden = true;
   details.setAttribute('aria-label', '날짜 상세');
-  const preview = el('p', 'grass-preview caption', '날짜를 선택하면 운동 메모를 볼 수 있어요.');
+  const preview = el('p', 'grass-preview caption');
+  let hoveredDate: string | null = null;
+  let focusedDate: string | null = null;
 
   const dayButtons = new Map<string, HTMLButtonElement>();
   let opened: string | null = null;
@@ -61,7 +63,11 @@ export function renderGrassCard(options: {
   const summary=(date:string)=>`전체 ${roster.length}명 중 ${daily.get(date)?.count??0}명 운동 · 사진 포함 ${daily.get(date)?.photoCount??0}명`;
   const description = (date: string, log = memoFor(date)) => aggregate
     ? `${date} · ${date>today?'아직 오지 않은 날짜':summary(date)}`
-    : `${date} · ${date > today ? '아직 오지 않은 날짜' : ['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log ? ` · ${log.memo || '사진 인증'}` : ''}`;
+    : `${date} · ${date > today ? '아직 오지 않은 날짜' : ['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log?.memo ? ` · ${log.memo}` : ''}`;
+  const updatePreview = () => {
+    const date = hoveredDate ?? focusedDate;
+    preview.textContent = date ? description(date) : '';
+  };
 
   const disposePhotos=()=>details.querySelectorAll('.photo-section').forEach(e=>e.dispatchEvent(new Event('dispose')));
   card.addEventListener('dispose',disposePhotos);
@@ -95,19 +101,26 @@ export function renderGrassCard(options: {
     const detailHeading = el('h4', '', `${date} · ${aggregate?summary(date):['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}`);
     detailHeading.tabIndex = -1;
     title.append(detailHeading, closeButton);
-    details.replaceChildren(title, el('p', 'memo', memoFor(date)?.memo || (levelFor(date) ? '사진 인증' : '기록 없음')));
+    details.replaceChildren(title);
     if(aggregate){
-      details.replaceChildren(title);
       const entries=daily.get(date)?.logs??[];
       if(!entries.length)details.append(el('p','memo','기록 없음'));
       for(const entry of entries){
         const item=el('article','aggregate-entry');
-        item.append(el('h4','',`${entry.username}${entry.has_photo?' · 사진 포함':''}`),el('p','memo',entry.memo||(entry.has_photo?'사진 인증':'텍스트 인증')));
-        if(entry.has_photo&&options.photos)item.append(options.photos(entry));
+        const message=el('div','timeline-message');
+        if(entry.memo)message.append(el('p','memo',entry.memo));
+        else if(!entry.has_photo)message.append(el('p','memo','텍스트 인증'));
+        if(entry.has_photo&&options.photos)message.append(options.photos(entry));
+        item.append(el('h4','',entry.username),message);
         details.append(item);
       }
     }
-    if(!aggregate){const entry=memoFor(date);if(entry?.has_photo&&options.photos)details.append(options.photos(entry));}
+    if(!aggregate){
+      const entry=memoFor(date);
+      if(entry?.memo)details.append(el('p','memo',entry.memo));
+      else if(!entry?.has_photo)details.append(el('p','memo',levelFor(date)?'텍스트 인증':'기록 없음'));
+      if(entry?.has_photo&&options.photos)details.append(options.photos(entry));
+    }
     details.hidden = false;
     for (const [d, cell] of dayButtons) cell.setAttribute('aria-expanded', String(d === date));
     requestAnimationFrame(() => {
@@ -156,14 +169,21 @@ export function renderGrassCard(options: {
     cell.setAttribute('aria-expanded', 'false');
     cell.onfocus = () => {
       for (const [d, b] of dayButtons) b.tabIndex = d === date ? 0 : -1;
-      preview.textContent = description(date);
+      focusedDate = date;
+      updatePreview();
       revealDate(date);
     };
+    cell.onblur = () => {
+      focusedDate = null;
+      updatePreview();
+    };
     cell.onmouseenter = () => {
-      preview.textContent = description(date);
+      hoveredDate = date;
+      updatePreview();
     };
     cell.onmouseleave = () => {
-      if (document.activeElement !== cell) preview.textContent = '날짜를 선택하면 운동 메모를 볼 수 있어요.';
+      hoveredDate = null;
+      updatePreview();
     };
     cell.onkeydown = e => {
       const delta = ({ ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 } as Record<string, number>)[e.key];
@@ -212,7 +232,9 @@ export function renderGrassCard(options: {
   }
 
   if(aggregate)legend.append(el('span','','색이 진할수록 더 많은 멤버가 운동했어요'));
-  visual.append(grassScroll, legend, preview);
+  const grassFooter = el('div', 'grass-footer');
+  grassFooter.append(legend, preview);
+  visual.append(grassScroll, grassFooter);
   content.append(visual, details);
   if(!logs.length && aggregate)card.append(el('p','secondary-text',roster.length?'선택한 연도에 남긴 운동이 없어요.':'첫 잔디를 기다리고 있어요.'));
   card.append(top, metrics, content);

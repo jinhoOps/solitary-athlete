@@ -1,18 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
-<title id="title">기록 상세의 사진 지연 조회</title><desc id="desc">예시 화면. 메모 아래 사진 보기 버튼을 누르면 작은 미리보기를 제공한다. 첫 화면에는 사진을 불러오지 않는다.</desc>
-<rect width="720" height="420" fill="#F7F8F2"/>
-<g font-family="Apple SD Gothic Neo, sans-serif" fill="#18271E">
-<text x="24" y="38" font-size="20" font-weight="700">사진은 기록을 펼친 뒤 선택해서</text>
-<rect x="24" y="58" width="672" height="338" rx="12" fill="#FFFFFF" stroke="#D3DBD0"/>
-<text x="48" y="92" font-size="16" font-weight="600">10월 16일 · 하루 · 사진 포함</text>
-<text x="48" y="121" font-size="14">가볍게 30분 걷기</text>
-<rect x="48" y="140" width="112" height="44" rx="8" fill="#326C43"/>
-<text x="104" y="168" text-anchor="middle" fill="#FFFFFF" font-size="14">사진 보기</text>
-<text x="180" y="168" fill="#57665B" font-size="12">누르기 전 사진 요청 없음</text>
-<rect x="48" y="204" width="128" height="112" rx="8" fill="#E8EDE4"/>
-<text x="112" y="265" text-anchor="middle" font-size="12" fill="#57665B">미리보기</text>
-<text x="196" y="241" font-size="14">보이는 사진만 불러와요.</text>
-<text x="196" y="270" font-size="14">클릭하면 크게 볼 수 있어요.</text>
-<text x="48" y="352" font-size="12" fill="#57665B">사진은 Discord에서 불러옵니다. 원본 삭제 시 표시가 중단될 수 있어요.</text>
-<text x="48" y="378" font-size="12" fill="#57665B">로딩 · 사진 없음 · 원본 삭제 · 오류/재시도 상태를 구분합니다.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="480" viewBox="0 0 720 480" role="img" aria-labelledby="title desc">
+<title id="title">기록 상세 · 인라인 사진과 예외 상태</title><desc id="desc">예시 기록. 이름·메모·사진 보기 한 행, 사진만 있는 개인 상세, 정상 사진 조회와 오류 재시도. Discord 안내는 공통 푸터에 한 번 표시한다.</desc>
+<rect width="720" height="480" fill="#E8EDE4"/>
+<g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif">
+<rect x="0" y="0" width="720" height="480" rx="0" fill="#F7F8F2" stroke="none"/>
+<text x="24" y="32" font-size="18" fill="#18271E" font-weight="700">기록 상세 · 예시 기록</text>
+<rect x="24" y="48" width="672" height="116" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="38" y="73" font-size="14" fill="#18271E" font-weight="600">2026-10-20 · 전체 20명 중 2명 운동 · 사진 포함 2명</text>
+<text x="666" y="73" font-size="20" fill="#57665B" font-weight="400">×</text>
+<text x="38" y="107" font-size="13" fill="#18271E" font-weight="600">하루</text>
+<rect x="132" y="85" width="344" height="36" rx="8" fill="#EDF1E9" stroke="none"/>
+<text x="144" y="108" font-size="14" fill="#18271E" font-weight="400">가볍게 30분 걷기</text>
+<text x="270" y="108" font-size="12" fill="#326C43" font-weight="400">사진 보기</text>
+<text x="38" y="145" font-size="13" fill="#18271E" font-weight="600">산책</text>
+<rect x="132" y="125" width="80" height="28" rx="8" fill="#EDF1E9" stroke="none"/>
+<text x="144" y="145" font-size="12" fill="#326C43" font-weight="400">사진 보기</text>
+<rect x="24" y="176" width="672" height="180" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="38" y="201" font-size="14" fill="#18271E" font-weight="600">2026-10-20 · 사진 포함 인증</text>
+<text x="666" y="201" font-size="20" fill="#57665B" font-weight="400">×</text>
+<text x="38" y="230" font-size="12" fill="#326C43" font-weight="400">사진 접기</text>
+<rect x="38" y="242" width="128" height="96" rx="8" fill="#E8EDE4" stroke="none"/>
+<text x="67" y="294" font-size="12" fill="#57665B" font-weight="400">미리보기</text>
+<text x="186" y="269" font-size="14" fill="#18271E" font-weight="400">정상 조회 시 사진만 표시</text>
+<text x="186" y="296" font-size="12" fill="#57665B" font-weight="400">추가 페이지가 있으면 사진 더 보기</text>
+<text x="186" y="321" font-size="12" fill="#57665B" font-weight="400">오류가 나면 다시 불러오기</text>
+<path d="M24 380h672" stroke="#D3DBD0"/>
+<text x="24" y="406" font-size="12" fill="#57665B" font-weight="400">사진은 Discord에서 불러오며, 원본 삭제 시 표시가 중단될 수 있어요.</text>
+<text x="24" y="438" font-size="12" fill="#57665B" font-weight="400">사진 없음 · 로딩 · 오류/재시도 · 더 보기 상태는 유지합니다.</text>
 </g></svg>

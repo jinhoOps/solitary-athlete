@@ -73,9 +73,9 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
    if(disposed||current.signal.aborted||!section.isConnected)return;
    if(!appendPage){items.replaceChildren();count=0;observers.forEach(o=>o.disconnect());observers.length=0;}
    page.photos.forEach(append);next=page.next;
-   controls.replaceChildren(el('p','caption',count?'사진은 Discord에서 불러옵니다. 원본 삭제 시 표시가 중단될 수 있어요.':'표시할 사진이 없어요. 원본이 삭제되었거나 첨부 정보를 확인할 수 없어요.'));
+   controls.replaceChildren();
+   if(!count)controls.append(el('p','caption','표시할 사진이 없어요. 원본이 삭제되었거나 첨부 정보를 확인할 수 없어요.'),button('사진 새로고침',()=>void load()));
    if(next)controls.append(button('사진 더 보기',()=>void load(true)));
-   controls.append(button('사진 새로고침',()=>void load()));
   }catch(error){
    if(disposed||current.signal.aborted||!section.isConnected)return;
    const message=error instanceof Error?error.message:'';
