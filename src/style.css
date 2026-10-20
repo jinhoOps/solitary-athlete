@@ -169,6 +169,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  .member-filter { flex-wrap:wrap; }
  .member-options-viewport { flex:1 1 96px; }
  .member-find { margin-left:auto; }
+ .member-filter--stacked .member-options-viewport { flex-basis:100%; order:1; }
  .member-options { flex-wrap:nowrap; overflow-x:auto; padding:3px 15px; scroll-padding-inline:15px; }
  .member-options .filter-button { flex-shrink:0; max-width:min(160px,100%); }
  .filter-button,.member-filter .member-find { min-height:44px; }

@@ -184,7 +184,9 @@
       <text x="1088" y="419" font-size="12" fill="#57665B" font-weight="400">금</text>
       <text x="1088" y="437" font-size="12" fill="#57665B" font-weight="400">토</text>
       <rect x="1102" y="318" width="12" height="122" fill="url(#scroll-fade-left)" pointer-events="none" />
+<rect x="1102" y="292" width="12" height="20" fill="url(#scroll-fade-left)" pointer-events="none" />
       <rect x="1374" y="318" width="12" height="122" fill="url(#scroll-fade-right)" pointer-events="none" />
+<rect x="1374" y="292" width="12" height="20" fill="url(#scroll-fade-right)" pointer-events="none" />
     </g>
     <rect x="1086" y="448" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none" />
     <text x="1102" y="458" font-size="12" fill="#57665B" font-weight="400">기록 없음</text>

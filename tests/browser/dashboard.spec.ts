@@ -887,6 +887,8 @@ for(const width of [320,360,768,1280])test(`grass label geometry remains legible
   await expect(page.locator('.grass-cell[data-date]')).toHaveCount(year===2028?366:365);
   for(const scale of [200,100]){
    await page.addStyleTag({content:`html{font-size:${scale}%}`});
+   // Chip refitting can move the entire card after a text-size change.
+   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    const labels=await page.locator('.weekday-labels > span').evaluateAll(nodes=>nodes.map(n=>{
     const r=n.getBoundingClientRect();const range=document.createRange();range.selectNodeContents(n);const text=range.getBoundingClientRect();
     return {top:r.top,bottom:r.bottom,center:(r.top+r.bottom)/2,textTop:text.top,textBottom:text.bottom};
@@ -907,7 +909,7 @@ for(const width of [320,360,768,1280])test(`grass label geometry remains legible
    const firstMonth=(await page.locator('.month-labels').boundingBox())!,grid=(await page.locator('.grass-grid').boundingBox())!;
    expect(Math.abs(firstMonth.x-grid.x)).toBeLessThan(1);
    await scroll.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
-   await expect(page.locator('.month-labels')).not.toHaveCSS('clip-path','none');
+   await expect(page.locator('.month-labels')).not.toHaveCSS('mask-image','none');
    await scroll.evaluate(e=>{e.scrollLeft=e.scrollWidth;});
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   }
@@ -988,4 +990,70 @@ for(const motion of ['no-preference','reduce'] as const)test(`control feedback c
  expect(paints[0]).toMatchObject({pressed:'false',background:'rgb(255, 255, 255)',color:'rgb(87, 102, 91)'});
  expect(paints[0].duration).toMatch(/^0s(?:, 0s)*$/);
  expect(paints[1].pressed).toBe('true');expect(paints[1].background).toBe('rgb(50, 108, 67)');expect(paints[1].color).toBe('rgb(255, 255, 255)');
+});
+
+for(const width of [360,390,768]) test(`month labels soften both scrolling edges at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ const scroll=page.locator('.grass-scroll'),months=page.locator('.month-labels');
+ for(const position of ['start','middle','end']){
+  await scroll.evaluate((e,p)=>{e.scrollLeft=p==='start'?0:p==='end'?e.scrollWidth:(e.scrollWidth-e.clientWidth)/2;},position);
+  await expect.poll(()=>months.evaluate(e=>getComputedStyle(e).maskImage)).not.toBe('none');
+  await expect(async()=>{
+   const mask=await months.evaluate(e=>getComputedStyle(e).maskImage);
+   const values=[...mask.matchAll(/(-?[\d.]+)px/g)].map(m=>Number(m[1]));
+   const m=(await months.boundingBox())!,s=(await scroll.boundingBox())!,w=(await page.locator('.weekday-labels').boundingBox())!;
+   if(position!=='start'){
+    expect(Math.abs(m.x+values[0]-w.x-w.width)).toBeLessThan(1);
+    expect(values[1]-values[0]).toBe(12);
+   }
+   if(position!=='end')expect(Math.abs(m.x+values.at(-1)!-s.x-s.width)).toBeLessThan(1);
+  }).toPass();
+ }
+});
+
+test('member selection is revealed after chip text grows without container resizing',async({page})=>{
+ await page.setViewportSize({width:390,height:900});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ const list=page.locator('.member-options'),chosen=list.locator('[aria-pressed="true"]');
+ const width=await list.evaluate(e=>e.clientWidth);
+ await page.addStyleTag({content:'.member-options .filter-button { font-size:2rem; max-width:none; white-space:nowrap; }'});
+ await expect(async()=>{
+  expect(await list.evaluate(e=>e.clientWidth)).toBe(width);
+  const c=(await chosen.boundingBox())!,l=(await list.boundingBox())!;
+  expect(c.x).toBeGreaterThanOrEqual(l.x+14);
+  expect(c.x+c.width).toBeLessThanOrEqual(l.x+l.width-14);
+ }).toPass();
+});
+
+test('narrow enlarged member controls put personal chips below both actions',async({page})=>{
+ await page.setViewportSize({width:320,height:900});await fixture(page);
+ await page.addStyleTag({content:'html { font-size:200%; }'});
+ await expect(async()=>{
+  const a=(await page.locator('.member-all').boundingBox())!,f=(await page.locator('.member-find').boundingBox())!,v=(await page.locator('.member-options-viewport').boundingBox())!,n=(await page.locator('.member-filter').boundingBox())!;
+  expect(Math.abs(a.y-f.y)).toBeLessThan(1);
+  expect(v.y).toBeGreaterThanOrEqual(Math.max(a.y+a.height,f.y+f.height));
+  expect(Math.abs(v.width-n.width)).toBeLessThan(1);
+ }).toPass();
+ await page.addStyleTag({content:'html { font-size:100%; }'});
+ await expect(async()=>{
+  const a=(await page.locator('.member-all').boundingBox())!,f=(await page.locator('.member-find').boundingBox())!,v=(await page.locator('.member-options-viewport').boundingBox())!;
+  expect(Math.abs(a.y-f.y)).toBeLessThan(1);expect(Math.abs(a.y-v.y)).toBeLessThan(1);
+ }).toPass({timeout:5000});
+});
+
+test('desktop refits two chip rows after text growth and shrink',async({page})=>{
+ await fixture(page);
+ const roster=Array.from({length:30},(_,i)=>({user_id:String(100+i),username:`산책하는 멤버 ${String(i).padStart(2,'0')}`}));
+ await page.route('**/rest/v1/rpc/get_dashboard_members',route=>route.fulfill({json:roster}));await page.reload();
+ await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
+ await page.locator('#member-search').fill('29');await page.locator('.member-results button').click();
+ const list=page.locator('.member-options');
+ for(const scale of [200,100]){
+  await page.addStyleTag({content:`html { font-size:${scale}%; }`});
+  await expect(async()=>{
+   const positions=await list.locator('button:visible').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));
+   expect(new Set(positions).size).toBeLessThanOrEqual(2);
+   await expect(list.locator('[data-member-id="129"]')).toBeVisible();
+  }).toPass({timeout:5000});
+ }
 });

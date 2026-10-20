@@ -65,6 +65,7 @@ export function renderDashboardControls(options:Options):HTMLElement {
  function fit(){
   if(disposed||!nav.isConnected)return;
   const mobile=matchMedia('(max-width:767px)').matches;
+  nav.classList.toggle('member-filter--stacked',mobile&&all.getBoundingClientRect().width+find.getBoundingClientRect().width+96+12>nav.clientWidth);
   personal.forEach(b=>b.hidden=false);
   if(!mobile){
    const tops=[...new Set(personal.map(b=>b.getBoundingClientRect().top))].sort((a,b)=>a-b);
@@ -83,9 +84,22 @@ export function renderDashboardControls(options:Options):HTMLElement {
    if(chosen)revealMember(chosen);
   }
   updateMemberFades();
+  lastKey=layoutKey();
  }
- let lastWidth=-1;
- const observer=new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;requestAnimationFrame(fit);}});observer.observe(list);root.addEventListener('dispose',()=>{disposed=true;observer.disconnect();list.removeEventListener('scroll',updateMemberFades);list.removeEventListener('focusin',onFocus);dialog.remove();});requestAnimationFrame(fit);
+ let lastKey='',fitFrame=0;
+ function layoutKey(){
+  return [nav.clientWidth,list.clientWidth,list.scrollWidth,...[all,find,...personal].flatMap(b=>[b.offsetWidth,b.offsetHeight])].join(':');
+ }
+ const observer=new ResizeObserver(()=>{
+  if(disposed||layoutKey()===lastKey||fitFrame)return;
+  fitFrame=requestAnimationFrame(()=>{fitFrame=0;fit();});
+ });
+ for(const element of [nav,list,all,find,...personal])observer.observe(element);
+ root.addEventListener('dispose',()=>{
+  disposed=true;observer.disconnect();cancelAnimationFrame(fitFrame);
+  list.removeEventListener('scroll',updateMemberFades);list.removeEventListener('focusin',onFocus);dialog.remove();
+ });
+ fitFrame=requestAnimationFrame(()=>{fitFrame=0;fit();});
 
  const years = el('div', 'year-controls');
  const stepper = el('div', 'year-stepper');
