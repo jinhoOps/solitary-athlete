@@ -1,4 +1,5 @@
 import {el,button} from './dom';
+import {requestPhotos} from './photo-request';
 import type {PublicConfig} from './types';
 interface Photo {id:string;preview:string|null;url:string;original:string;width?:number;height?:number}
 interface PhotoPage {photos:Photo[];next:string|null}
@@ -11,10 +12,23 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
  const section=el('section','photo-section');
  section.setAttribute('aria-label',`${name}님의 사진`);
  const items=el('div','photo-grid'),controls=el('div','photo-controls');
- section.append(items,controls);
+ const toggle=button('사진 보기',()=>{
+  if(expanded){collapse();return;}
+  expanded=true;toggle.textContent='사진 접기';toggle.setAttribute('aria-expanded','true');
+  items.hidden=false;controls.hidden=false;void load();
+ },'button photo-toggle');
+ toggle.setAttribute('aria-expanded','false');
+ items.hidden=true;controls.hidden=true;
+ section.append(toggle,items,controls);
+ let expanded=false;
  let controller:AbortController|undefined,disposed=false,next:string|null=null,count=0;
  let dialog:HTMLDialogElement|undefined;
  const observers:IntersectionObserver[]=[];
+ function collapse(){
+  expanded=false;controller?.abort();observers.forEach(o=>o.disconnect());observers.length=0;
+  dialog?.close();dialog?.remove();items.replaceChildren();controls.replaceChildren();
+  items.hidden=true;controls.hidden=true;toggle.textContent='사진 보기';toggle.setAttribute('aria-expanded','false');
+ }
  function dispose(){disposed=true;controller?.abort();observers.forEach(o=>o.disconnect());dialog?.close();dialog?.remove();}
  section.addEventListener('dispose',dispose);
  function enlarge(photo:Photo,opener:HTMLButtonElement){
@@ -51,11 +65,8 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
   controller?.abort();controller=new AbortController();const current=controller;
   controls.replaceChildren(el('p','caption','사진을 불러오고 있어요.'));
   try{
-   const r=await fetch(`${config.url.replace(/\/+$/,'')}/functions/v1/mukmuk-discord-photos`,{
-    method:'POST',headers:{'Content-Type':'application/json',apikey:config.key},
-    body:JSON.stringify({code:code(),user_id:user,date,after:appendPage?next:null}),
-    signal:AbortSignal.any([current.signal,AbortSignal.timeout(45_000)]),
-   });
+   const r=await requestPhotos(`${config.url.replace(/\/+$/,'')}/functions/v1/mukmuk-discord-photos`,config.key,
+    JSON.stringify({code:code(),user_id:user,date,after:appendPage?next:null}),current.signal);
    if(!r.ok)throw new Error(r.status===401?'auth':r.status===429?'rate':'unavailable');
    const page=await r.json() as PhotoPage;
    if(!Array.isArray(page.photos)||page.photos.some(p=>!validImage(p.url)||(p.preview!==null&&!validImage(p.preview))||!validOriginal(p.original))||(page.next!==null&&!/^\d+$/.test(page.next)))throw new Error('invalid');
@@ -71,6 +82,5 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
    controls.replaceChildren(el('p','caption',message==='auth'?'시크릿 코드가 만료되었어요. 웹보드를 새로 열어 주세요.':message==='rate'?'사진 요청이 많아요. 잠시 후 다시 시도해 주세요.':'사진을 불러오지 못했어요.'),button('다시 불러오기',()=>void load(appendPage)));
   }
  }
- controls.append(button('사진 보기',()=>void load()));
  return section;
 }
