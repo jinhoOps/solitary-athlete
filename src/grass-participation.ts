@@ -1,4 +1,4 @@
-import {dayAt} from './dates';
+import {dayAt,shiftDay} from './dates';
 import type {GrassParticipation,GrassParticipationSample} from './types';
 
 /** Validate private RPC aggregates before turning missing/partial data into a percentage. */
@@ -20,8 +20,10 @@ export function parseGrassParticipation(rows:unknown[],month:string):GrassPartic
  }
  const current=sample('');
  const previousKeys=['previous_collected_at','previous_member_count','previous_workout_days','previous_elapsed_days'];
- const previous=previousKeys.every(key=>row[key]===null)?null:sample('previous_');
- if(previous&&Date.parse(previous.collectedAt)>=Date.parse(current.collectedAt))throw new Error('Invalid participation order');
+ const previousSample=previousKeys.every(key=>row[key]===null)?null:sample('previous_');
+ if(previousSample&&Date.parse(previousSample.collectedAt)>=Date.parse(current.collectedAt))throw new Error('Invalid participation order');
+ // Ignore legacy same-day pairs until the database migration is applied.
+ const previous=previousSample&&dayAt(new Date(previousSample.collectedAt))===shiftDay(dayAt(new Date(current.collectedAt)),-1)?previousSample:null;
  return {status:'ready',month,current,previous};
 }
 
@@ -35,9 +37,9 @@ export function grassParticipationView(state:GrassParticipation):{value:string;c
  let change='비교 기록 없음';
  if(state.previous){
   const delta=rate-grassParticipationRate(state.previous);
-  change=delta===0?'직전 수집 대비 변동 없음':Math.abs(delta)<.1
-   ?`직전 수집 대비 ${delta>0?'↑':'↓'} 0.1%p 미만`
-   :`직전 수집 대비 ${delta>0?'+':'−'}${Math.abs(delta).toFixed(1)}%p`;
+  change=delta===0?'전일 대비 변동 없음':Math.abs(delta)<.1
+   ?`전일 대비 ${delta>0?'↑':'↓'} 0.1%p 미만`
+   :`전일 대비 ${delta>0?'+':'−'}${Math.abs(delta).toFixed(1)}%p`;
  }
  return {value:`${Number(rate.toFixed(1))}%`,change,
   description:`${dayAt(new Date(state.current.collectedAt))} KST 수집 기준 · 월간 ${state.current.members}명이 ${state.current.elapsedDays}일 동안 채운 ${state.current.days}칸. 인원과 경과 일수의 변화도 증감에 포함돼요.`};
