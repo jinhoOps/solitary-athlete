@@ -34,6 +34,8 @@ export function renderGrassCard(options: {
     item.append(el('dt', 'caption', label), el('dd', '', `${value}${suffix}`));
     metrics.append(item);
   }
+  top.querySelector('.metrics')?.remove();
+  top.insertBefore(metrics, top.querySelector('.year-filter'));
 
   const content = el('div', 'grass-content');
   const visual = el('div', 'grass-visual');
@@ -66,7 +68,7 @@ export function renderGrassCard(options: {
     : `${date} · ${date > today ? '아직 오지 않은 날짜' : ['기록 없음', '텍스트 인증', '사진 포함 인증'][levelFor(date)]}${log?.memo ? ` · ${log.memo}` : ''}`;
   const updatePreview = () => {
     const date = hoveredDate ?? focusedDate;
-    preview.textContent = date ? description(date) : '';
+    preview.textContent = date ? description(date).replace(/\s*\r?\n\s*/g, ' ') : '';
   };
 
   const disposePhotos=()=>details.querySelectorAll('.photo-section').forEach(e=>e.dispatchEvent(new Event('dispose')));
@@ -117,9 +119,11 @@ export function renderGrassCard(options: {
     }
     if(!aggregate){
       const entry=memoFor(date);
-      if(entry?.memo)details.append(el('p','memo',entry.memo));
-      else if(!entry?.has_photo)details.append(el('p','memo',levelFor(date)?'텍스트 인증':'기록 없음'));
-      if(entry?.has_photo&&options.photos)details.append(options.photos(entry));
+      const message=el('div','timeline-message');
+      if(entry?.memo)message.append(el('p','memo',entry.memo));
+      else if(!entry?.has_photo)message.append(el('p','memo',levelFor(date)?'텍스트 인증':'기록 없음'));
+      if(entry?.has_photo&&options.photos)message.append(options.photos(entry));
+      details.append(message);
     }
     details.hidden = false;
     for (const [d, cell] of dayButtons) cell.setAttribute('aria-expanded', String(d === date));
@@ -231,13 +235,12 @@ export function renderGrassCard(options: {
     legend.append(item);
   }
 
-  if(aggregate)legend.append(el('span','','색이 진할수록 더 많은 멤버가 운동했어요'));
   const grassFooter = el('div', 'grass-footer');
   grassFooter.append(legend, preview);
   visual.append(grassScroll, grassFooter);
   content.append(visual, details);
   if(!logs.length && aggregate)card.append(el('p','secondary-text',roster.length?'선택한 연도에 남긴 운동이 없어요.':'첫 잔디를 기다리고 있어요.'));
-  card.append(top, metrics, content);
+  card.append(top, content);
   return {element:card,revealToday,openDate:open};
 }
 
