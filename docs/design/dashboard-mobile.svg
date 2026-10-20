@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="850" viewBox="1056 44 360 850" role="img" aria-labelledby="title desc">
+  <title id="title">묵묵 · 모바일 웹보드</title>
+  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 140ms 피드백·160ms 등장은 구현 DOM에서 확인한다.</desc>
+  <defs>
+    <linearGradient id="scroll-fade-right" x1="0%" x2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="1" />
+    </linearGradient>
+    <linearGradient id="scroll-fade-left" x1="0%" x2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif">
+    <text x="1056" y="28" font-size="14" fill="#57665B" font-weight="400">MOBILE · 360px · 하루</text>
+    <rect x="1056" y="44" width="360" height="850" rx="16" fill="#F7F8F2" stroke="none" />
+    <rect x="1070" y="68" width="28" height="28" rx="6" fill="#326C43" stroke="none" />
+    <text x="1076" y="89" font-size="18" fill="#57665B" font-weight="400">🌱</text>
+    <text x="1110" y="82" font-size="18" fill="#18271E" font-weight="700">고독한 운동가</text>
+    <text x="1110" y="103" font-size="13" fill="#57665B" font-weight="400">묵묵 · 운동 기록</text>
+    <rect x="1070" y="116" width="242" height="26" rx="13" fill="#D9E9D9" stroke="none" />
+    <text x="1082" y="134" font-size="12" fill="#57665B" font-weight="400">마지막 수집 · 10월 20일 09:25 KST</text>
+    <path d="M1070 154h332" stroke="#D3DBD0" />
+    <rect x="1070" y="168" width="98" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0" />
+    <text x="1082" y="195.0" font-size="13" fill="#57665B" font-weight="500">전체 멤버</text>
+    <rect x="1174" y="168" width="62" height="44" rx="8" fill="#326C43" stroke="#D3DBD0" />
+    <text x="1186" y="195.0" font-size="13" fill="#FFFFFF" font-weight="500">하루</text>
+    <rect x="1304" y="168" width="98" height="44" rx="8" fill="#FFFFFF" stroke="#D3DBD0" />
+    <text x="1316" y="195.0" font-size="13" fill="#57665B" font-weight="500">멤버 찾기</text>
+    <rect x="1070" y="226" width="332" height="269" rx="16" fill="#FFFFFF" stroke="#D3DBD0" />
+    <text x="1086" y="253" font-size="12" fill="#57665B" font-weight="400">오늘 · 2026-10-20 KST</text>
+    <text x="1290" y="253" font-size="13" fill="#18271E" font-weight="600">‹ 2026년 ›</text>
+    <text x="1086" y="281" font-size="12" fill="#57665B" font-weight="400">이번 주</text>
+    <text x="1130" y="281" font-size="14" fill="#18271E" font-weight="700">3일</text>
+    <text x="1175" y="281" font-size="12" fill="#57665B" font-weight="400">연속</text>
+    <text x="1203" y="281" font-size="14" fill="#18271E" font-weight="700">4일</text>
+    <text x="1248" y="281" font-size="12" fill="#57665B" font-weight="400">2026년 운동</text>
+    <text x="1318" y="281" font-size="14" fill="#18271E" font-weight="700">32일</text>
+    <defs>
+      <clipPath id="mobile-grass">
+        <rect x="1086" y="292" width="300" height="150" />
+      </clipPath>
+    </defs>
+    <g clip-path="url(#mobile-grass)">
+      <text x="1110" y="306" font-size="12" fill="#57665B" font-weight="400">8월</text>
+      <text x="1184" y="306" font-size="12" fill="#57665B" font-weight="400">9월</text>
+      <text x="1258" y="306" font-size="12" fill="#57665B" font-weight="400">10월</text>
+      <text x="1332" y="306" font-size="12" fill="#57665B" font-weight="400">11월</text>
+      <rect x="1110" y="318" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1110" y="336" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1110" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1110" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1110" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1110" y="408" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1110" y="426" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1128" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1128" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1128" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1128" y="372" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1128" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1128" y="408" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1128" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1146" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1146" y="336" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1146" y="354" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1146" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1146" y="390" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1146" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1146" y="426" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1164" y="318" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1164" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1164" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1164" y="372" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1164" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1164" y="408" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1164" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1182" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1182" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1182" y="354" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1182" y="372" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1182" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1182" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1182" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1200" y="318" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1200" y="336" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1200" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1200" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1200" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1200" y="408" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1200" y="426" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1218" y="318" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1218" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1218" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1218" y="372" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1218" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1218" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1218" y="426" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1236" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1236" y="336" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1236" y="354" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1236" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1236" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1236" y="408" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1236" y="426" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1254" y="318" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1254" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1254" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1254" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1254" y="390" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1254" y="408" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1254" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1272" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1272" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1272" y="354" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1272" y="372" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1272" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1272" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1272" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1290" y="318" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1290" y="336" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1290" y="354" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1290" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1290" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1290" y="408" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1290" y="426" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1308" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1308" y="336" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1308" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1308" y="372" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1308" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1308" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1308" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1326" y="318" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1326" y="336" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1326" y="354" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1326" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1326" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1326" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1326" y="426" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1344" y="318" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1344" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1344" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1344" y="372" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1344" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1344" y="408" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1344" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1362" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1362" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1362" y="354" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1362" y="372" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1362" y="390" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1362" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1362" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1380" y="318" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1380" y="336" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1380" y="354" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1380" y="372" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1380" y="390" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1380" y="408" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1380" y="426" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1398" y="318" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1398" y="336" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1398" y="354" width="14" height="14" rx="3" fill="#216E39" stroke="none" />
+      <rect x="1398" y="372" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1398" y="390" width="14" height="14" rx="3" fill="#E8EDE4" stroke="none" />
+      <rect x="1398" y="408" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <rect x="1398" y="426" width="14" height="14" rx="3" fill="#4B8F52" stroke="none" />
+      <text x="1088" y="329" font-size="12" fill="#57665B" font-weight="400">일</text>
+      <text x="1088" y="347" font-size="12" fill="#57665B" font-weight="400">월</text>
+      <text x="1088" y="365" font-size="12" fill="#57665B" font-weight="400">화</text>
+      <text x="1088" y="383" font-size="12" fill="#57665B" font-weight="400">수</text>
+      <text x="1088" y="401" font-size="12" fill="#57665B" font-weight="400">목</text>
+      <text x="1088" y="419" font-size="12" fill="#57665B" font-weight="400">금</text>
+      <text x="1088" y="437" font-size="12" fill="#57665B" font-weight="400">토</text>
+      <rect x="1110" y="292" width="12" height="150" fill="url(#scroll-fade-left)" pointer-events="none" />
+      <rect x="1374" y="292" width="12" height="150" fill="url(#scroll-fade-right)" pointer-events="none" />
+    </g>
+    <rect x="1086" y="448" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none" />
+    <text x="1102" y="458" font-size="12" fill="#57665B" font-weight="400">기록 없음</text>
+    <rect x="1170" y="448" width="12" height="12" rx="3" fill="#4B8F52" stroke="none" />
+    <text x="1186" y="458" font-size="12" fill="#57665B" font-weight="400">텍스트 인증</text>
+    <rect x="1266" y="448" width="12" height="12" rx="3" fill="#216E39" stroke="none" />
+    <text x="1282" y="458" font-size="12" fill="#57665B" font-weight="400">사진 포함</text>
+    <text x="1070" y="524" font-size="16" fill="#18271E" font-weight="700">남겨 둔 운동</text>
+    <text x="1070" y="554" font-size="13" fill="#57665B" font-weight="400">2026년 10월</text>
+    <path d="M1170 549h232" stroke="#D3DBD0" />
+    <text x="1070" y="593" font-size="13" fill="#57665B" font-weight="600">20일 (화)</text>
+    <rect x="1142" y="568" width="244" height="44" rx="8" fill="#EDF1E9" stroke="none" />
+    <text x="1154" y="593" font-size="14" fill="#18271E" font-weight="400">등 운동 40분.</text>
+    <text x="1070" y="645" font-size="13" fill="#57665B" font-weight="600">19일 (월)</text>
+    <rect x="1142" y="620" width="244" height="44" rx="8" fill="#EDF1E9" stroke="none" />
+    <text x="1154" y="645" font-size="14" fill="#18271E" font-weight="400">천천히 3km 달리기</text>
+    <text x="1070" y="697" font-size="13" fill="#57665B" font-weight="600">18일 (일)</text>
+    <rect x="1142" y="672" width="244" height="44" rx="8" fill="#EDF1E9" stroke="none" />
+    <text x="1154" y="697" font-size="14" fill="#18271E" font-weight="400">스트레칭과 산책</text>
+    <text x="1260" y="593" font-size="12" fill="#326C43" font-weight="500">사진 보기</text>
+    <text x="1070" y="756" font-size="13" fill="#57665B" font-weight="400">2026년 9월</text>
+    <path d="M1170 751h232" stroke="#D3DBD0" />
+    <text x="1070" y="799" font-size="13" fill="#57665B" font-weight="600">30일 (수)</text>
+    <rect x="1142" y="774" width="90" height="44" rx="8" fill="#EDF1E9" stroke="none" />
+    <text x="1154" y="799" font-size="12" fill="#326C43" font-weight="500">사진 보기</text>
+  </g>
+</svg>

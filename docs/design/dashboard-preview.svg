@@ -1,5 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920" role="img" aria-labelledby="title desc">
-<title id="title">묵묵 · 2차 컴팩트 웹보드</title><desc id="desc">가상 기록. 최대 폭 960px 데스크톱의 날짜·통계·연도 한 줄 헤더와 360px 모바일의 자연 줄바꿈, 높이가 고정된 프리뷰, 인라인 메모와 사진 버튼.</desc>
+<title id="title">묵묵 · 2차 컴팩트 웹보드</title><desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 140ms 피드백·160ms 등장은 구현 DOM에서 확인한다.</desc>
+<defs>
+    <linearGradient id="scroll-fade-right" x1="0%" x2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="1" />
+    </linearGradient>
+    <linearGradient id="scroll-fade-left" x1="0%" x2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
 <rect width="1440" height="920" fill="#E8EDE4"/>
 <g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif">
 <text x="24" y="28" font-size="14" fill="#57665B" font-weight="400">DESKTOP · 최대 폭 960px · 예시 기록</text>
@@ -436,6 +447,7 @@
 <text x="71" y="407" font-size="12" fill="#57665B" font-weight="400">목</text>
 <text x="71" y="425" font-size="12" fill="#57665B" font-weight="400">금</text>
 <text x="71" y="443" font-size="12" fill="#57665B" font-weight="400">토</text>
+<rect x="927" y="296" width="12" height="166" fill="url(#scroll-fade-right)" pointer-events="none" />
 </g>
 <rect x="69" y="456" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none"/>
 <text x="85" y="466" font-size="12" fill="#57665B" font-weight="400">0%</text>
@@ -448,7 +460,7 @@
 <rect x="325" y="456" width="12" height="12" rx="3" fill="#4B8F52" stroke="none"/>
 <text x="341" y="466" font-size="12" fill="#57665B" font-weight="400">100%</text>
 <text x="540" y="466" font-size="12" fill="#57665B" font-weight="400">2026-10-20 · 전체 20명 중 2명 운동…</text>
-<rect x="69" y="482" width="870" height="104" rx="10" fill="#F7F8F2" stroke="#D3DBD0"/>
+<rect x="69" y="482" width="870" height="104" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="83" y="508" font-size="14" fill="#18271E" font-weight="600">2026-10-20 · 전체 20명 중 2명 운동 · 사진 포함 2명</text>
 <text x="913" y="508" font-size="20" fill="#57665B" font-weight="400">×</text>
 <text x="83" y="543" font-size="13" fill="#18271E" font-weight="600">하루</text>
@@ -616,6 +628,8 @@
 <text x="1088" y="401" font-size="12" fill="#57665B" font-weight="400">목</text>
 <text x="1088" y="419" font-size="12" fill="#57665B" font-weight="400">금</text>
 <text x="1088" y="437" font-size="12" fill="#57665B" font-weight="400">토</text>
+<rect x="1110" y="292" width="12" height="150" fill="url(#scroll-fade-left)" pointer-events="none" />
+<rect x="1374" y="292" width="12" height="150" fill="url(#scroll-fade-right)" pointer-events="none" />
 </g>
 <rect x="1086" y="448" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none"/>
 <text x="1102" y="458" font-size="12" fill="#57665B" font-weight="400">기록 없음</text>

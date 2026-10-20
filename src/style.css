@@ -3,6 +3,9 @@
   color: #18271E; background: #F7F8F2; font-synthesis: none;
   --ink: #18271E; --primary: #326C43; --active: #275635; --muted: #57665B; --border: #D3DBD0;
   --empty: #E8EDE4; --record: #4B8F52; --photo: #216E39;
+  --motion-feedback: 140ms; --motion-enter: 160ms; --motion-easing: ease-out;
+  --control-hover: rgba(46,85,59,.08); --control-pressed: rgba(46,85,59,.16);
+  --grass-detail-background: #FFFFFF; --grass-scroll-fade-width: 12px;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -24,7 +27,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .brand-sub { font-size: 0.8125rem; color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
 .brand-mark { flex-shrink: 0; }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.discord-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; color: var(--muted); background: transparent; transition: color .15s ease, background-color .15s ease; flex-shrink: 0; }
+.discord-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; color: var(--muted); background: transparent; flex-shrink: 0; }
 .discord-link:hover { color: var(--primary); background: #E8EDE4; }
 .discord-link svg { display: block; }
 .text-link { color: var(--primary); font-size: .875rem; text-underline-offset: 4px; margin-left: auto; min-height: 40px; display: flex; align-items: center; white-space: nowrap; font-weight: 500; }
@@ -57,7 +60,12 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .metrics dd { font-size: .875rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .grass-content { display: block; }
 .grass-visual { max-width: 100%; min-width: 0; }
+.grass-viewport { position: relative; min-width: 0; }
 .grass-scroll { max-width: 100%; overflow-x: auto; padding: 4px 0; -webkit-overflow-scrolling: touch; }
+.grass-scroll-fade { position: absolute; top: 0; bottom: 0; width: var(--grass-scroll-fade-width); pointer-events: none; z-index: 2; }
+.grass-scroll-fade--left { background: linear-gradient(to right, white, transparent); }
+.grass-scroll-fade--right { right: 0; background: linear-gradient(to left, white, transparent); }
+.grass-viewport:focus-within .grass-scroll-fade { opacity: 0; }
 .month-labels { display: grid; grid-auto-flow: column; grid-auto-columns: 14px; gap: 4px; margin-left: 24px; font-size: .75rem; color: var(--muted); margin-bottom: 8px; width: max-content; }
 .month-labels span { width: 32px; white-space: nowrap; }
 .grid-wrap { display: flex; gap: 12px; width: max-content; padding: 4px 0; }
@@ -73,14 +81,14 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .grass-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .grass-footer .legend { min-width: 0; }
 .grass-preview { flex: 1 1 180px; min-width: 0; min-height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
-.date-detail { width: 100%; margin-top: 12px; scroll-margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: #F7F8F2; }
+.date-detail { width: 100%; margin-top: 12px; scroll-margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--grass-detail-background); }
 .detail-heading { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
 .detail-heading h4 { flex: 1; }
 .button { min-height: 44px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: .875rem; font-weight: 600; }
 .secondary { color: var(--primary); background: white; }
 .primary { color: white; background: var(--primary); border-color: var(--primary); }
 .icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; font-size: 1.25rem; background: transparent; border: 0; border-radius: 6px; color: var(--muted); }
-.icon-button:hover, .icon-button:focus-visible { background: rgba(46,85,59,.08); }
+.icon-button:hover, .icon-button:focus-visible { background: var(--control-hover); }
 .section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 16px 0 8px; }
 .section-heading h2 { font-size: 1rem; }
 .timeline { display: grid; gap: 16px; }
@@ -135,9 +143,9 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .member-results { display:grid; gap:8px; margin:16px 0; max-height:45dvh; overflow:auto; }
 
 .year-stepper { display: inline-flex; align-items: center; gap: 0; background: transparent; border: 0; padding: 0; }
-.year-filter .stepper-btn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; min-height:28px; padding:0; border:none; background:transparent; color:var(--ink); border-radius:4px; cursor:pointer; transition:background .15s ease, color .15s ease; }
-.stepper-btn:hover:not(:disabled) { background:rgba(46,85,59,.08); color:var(--primary); }
-.stepper-btn:active:not(:disabled) { background:rgba(46,85,59,.16); }
+.year-filter .stepper-btn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; min-height:28px; padding:0; border:none; background:transparent; color:var(--ink); border-radius:4px; cursor:pointer; }
+.stepper-btn:hover:not(:disabled) { background:var(--control-hover); color:var(--primary); }
+.stepper-btn:active:not(:disabled) { background:var(--control-pressed); }
 .stepper-btn:disabled { opacity:.25; cursor:not-allowed; background:transparent; }
 .year-label { font-size:.8125rem; font-weight:600; color:var(--ink); padding:0 4px; min-width:54px; text-align:center; font-variant-numeric:tabular-nums; user-select:none; }
 
@@ -180,7 +188,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .timeline-message:has(.photo-preview) { width:100%; }
 @media(max-width:767px) {
  .year-filter .stepper-btn { width:44px; height:44px; min-height:44px; }
- .year-filter .stepper-btn:hover:not(:disabled) { background:transparent; }
+ .year-filter .stepper-btn:hover:not(:disabled):not(:active) { background:transparent; }
  .timeline-item, .aggregate-entry { grid-template-columns:64px minmax(0,1fr); gap:8px; }
  .date-button { min-height:44px; }
  .photo-toggle { min-height:32px; }
@@ -192,4 +200,23 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  .year-stepper:focus-within .stepper-btn:not(:disabled) { opacity:1; }
  .year-stepper:hover .stepper-btn:disabled,
  .year-stepper:focus-within .stepper-btn:disabled { opacity:.25; }
+}
+
+/* Shared feedback changes paint only; focus and pressed states take effect immediately. */
+:is(.filter-button,.member-find,.photo-toggle,.date-button,.icon-button,.stepper-btn,.primary,.secondary,.discord-link) {
+ transition: color var(--motion-feedback) var(--motion-easing), background-color var(--motion-feedback) var(--motion-easing), border-color var(--motion-feedback) var(--motion-easing);
+}
+@media (hover:hover) and (pointer:fine) {
+ :is(.filter-button,.member-find):not([aria-pressed="true"]):not(:disabled):hover { background:var(--control-hover); color:var(--primary); }
+ :is(.photo-toggle,.date-button,.secondary,.icon-button):not(:disabled):hover { background:var(--control-hover); }
+ .primary:not(:disabled):hover { background:var(--active); }
+}
+:is(.filter-button,.member-find,.photo-toggle,.date-button,.icon-button,.stepper-btn,.primary,.secondary,.discord-link):active { transition-duration:0s; }
+:is(.photo-toggle,.date-button,.icon-button,.secondary,.member-find,.discord-link):not(:disabled):active { background:var(--control-pressed); }
+.filter-button:not([aria-pressed="true"]):not(:disabled):active { background:var(--control-pressed); color:var(--primary); }
+@keyframes surface-enter { from { opacity:0; } to { opacity:1; } }
+.date-detail:not([hidden]), dialog[open], .modal-box { animation:surface-enter var(--motion-enter) var(--motion-easing); }
+@media (prefers-reduced-motion:reduce) {
+ :root { --motion-feedback:0s; --motion-enter:0s; }
+ .date-detail:not([hidden]), dialog[open], .modal-box { animation:none; }
 }
