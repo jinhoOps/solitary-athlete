@@ -131,3 +131,87 @@ def test_previous_day_final_sample_stays_fixed_through_today_and_skipped_days(st
     assert snapshot(store)['previous_collected_at'] is None
     store.success(CHANNEL, '101', at('2026-10-17T09:00:00+00:00'))
     assert snapshot(store)['previous_collected_at'] is None
+
+
+def history(store):
+    with store.conn.transaction():
+        return store.conn.execute('SELECT * FROM solitary_athlete.mukmuk_daily_grass_history ORDER BY snapshot_date').fetchall()
+
+
+def test_daily_history_keeps_each_kst_days_final_monthly_sample(store):
+    save(store, '100', '1', '2028-02-29')
+    store.success(CHANNEL, '100', at('2028-02-29T14:50:00+00:00'))
+    save(store, '101', '2', '2028-02-29')
+    store.success(CHANNEL, '101', at('2028-02-29T14:59:59+00:00'))
+    feb = history(store)
+    assert len(feb) == 1
+    assert (feb[0]['member_count'], feb[0]['workout_days'], feb[0]['elapsed_days']) == (2, 2, 29)
+    store.success(CHANNEL, '101', at('2028-02-29T15:00:00+00:00'))
+    rows = history(store)
+    assert rows[0] == feb[0]
+    assert rows[1]['snapshot_date'].isoformat() == '2028-03-01'
+    assert (rows[1]['member_count'], rows[1]['workout_days'], rows[1]['elapsed_days']) == (0, 0, 1)
+    assert snapshot(store, '2028-03-01')['previous_collected_at'] is None
+    store.success(CHANNEL, '101', at('2028-03-02T15:00:00+00:00'))
+    assert [r['snapshot_date'].isoformat() for r in history(store)] == ['2028-02-29', '2028-03-01', '2028-03-03']
+    # Later deletion changes today's month aggregate without rewriting old observations.
+    store.save('100', None)
+    store.success(CHANNEL, '101', at('2028-03-03T09:00:00+00:00'))
+    assert history(store)[0] == feb[0]
+    before = history(store)
+    for timestamp in ['2028-03-03T09:00:00+00:00', '2028-02-29T14:59:59+00:00']:
+        store.success(CHANNEL, '99', at(timestamp))
+        with store.conn.transaction():
+            store.conn.execute('SELECT solitary_athlete.capture_monthly_grass_snapshot(%s)', (at(timestamp),))
+        assert history(store) == before
+    with pytest.raises(psycopg.errors.CheckViolation):
+        store.success('wrong-channel', None, at('2028-03-03T15:00:00+00:00'))
+    assert history(store) == before
+
+
+def test_daily_history_failure_rolls_back_monthly_snapshot_and_status(store):
+    store.success(CHANNEL, '100', at('2026-10-13T14:59:59+00:00'))
+    before, status, daily = snapshot(store), store.state(CHANNEL), history(store)
+    with psycopg.connect(os.environ['TEST_DATABASE_URL'], autocommit=True) as admin:
+        admin.execute("ALTER TABLE solitary_athlete.mukmuk_daily_grass_history ADD CONSTRAINT fixture_reject_day CHECK (snapshot_date<>date '2026-10-14')")
+        try:
+            with pytest.raises(psycopg.errors.CheckViolation):
+                store.success(CHANNEL, '101', at('2026-10-13T15:00:00+00:00'))
+            assert snapshot(store) == before
+            assert store.state(CHANNEL) == status
+            assert history(store) == daily
+        finally:
+            admin.execute('ALTER TABLE solitary_athlete.mukmuk_daily_grass_history DROP CONSTRAINT fixture_reject_day')
+
+
+def test_daily_history_is_private_and_worker_cannot_delete_it(store):
+    store.success(CHANNEL, '100', at('2026-10-14T09:00:00+00:00'))
+    with psycopg.connect(os.environ['TEST_DATABASE_URL'], autocommit=True) as admin:
+        for role in ['anon', 'authenticated', 'service_role']:
+            admin.execute(f'SET ROLE {role}')
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                admin.execute('SELECT * FROM solitary_athlete.mukmuk_daily_grass_history')
+            admin.execute('RESET ROLE')
+        admin.execute('SET ROLE mukmuk_worker')
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            admin.execute('DELETE FROM solitary_athlete.mukmuk_daily_grass_history')
+        admin.execute('RESET ROLE')
+        assert admin.execute("SELECT relrowsecurity FROM pg_class WHERE oid='solitary_athlete.mukmuk_daily_grass_history'::regclass").fetchone()[0]
+
+
+def test_history_upgrade_preserves_only_existing_current_and_previous_observations(store):
+    from pathlib import Path
+    source = Path('supabase/migrations/20261020000003_mukmuk_daily_grass_history.sql').read_text()
+    assert source.startswith('BEGIN;\n') and source.endswith('COMMIT;\n')
+    with psycopg.connect(os.environ['TEST_DATABASE_URL'], autocommit=True) as admin:
+        with admin.transaction(force_rollback=True):
+            admin.execute('DROP TABLE solitary_athlete.mukmuk_daily_grass_history')
+            admin.execute("""INSERT INTO solitary_athlete.mukmuk_monthly_grass_snapshots
+              (month_start,collected_at,member_count,workout_days,elapsed_days,
+               previous_collected_at,previous_member_count,previous_workout_days,previous_elapsed_days)
+              VALUES ('2026-09-01','2026-09-30T14:55:00Z',2,30,30,'2026-09-29T14:50:00Z',1,20,29),
+                     ('2026-10-01','2026-10-14T09:00:00Z',3,10,14,NULL,NULL,NULL,NULL)""")
+            admin.execute(source[len('BEGIN;\n'):-len('COMMIT;\n')])
+            rows = admin.execute('SELECT snapshot_date,member_count,workout_days,elapsed_days FROM solitary_athlete.mukmuk_daily_grass_history ORDER BY snapshot_date').fetchall()
+            assert [(r[0].isoformat(), *r[1:]) for r in rows] == [
+                ('2026-09-29',1,20,29),('2026-09-30',2,30,30),('2026-10-14',3,10,14)]
