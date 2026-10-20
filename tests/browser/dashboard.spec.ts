@@ -422,7 +422,7 @@ test('photo fallback has no automatic original download and fits mobile',async({
 test('closing details discards a late photo response',async({page})=>{
  let finish:()=>void=()=>{};const gate=new Promise<void>(resolve=>{finish=resolve;});
  await page.route('**/functions/v1/mukmuk-discord-photos',async route=>{await gate;await route.fulfill({json:{photos:[],next:null}}).catch(()=>{});});
- await fixture(page);await page.locator(`[data-date="${today}"]`).click();
+ await fixture(page);const day=page.locator(`[data-date="${today}"]`);await day.focus();await day.press('Enter');
  await page.locator('.photo-section').getByRole('button',{name:'사진 보기',exact:true}).click();
  await page.getByRole('button',{name:'날짜 상세 닫기'}).click();finish();
  await expect(page.locator('.date-detail')).toBeHidden();
