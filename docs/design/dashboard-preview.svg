@@ -28,21 +28,23 @@
 <text x="626" y="74" font-size="12" fill="#8A5A13">마지막 수집 · 10월 20일 06:25 KST</text>
 <text x="626" y="96" font-size="12" fill="#8A5A13">새 인증의 반영이 늦어지고 있어요.</text>
 <path d="M48 112h912" stroke="#D3DBD0"/>
-<rect x="48.0" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<rect x="48.0" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="60.0" y="147" font-size="12" fill="#57665B" font-weight="400">운동왕 👑</text>
 <text x="60.0" y="170" font-size="19" fill="#18271E" font-weight="700">하루</text>
-<rect x="232.4" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<rect x="232.4" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="244.4" y="147" font-size="12" fill="#57665B" font-weight="400">이번 달 고운</text>
 <text x="244.4" y="170" font-size="19" fill="#18271E" font-weight="700">20명</text>
-<rect x="416.8" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
-<text x="428.8" y="147" font-size="12" fill="#57665B" font-weight="400">총 운동 일수</text>
-<text x="428.8" y="170" font-size="19" fill="#18271E" font-weight="700">143일</text>
-<rect x="601.2" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<rect x="416.8" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<text x="428.8" y="147" font-size="12" fill="#57665B" font-weight="400">함께 심은 잔디</text>
+<text x="428.8" y="170" font-size="19" fill="#18271E" font-weight="700">35.8%</text>
+<text x="428.8" y="193" font-size="12" fill="#57665B" font-weight="500">직전 수집 대비 +0.3%p</text>
+<rect x="601.2" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="613.2" y="147" font-size="12" fill="#57665B" font-weight="400">가장 푸른 요일</text>
 <text x="613.2" y="170" font-size="19" fill="#18271E" font-weight="700">수요일</text>
-<rect x="785.6" y="126" width="174.4" height="62" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
+<rect x="785.6" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0"/>
 <text x="797.6" y="147" font-size="12" fill="#57665B" font-weight="400">1인당 평균 일수</text>
 <text x="797.6" y="170" font-size="19" fill="#18271E" font-weight="700">7.2일</text>
+<g transform="translate(0,24)">
 <rect x="48" y="202" width="98" height="36" rx="8" fill="#326C43" stroke="#D3DBD0"/>
 <text x="60" y="225.0" font-size="13" fill="#FFFFFF" font-weight="500">전체 멤버</text>
 <rect x="152" y="202" width="62" height="36" rx="8" fill="#FFFFFF" stroke="#D3DBD0"/>
@@ -480,6 +482,7 @@
 <text x="48" y="678" font-size="12" fill="#57665B" font-weight="400">사진은 Discord에서 불러오며, 원본 삭제 시 표시가 중단될 수 있어요.</text>
 <text x="48" y="738" font-size="12" fill="#57665B" font-weight="400">프리뷰는 빈 상태에도 한 줄 높이를 유지하며, hover·focus 요약만 말줄임합니다.</text>
 <text x="48" y="762" font-size="12" fill="#57665B" font-weight="400">53주 잔디는 14px 셀·4px 간격을 유지하고 카드 안에서 가로로 탐색합니다.</text>
+</g>
 <rect x="1070" y="68" width="28" height="28" rx="6" fill="#326C43" stroke="none"/>
 <text x="1076" y="89" font-size="18" fill="#57665B" font-weight="400">🌱</text>
 <text x="1110" y="82" font-size="18" fill="#18271E" font-weight="700">고독한 운동가</text>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="850" viewBox="1056 44 360 850" role="img" aria-labelledby="title desc">
   <title id="title">묵묵 · 모바일 웹보드</title>
-  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 선택 상태는 즉시 표시하며 스크롤 방향 페이드와 확대 시 라벨 정렬은 구현 DOM에서 확인한다.</desc>
+  <desc id="desc">가상 기록. 날짜·통계·연도 헤더와 흰 날짜 상세, 녹색 말풍선, 잔디가 이어지는 쪽의 12px 페이드. 선택 상태는 즉시 표시하며 스크롤 방향 페이드와 확대 시 라벨 정렬은 구현 DOM에서 확인한다. 월간 함께 심은 잔디 KPI는 전체 멤버 화면에서 표시하며 이 개인 화면에서는 숨긴다.</desc>
   <defs>
     <linearGradient id="scroll-fade-right" x1="0%" x2="100%">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0" />

@@ -68,6 +68,11 @@ class Store:
 
     def success(self, channel, cursor, now):
         with self.conn.transaction():
+            self.conn.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
+            previous = self.conn.execute('SELECT last_success_at FROM solitary_athlete.sync_state WHERE channel_id=%s FOR UPDATE', (channel,)).fetchone()
+            if previous and previous['last_success_at'] and previous['last_success_at'] >= now:
+                return
+            self.conn.execute('SELECT solitary_athlete.capture_monthly_grass_snapshot(%s)', (now,))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_state(channel_id,last_message_id,last_success_at) VALUES(%s,%s,%s)
                 ON CONFLICT(channel_id) DO UPDATE SET last_message_id=COALESCE(EXCLUDED.last_message_id,solitary_athlete.sync_state.last_message_id),last_success_at=EXCLUDED.last_success_at''', (channel, cursor, now))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_status(singleton,last_success_at) VALUES(true,%s)

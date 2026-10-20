@@ -73,7 +73,7 @@ it('keeps current week and streak across New Year while annual logs stay in sele
   vi.useFakeTimers();vi.setSystemTime(new Date('2026-01-01T03:00:00Z'));
   const years:number[]=[];
   const fetcher:typeof fetch=async(input,init)=>{
-    if(String(input).includes('sync_status') || String(input).includes('get_dashboard_members'))return Response.json([]);
+    if(String(input).includes('sync_status') || String(input).includes('get_monthly_grass_participation') || String(input).includes('get_dashboard_members'))return Response.json([]);
     const year=JSON.parse(String(init?.body)).p_year;years.push(year);
     return Response.json((year===2026?['2026-01-01']:['2025-12-31','2025-12-30','2025-12-29']).map(log_date=>({...row(1),log_date})));
   };
@@ -89,7 +89,7 @@ it('keeps current week and streak across New Year while annual logs stay in sele
 it('counts yesterday grace at New Year even before the first workout of this year',async()=>{
   vi.useFakeTimers();vi.setSystemTime(new Date('2026-01-01T03:00:00Z'));
   const fetcher:typeof fetch=async(input,init)=>{
-    if(String(input).includes('sync_status') || String(input).includes('get_dashboard_members'))return Response.json([]);
+    if(String(input).includes('sync_status') || String(input).includes('get_monthly_grass_participation') || String(input).includes('get_dashboard_members'))return Response.json([]);
     const year=JSON.parse(String(init?.body)).p_year;
     return Response.json(year===2026?[]:['2025-12-31','2025-12-30','2025-12-29'].map(log_date=>({...row(1),log_date})));
   };

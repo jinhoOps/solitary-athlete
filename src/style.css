@@ -41,6 +41,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .kpi-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 0; }
 .kpi-title { font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-bottom: 2px; overflow-wrap: anywhere; }
 .kpi-value { font-size: 1.1875rem; font-weight: 700; color: var(--ink); line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.kpi-change { margin-top:4px; }
 
 .member-filter { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 6px; margin-bottom: 14px; }
 .filter-button, .member-filter .member-find { min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--muted); font-size: .8125rem; font-weight: 500; overflow-wrap: anywhere; text-align: left; }

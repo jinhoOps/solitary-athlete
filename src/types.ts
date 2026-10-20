@@ -13,11 +13,18 @@ export interface MonthlyKPIs {
   mostActiveWeekday: string;
   averageDaysPerMember: number;
 }
+export interface GrassParticipationSample {
+  collectedAt: string; members: number; days: number; elapsedDays: number;
+}
+export type GrassParticipation =
+  | { status: 'ready'; month: string; current: GrassParticipationSample; previous: GrassParticipationSample | null }
+  | { status: 'pending' | 'unavailable' };
 export interface DashboardData {
   roster: {id:string;name:string}[];
   members: Member[];
   logs: WorkoutLog[];
   lastSuccess: string | null;
   kpis: MonthlyKPIs;
+  grassParticipation: GrassParticipation;
   currentStats?: Map<string, {week:number;streak:number;total:number}>;
 }
