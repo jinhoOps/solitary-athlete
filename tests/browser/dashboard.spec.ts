@@ -953,3 +953,23 @@ for(const width of [320,360,768,1280])test(`flat dialog and warning notice wraps
   expect(rect.x).toBeGreaterThanOrEqual(header.x);expect(rect.x+rect.width).toBeLessThanOrEqual(header.x+header.width);
  }
 });
+
+for(const width of [320,360,768,1280])for(const scale of [100,200])test(`visual review matrix ${width}px text ${scale}% preserves outer alignment`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page,'normal',true,true);
+ await page.addStyleTag({content:`html{font-size:${scale}%}`});
+ for(const member of ['전체 멤버','하루']){
+  await page.getByRole('button',{name:member,exact:true}).click();
+  const header=(await page.locator('.brand-header').boundingBox())!;
+  for(const selector of ['.member-filter','.workout-card','.footer',...(member==='전체 멤버'?['.kpi-section']:[])]){
+   const box=(await page.locator(selector).boundingBox())!;
+   expect(Math.abs(box.x-header.x)).toBeLessThan(1);expect(Math.abs(box.x+box.width-header.x-header.width)).toBeLessThan(1);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  if(process.env.MUKMUK_CAPTURE_DIR){
+   await page.evaluate(()=>document.fonts.ready);
+   await page.locator('.workout-card').screenshot({path:`${process.env.MUKMUK_CAPTURE_DIR}/grass-${width}-${scale}-${member==='하루'?'member':'all'}.png`});
+   await page.evaluate(()=>scrollTo(0,0));
+   await page.screenshot({path:`${process.env.MUKMUK_CAPTURE_DIR}/board-${width}-${scale}-${member==='하루'?'member':'all'}.png`,fullPage:true});
+  }
+ }
+});
