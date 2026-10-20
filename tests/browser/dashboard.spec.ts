@@ -233,7 +233,7 @@ test('keeps 2026 dashboard stable while viewing members and preserves active sta
   await fixture(page);
   const values=await page.locator('.kpi-value').allTextContents();
   await page.getByRole('button',{name:'하루',exact:true}).click();
-  await expect(page.locator('.workout-card').first()).toContainText('2026년 · 1월 1일 — 12월 31일');
+  await expect(page.locator('.workout-card .year-label')).toHaveText('2026년');
   expect(await page.locator('.kpi-value').allTextContents()).toEqual(values);
   await expect(page.getByRole('button',{name:'하루',exact:true})).toHaveAttribute('aria-pressed','true');
 });
@@ -265,7 +265,7 @@ test('reveals today automatically without stealing focus, then reveals selected 
  expect(detail!.y).toBeGreaterThan(graph!.y+graph!.height);
  await page.getByRole('button',{name:'날짜 상세 닫기'}).click();
  await page.getByRole('button',{name:'과거 전용',exact:true}).click();
- await expect(page.locator('.workout-card')).toContainText('과거 전용');
+ await expect(page.locator('.grass-grid')).toHaveAttribute('aria-label', /과거 전용의/);
  await expect(page.locator('.grass-cell[data-level="1"]')).toHaveCount(0);
  });
 
@@ -293,7 +293,7 @@ test('all joint workout king nicknames remain visible without page overflow',asy
 test('mobile year stepper triggers inception dialog on older navigation and preserves member search',async({page})=>{
  await page.setViewportSize({width:360,height:900});await fixture(page);
  await page.getByRole('button',{name:'하루',exact:true}).click();
- await expect(page.locator('.workout-card')).toContainText('하루');
+ await expect(page.locator('.grass-grid')).toHaveAttribute('aria-label', /하루의/);
 
  const prevBtn=page.getByRole('button',{name:'이전 연도'});
  await prevBtn.click();
@@ -309,7 +309,7 @@ test('mobile year stepper triggers inception dialog on older navigation and pres
  const search=page.getByLabel('멤버 이름 검색');await expect(search).toBeFocused();
  await search.fill('과거');await page.getByRole('dialog').getByRole('button',{name:/과거 전용/}).click();
  await expect(page.getByRole('dialog')).toBeHidden();
- await expect(page.locator('.workout-card')).toContainText('과거 전용');
+ await expect(page.locator('.grass-grid')).toHaveAttribute('aria-label', /과거 전용의/);
  await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();await search.fill('없는이름');
  await expect(page.getByRole('dialog')).toContainText('일치하는 멤버가 없어요.');
  await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'멤버 찾기',exact:true})).toBeFocused();
@@ -339,7 +339,7 @@ test('search exposes overflow and distinguishes same names by ID',async({page})=
  const dialog=page.getByRole('dialog');await expect(dialog.getByRole('button',{name:/동명/})).toHaveCount(2);
  await dialog.getByRole('button',{name:'동명 · ID: 1001',exact:true}).click();
  await expect(page.locator('.member-options [data-member-id="1001"]')).toHaveAttribute('aria-pressed','true');
- await expect(page.locator('.workout-card')).toContainText('동명');
+ await expect(page.locator('.grass-grid')).toHaveAttribute('aria-label', /동명의/);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
@@ -380,7 +380,7 @@ test('photos stay unloaded until requested and full image loads only after click
  await fixture(page);
  expect(lookups).toBe(0);expect(previews).toBe(0);expect(full).toBe(0);
  await page.getByRole('button',{name:'하루',exact:true}).click();
- await expect(page.locator('.workout-card')).toContainText('하루');
+ await expect(page.locator('.grass-grid')).toHaveAttribute('aria-label', /하루의/);
  expect(lookups).toBe(0);
  await page.locator(`[data-date="${today}"]`).click();
  const photos=page.locator('.date-detail .photo-section');
@@ -443,4 +443,21 @@ test('offscreen photo previews wait for viewport entry',async({page})=>{
  await expect(page.locator('.photo-preview').last()).not.toHaveAttribute('src');
  await page.locator('.photo-preview').last().scrollIntoViewIfNeeded();
  await expect(page.locator('.photo-preview').last()).toHaveAttribute('src',/media.discordapp.net/);
+});
+
+
+test('compact card header and member timeline weekday', async ({page}) => {
+ await page.setViewportSize({width:375,height:812});
+ await fixture(page);
+ const header=page.locator('.workout-card .card-heading');
+ await expect(header).toContainText('오늘 · 2026-10-14 KST');
+ await expect(header.locator('.year-filter')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'연도별 운동 잔디'})).toHaveCount(0);
+ await expect(header.locator('h3')).toHaveCount(0);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await expect(page.locator('.date-button').first()).toHaveText('10월 14일 (수)');
+ await page.locator('.date-button').first().click();
+ await expect(page.locator('.date-detail')).toBeVisible();
+ await expect(header.locator('.year-filter')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
