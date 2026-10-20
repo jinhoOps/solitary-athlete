@@ -26,7 +26,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .brand-divider { color: var(--border); }
 .brand-sub { font-size: 0.8125rem; color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
 .brand-mark { flex-shrink: 0; }
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.header-actions { min-width:0; max-width:100%; margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .discord-link { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; color: var(--muted); background: transparent; flex-shrink: 0; }
 .discord-link:hover { color: var(--primary); background: #E8EDE4; }
 .discord-link svg { display: block; }
@@ -34,7 +34,8 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .secondary-text { font-size: .875rem; color: var(--muted); }
 .caption { color: var(--muted); font-size: .75rem; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
 .status-notice { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 12px; background: #D9E9D9; color: #18271E; border-radius: 9999px; font-size: .75rem; font-weight: 500; line-height: 1.4; }
-.status-notice.warning { color: #8A5A13; background: #FFF4DD; }
+.status-notice.warning { color:#8A5A13; background:#FFF4DD; border-radius:10px; padding:16px; max-width:100%; white-space:normal; }
+.status-notice.warning > span { flex-basis:100%; }
 
 .kpi-section { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .kpi-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 0; }
@@ -110,8 +111,8 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .footer p+p { margin-top: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-.modal-backdrop { position: fixed; inset: 0; background: rgba(24, 39, 30, 0.4); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
-.modal-box { background: white; border-radius: 16px; padding: 28px; max-width: 400px; width: 100%; border: 1px solid var(--border); box-shadow: 0 12px 32px rgba(24, 39, 30, 0.12); }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(24, 39, 30, 0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+.modal-box { background: white; border-radius: 16px; padding: 28px; max-width: 400px; width: 100%; border: 1px solid var(--border); }
 .modal-box h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: 8px; color: #18271E; }
 .modal-box p { font-size: 0.875rem; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
 .modal-form { display: flex; flex-direction: column; gap: 12px; }
@@ -157,9 +158,9 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .stepper-btn:disabled { opacity:.25; cursor:not-allowed; background:transparent; }
 .year-label { font-size:.8125rem; font-weight:600; color:var(--ink); padding:0 4px; min-width:54px; text-align:center; font-variant-numeric:tabular-nums; user-select:none; }
 
-.inception-dialog { width:min(420px,calc(100% - 32px)); padding:28px 24px 24px; border:1px solid var(--border); border-radius:16px; background:white; color:var(--ink); text-align:center; box-shadow:0 12px 32px rgba(24,39,30,.12); }
-.inception-dialog::backdrop { background:rgb(24 39 30 / .4); backdrop-filter:blur(2px); }
-.inception-character { width:88px; height:88px; margin:0 auto 12px; display:block; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(24,39,30,.08)); }
+.inception-dialog { width:min(420px,calc(100% - 32px)); padding:28px 24px 24px; border:1px solid var(--border); border-radius:16px; background:white; color:var(--ink); text-align:center; }
+.inception-dialog::backdrop { background:rgb(24 39 30 / .4); }
+.inception-character { width:88px; height:88px; margin:0 auto 12px; display:block; object-fit:contain; }
 .inception-dialog h2 { font-size:1.125rem; font-weight:700; margin-bottom:8px; color:var(--ink); }
 .inception-desc { font-size:0.9375rem; color:var(--ink); line-height:1.6; margin-bottom:8px; word-break:keep-all; }
 .inception-dialog .caption { font-size:0.8125rem; color:var(--muted); margin-bottom:20px; }
@@ -237,3 +238,6 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  background:var(--primary); color:white; border-color:var(--primary); transition-duration:0s;
 }
 .filter-button:disabled { transition-duration:0s; }
+
+.dialog-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.dialog-actions > .button { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; max-width:100%; overflow-wrap:anywhere; }

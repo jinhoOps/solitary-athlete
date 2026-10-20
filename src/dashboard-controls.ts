@@ -57,7 +57,8 @@ export function renderDashboardControls(options:Options):HTMLElement {
  }
  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();dialog.close();find.focus();}});
  input.oninput=results;dialog.addEventListener('close',()=>{(searchFocusTarget??find).focus({preventScroll:true});searchFocusTarget=undefined;});
- dialog.append(title,label,input,found,button('닫기',()=>dialog.close()));
+ const actions=el('div','dialog-actions');actions.append(button('닫기',()=>dialog.close(),'button secondary'));
+ dialog.append(title,label,input,found,actions);
  nav.append(all,viewport,find);root.append(nav,dialog);
  updatePressed();
  // Hide overflow from the keyboard too; always reserve a visible slot for the selection.

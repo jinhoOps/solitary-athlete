@@ -51,6 +51,9 @@ async function fixture(
     await route.fulfill({ json: [] });
   });
   await page.goto('./');
+  await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  // Initial reveal and ResizeObserver both schedule layout work on animation frames.
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
 }
 
 test('photo grass, safe text, all-history stats, 5 KPIs, and member filtering', async ({ page }) => {
@@ -906,5 +909,47 @@ for(const width of [320,360,768,1280])test(`grass label geometry remains legible
    await scroll.evaluate(e=>{e.scrollLeft=e.scrollWidth;});
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   }
+ }
+});
+
+for(const kind of ['auth','member','inception','photo'] as const)test(`flat dialog and warning keep ${kind} surface readable`,async({page})=>{
+ await page.setViewportSize({width:360,height:900});
+ if(kind==='photo'){
+  await page.route('**/functions/v1/mukmuk-discord-photos',route=>route.fulfill({json:{photos:[{id:'200',preview:null,url:'https://cdn.discordapp.com/attachments/20/200/a.jpg',original:'https://discord.com/channels/10/20/100'}],next:null}}));
+  await page.route('https://cdn.discordapp.com/**',route=>route.fulfill({body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64'),contentType:'image/png'}));
+ }
+ await fixture(page,'normal',kind!=='auth');
+ let surface=page.locator('.modal-box');
+ if(kind==='member'){await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();surface=page.locator('.member-dialog');}
+ if(kind==='inception'){await page.getByRole('button',{name:'이전 연도',exact:true}).click();surface=page.locator('.inception-dialog');}
+ if(kind==='photo'){
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  await page.locator('.timeline-item').first().getByRole('button',{name:'사진 보기',exact:true}).click();
+  await page.getByRole('button',{name:'사진 1 크게 보기',exact:true}).click();surface=page.locator('.photo-dialog');
+ }
+ await expect(surface).toBeVisible();await expect(surface).toHaveCSS('box-shadow','none');
+ if(kind==='auth')await expect(page.locator('.modal-backdrop')).toHaveCSS('backdrop-filter','none');
+ else expect(await surface.evaluate(e=>getComputedStyle(e,'::backdrop').backdropFilter)).toBe('none');
+ if(kind==='inception')await expect(surface.locator('.inception-character')).toHaveCSS('filter','none');
+ if(kind==='photo'||kind==='member'){
+  const close=surface.getByRole('button',{name:'닫기',exact:true});await expect(close).toHaveClass(/secondary/);
+  if(kind==='photo')await expect(surface.getByRole('link',{name:'Discord 원문 보기'})).toHaveClass(/secondary/);
+  await page.addStyleTag({content:'html{font-size:200%}'});
+  const box=(await surface.boundingBox())!,buttons=await surface.locator('.dialog-actions > *').all();
+  expect(buttons.length).toBeGreaterThan(0);
+  for(const b of buttons){const r=(await b.boundingBox())!;expect(r.x).toBeGreaterThanOrEqual(box.x);expect(r.x+r.width).toBeLessThanOrEqual(box.x+box.width);expect(r.height).toBeGreaterThanOrEqual(44);}
+  await close.click();if(kind==='member')await expect(page.getByRole('button',{name:'멤버 찾기',exact:true})).toBeFocused();
+ }
+});
+
+for(const width of [320,360,768,1280])test(`flat dialog and warning notice wraps within header at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page,'normal',true,false,'2026-10-14T12:00:00Z');
+ const notice=page.locator('.status-notice.warning');await expect(notice).toContainText('새 인증의 반영이 늦어지고 있어요.');
+ await expect(notice).toHaveCSS('border-radius','10px');await expect(notice).toHaveCSS('padding-top','16px');
+ for(const scale of [100,200]){
+  await page.addStyleTag({content:`html{font-size:${scale}%}`});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const rect=(await notice.boundingBox())!,header=(await page.locator('.brand-header').boundingBox())!;
+  expect(rect.x).toBeGreaterThanOrEqual(header.x);expect(rect.x+rect.width).toBeLessThanOrEqual(header.x+header.width);
  }
 });
