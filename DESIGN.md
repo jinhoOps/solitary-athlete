@@ -1,5 +1,5 @@
 ---
-version: "1.3"
+version: "1.4"
 name: mukmuk-design-system
 status: implementation-ready
 updated: "2026-10-20"
@@ -19,6 +19,9 @@ colors:
   hairline: "#D3DBD0"
   canvas: "#F7F8F2"
   surface-card: "#FFFFFF"
+  surface-message: "#EDF1E9"
+  control-hover: "rgba(46,85,59,.08)"
+  control-pressed: "rgba(46,85,59,.16)"
   surface-soft: "#D9E9D9"
   grass-empty: "#E8EDE4"
   grass-record: "#4B8F52"
@@ -118,6 +121,33 @@ layout:
   focus-width: 2px
   focus-offset: 2px
 
+motion:
+  feedback: 140ms
+  enter: 160ms
+  easing: ease-out
+  animatedProperties: color, background-color, border-color
+  enterProperty: opacity
+  pressed: immediate
+  focusOutline: immediate
+  reducedMotion:
+    feedback: 0s
+    enter: none
+
+grass:
+  detail:
+    backgroundColor: "{colors.surface-card}"
+    messageBackgroundColor: "{colors.surface-message}"
+    borderColor: "{colors.hairline}"
+  scroll_fade:
+    width: 12px
+    color: "{colors.surface-card}"
+    edgeTolerance: 1px
+    pointerEvents: none
+    keyboardFocus: hidden
+    weekdayLabels: unobscured
+    visibility: remaining-scroll-direction-only
+    updateOn: scroll, resize, reveal-date
+
 components:
   brand-header:
     textColor: "{colors.ink}"
@@ -163,7 +193,7 @@ components:
     textColor: "{colors.muted}"
   button-icon:
     backgroundColor: transparent
-    hoverFocusBackground: "rgba(46,85,59,.08)"
+    hoverFocusBackground: "{colors.control-hover}"
     borderWidth: 0px
     textColor: "{colors.muted}"
     rounded: 6px
@@ -312,7 +342,7 @@ components:
     previewOverflow: ellipsis
     previewNewlines: space
   date-detail:
-    backgroundColor: "{colors.canvas}"
+    backgroundColor: "{grass.detail.backgroundColor}"
     textColor: "{colors.ink}"
     typography: "{typography.body-sm}"
     rounded: "{rounded.control}"
@@ -331,7 +361,7 @@ components:
     padding: 0px
     gap: 12px
   timeline-message:
-    backgroundColor: "#EDF1E9"
+    backgroundColor: "{colors.surface-message}"
     rounded: 8px
     padding: 8px 12px
     fontSize: 14px
@@ -379,7 +409,7 @@ components:
 
 이 문서는 색상·글꼴·간격·컴포넌트·상태·반응형의 단일 기준이다. `DESIGN-cal.md`의 **YAML 토큰 → 시각 원칙 → 컴포넌트 → 반응형 → 변경 가이드** 형식을 참고했다. Cal의 검정 CTA·전용 글꼴·마케팅 카드·어두운 푸터를 가져오는 대신 묵묵의 기존 녹색·한국어 글꼴·기록 화면을 정의한다. 2026-10-15에 전체 합산 그래프·멤버 탐색·오른쪽 연도 탐색 설계가 승인됐다. 이 변경은 구현 전 시각 기준이며 현재 출시 화면과 다를 수 있다.
 
-제품 동작, 날짜 집계, DB·함수·배포 계약, 실제 서비스 ID와 적용 이력은 [ARCHITECTURE.md](ARCHITECTURE.md)에서 관리한다. 화면을 구현할 때에는 두 문서를 함께 따른다. [대시보드 시안](docs/design/dashboard-preview.svg)은 가상 기록을 사용하는 정적 구성 시안이다.
+제품 동작, 날짜 집계, DB·함수·배포 계약, 실제 서비스 ID와 적용 이력은 [ARCHITECTURE.md](ARCHITECTURE.md)에서 관리한다. 화면을 구현할 때에는 두 문서를 함께 따른다. [대시보드 통합 시안](docs/design/dashboard-preview.svg)과 [데스크톱 시안](docs/design/dashboard-desktop.svg)·[모바일 시안](docs/design/dashboard-mobile.svg)은 가상 기록을 사용하는 정적 구성 시안이다.
 
 | 브랜드 요소 | 기준 |
 | --- | --- |
@@ -653,7 +683,7 @@ components:
 
 ## Motion
 
-초기 버전은 정적인 기록 화면이다. 잔디 채우기·스트릭 축하·반짝임·shimmer를 넣지 않는다. 상태 전환은 즉시 반영하고 로딩 자리표시자는 움직이지 않는다. 이후 모션을 추가하면 목적·시간·`prefers-reduced-motion` 대체 동작을 이 문서에 기록한다.
+동작 피드백은 `{motion.feedback}` 140ms의 색상·배경·테두리 전환, 날짜 상세·열린 다이얼로그·인증 상자는 `{motion.enter}` 160ms의 opacity 등장으로 통일한다. easing은 ease-out이다. 누름 상태와 키보드 초점 윤곽선은 즉시 반영하며 닫기·초점 복귀를 애니메이션 종료까지 미루지 않는다. `prefers-reduced-motion: reduce`에서는 전환 시간을 0s로 두고 등장 애니메이션을 생략한다. 잔디 채우기·스트릭 축하·반짝임·shimmer·높이 애니메이션은 넣지 않으며 로딩 자리표시자는 움직이지 않는다.
 
 ## Iteration Guide
 
@@ -753,3 +783,13 @@ components:
 - 「남겨 둔 운동」 제목은 16px, 여백은 16px 0 8px이며 우측 캡션을 생략한다. 날짜는 muted, hover/focus에는 primary를 사용하고 메모 면은 `#EDF1E9`를 유지한다.
 
 - 공통 푸터는 상단 마진 24px·상단 패딩 14px이다. 페이지 최대 폭은 바깥 패딩 포함 960px이다. 53주 잔디 자체는 14px 셀 53개와 4px 간격 52개로 950px이며 요일 열은 별도다. 셀 크기를 줄이지 않고 잔디 내부 가로 스크롤로 탐색하며, 카드·KPI·상세의 바깥 끝선은 정렬한다.
+
+
+### 웹보드 균형·상호작용 마감 (2026-10-20)
+
+- `{grass.scroll_fade}`는 잔디 스크롤 뷰포트 위에 배치한 12px 흰색 그라데이션이다. 해당 방향으로 스크롤할 기록이 남아 있을 때만 표시하며 양 끝 판정 허용 오차는 1px이다. 모든 주가 보이면 양쪽을 숨긴다. 왼쪽 페이드는 실제 고정 요일 열 너비와 열 사이 간격 다음에 배치한다. 클릭을 가로채지 않고 접근성 트리에서도 제외한다. 그리드에 키보드 초점이 있는 동안 양쪽을 즉시 숨겨 셀 윤곽선을 가리지 않는다.
+- 스크롤, 날짜 자동 노출, 뷰포트·그리드·요일 열 크기 변경 때 페이드를 갱신한다. 멤버·연도 전환으로 카드를 폐기하면 ResizeObserver와 스크롤 리스너를 해제한다. 범례·프리뷰·날짜 상세는 페이드 적용 영역 밖에 둔다.
+- 날짜 상세는 `{grass.detail.backgroundColor}`의 흰 바탕·기존 얇은 테두리를 유지하고 말풍선은 `{colors.surface-message}`로 구분한다. 전체·개인·사진을 펼친 상세에 같은 위계를 적용한다.
+- 멤버 칩·찾기·사진·날짜·닫기·연도·일반 동작 버튼과 Discord 링크는 `{motion.feedback}`를 공유한다. 선택된 멤버의 녹색과 비활성 상태는 hover에 덮이지 않는다. hover 효과는 마우스 입력 환경에 적용하며 누름은 즉시 반응한다. focus 윤곽선은 전환 대상에 넣지 않는다.
+- 데스크톱 상단의 날짜·통계 간격은 기존 14px을 유지하며 세로 구분선을 추가하지 않는다. 날짜 안의 `·` 구분자와 기존 정렬만 사용한다.
+- 정적 시안은 페이드와 배경·상태의 기준을 보여준다. 140ms·160ms 전환과 모션 줄이기는 실제 DOM에서 검증하며 애니메이션 라이브러리를 추가하지 않는다.

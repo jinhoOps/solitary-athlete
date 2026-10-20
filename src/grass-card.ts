@@ -212,6 +212,30 @@ export function renderGrassCard(options: {
 
   const grassScroll = el('div', 'grass-scroll');
   grassScroll.append(months, gridWrap);
+  const viewport = el('div', 'grass-viewport');
+  const leftFade = el('span', 'grass-scroll-fade grass-scroll-fade--left');
+  const rightFade = el('span', 'grass-scroll-fade grass-scroll-fade--right');
+  for (const fade of [leftFade, rightFade]) {
+    fade.setAttribute('aria-hidden', 'true');
+    fade.hidden = true;
+  }
+  viewport.append(grassScroll, leftFade, rightFade);
+  let disposed = false;
+  function updateScrollFades() {
+    if (disposed || !card.isConnected) return;
+    const remaining = grassScroll.scrollWidth - grassScroll.clientWidth;
+    leftFade.hidden = grassScroll.scrollLeft <= 1;
+    rightFade.hidden = remaining - grassScroll.scrollLeft <= 1;
+    leftFade.style.left = `${weekdays.offsetWidth + parseFloat(getComputedStyle(gridWrap).columnGap)}px`;
+  }
+  grassScroll.addEventListener('scroll', updateScrollFades, {passive: true});
+  const resizeObserver = new ResizeObserver(updateScrollFades);
+  for (const element of [grassScroll, gridWrap, weekdays]) resizeObserver.observe(element);
+  card.addEventListener('dispose', () => {
+    disposed = true;
+    resizeObserver.disconnect();
+    grassScroll.removeEventListener('scroll', updateScrollFades);
+  });
 
   function revealDate(date: string) {
     if (!card.isConnected) return;
@@ -219,10 +243,12 @@ export function renderGrassCard(options: {
     if (!cell) return;
     const target = cell.getBoundingClientRect(), viewport = grassScroll.getBoundingClientRect();
     grassScroll.scrollLeft += target.left - viewport.left - (viewport.width - target.width) / 2;
+    updateScrollFades();
   }
   const revealToday=() => {
     const date = opened ?? (selectedYear === currentYear ? today : null);
     if (date) revealDate(date);
+    else updateScrollFades();
   };
 
   const legend = el('div', 'legend');
@@ -237,7 +263,7 @@ export function renderGrassCard(options: {
 
   const grassFooter = el('div', 'grass-footer');
   grassFooter.append(legend, preview);
-  visual.append(grassScroll, grassFooter);
+  visual.append(viewport, grassFooter);
   content.append(visual, details);
   if(!logs.length && aggregate)card.append(el('p','secondary-text',roster.length?'선택한 연도에 남긴 운동이 없어요.':'첫 잔디를 기다리고 있어요.'));
   card.append(top, content);

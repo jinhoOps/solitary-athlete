@@ -584,6 +584,72 @@ test('grass preview clears after hover and focus leave, and restores a focused d
  await expect(preview).toBeEmpty();
 });
 
+test('grass edge fades follow scroll boundaries, resizing and keyboard navigation',async({page})=>{
+ await page.setViewportSize({width:360,height:900});await fixture(page);
+ const scroll=page.locator('.grass-scroll'),left=page.locator('.grass-scroll-fade--left'),right=page.locator('.grass-scroll-fade--right');
+ await scroll.evaluate(e=>{e.scrollLeft=0;});
+ await expect(left).toBeHidden();await expect(right).toBeVisible();
+ await scroll.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+ await expect(left).toBeVisible();await expect(right).toBeVisible();
+ const fade=(await left.boundingBox())!,labels=(await page.locator('.weekday-labels').boundingBox())!;
+ expect(fade.x).toBeGreaterThanOrEqual(labels.x+labels.width);
+ await scroll.evaluate(e=>{e.scrollLeft=e.scrollWidth;});
+ await expect(left).toBeVisible();await expect(right).toBeHidden();
+ const day=page.locator(`[data-date="${today}"]`);await day.focus();await day.press('ArrowLeft');
+ await expect(day).not.toBeFocused();
+ await expect(left).toHaveCSS('opacity','0');await expect(right).toHaveCSS('opacity','0');
+ await page.getByRole('button',{name:'전체 멤버',exact:true}).focus();
+ await expect(left).toHaveCSS('opacity','1');
+ // With enough room for all 53 weeks, both fades must disappear without a scroll event.
+ await page.addStyleTag({content:'#app { max-width:none; }'});
+ await page.setViewportSize({width:1400,height:900});
+ await expect(left).toBeHidden();await expect(right).toBeHidden();
+ expect(await scroll.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
+ await page.setViewportSize({width:320,height:900});
+ await expect(right).toBeVisible();
+});
+
+test('surface motion respects reduced motion and never delays closing or focus restoration',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});await fixture(page);
+ const day=page.locator(`[data-date="${today}"]`);await day.focus();await day.press('Enter');
+ const detail=page.locator('.date-detail');
+ expect(await detail.evaluate(e=>getComputedStyle(e).animationName)).not.toBe('none');
+ await detail.getByRole('button',{name:'날짜 상세 닫기',exact:true}).click();
+ await expect(detail).toBeHidden();await expect(day).toBeFocused();
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await day.press('Enter');await expect(detail).toHaveCSS('animation-name','none');
+ const close=detail.getByRole('button',{name:'날짜 상세 닫기',exact:true});
+ await close.focus();await expect(close).toHaveCSS('outline-style','solid');
+ await expect(close).toHaveCSS('transition-duration',/^0s(?:, 0s)*$/);
+ await close.press('Enter');await expect(day).toBeFocused();
+ const find=page.getByRole('button',{name:'멤버 찾기',exact:true});await find.click();
+ await expect(page.locator('.member-dialog')).toHaveCSS('animation-name','none');
+ await page.keyboard.press('Escape');await expect(find).toBeFocused();
+ await page.emulateMedia({reducedMotion:'no-preference'});await find.click();
+ expect(await page.locator('.member-dialog').evaluate(e=>getComputedStyle(e).animationName)).not.toBe('none');
+ await page.keyboard.press('Escape');await expect(find).toBeFocused();
+});
+
+test('control feedback preserves the selection and responds immediately while pressed',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});await fixture(page);
+ const selected=page.getByRole('button',{name:'전체 멤버',exact:true});
+ const selectedColor=await selected.evaluate(e=>getComputedStyle(e).backgroundColor);
+ await selected.hover();await expect(selected).toHaveCSS('background-color',selectedColor);
+ const member=page.getByRole('button',{name:'하루',exact:true});await member.hover();
+ const hoveredColor=await member.evaluate(e=>getComputedStyle(e).backgroundColor);
+ await page.mouse.down();
+ await expect(member).not.toHaveCSS('background-color',hoveredColor);
+ await expect(member).toHaveCSS('transition-duration',/^0s(?:, 0s)*$/);
+ await page.mouse.up();await expect(member).toHaveAttribute('aria-pressed','true');
+ await expect(member).toHaveCSS('background-color',selectedColor);
+ await page.setViewportSize({width:360,height:900});
+ const previous=page.getByRole('button',{name:'이전 연도',exact:true});await previous.hover();
+ const arrowHover=await previous.evaluate(e=>getComputedStyle(e).backgroundColor);
+ await page.mouse.down();await expect(previous).not.toHaveCSS('background-color',arrowHover);
+ await page.mouse.up();await expect(page.locator('.inception-dialog')).toBeVisible();
+ await page.keyboard.press('Escape');await expect(previous).toBeFocused();
+});
+
 for(const width of [320,360,768,1280]) test(`grass preview keeps the card height stable at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});await fixture(page);
  await page.getByRole('button',{name:'하루',exact:true}).click();
