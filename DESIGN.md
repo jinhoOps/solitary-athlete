@@ -1,5 +1,5 @@
 ---
-version: "1.4"
+version: "1.4.1"
 name: mukmuk-design-system
 status: implementation-ready
 updated: "2026-10-20"
@@ -145,6 +145,8 @@ grass:
     pointerEvents: none
     keyboardFocus: hidden
     weekdayLabels: unobscured
+    leftEdge: sticky-weekday-right-edge
+    verticalExtent: cell-rows-only
     visibility: remaining-scroll-direction-only
     updateOn: scroll, resize, reveal-date
 
@@ -787,7 +789,7 @@ components:
 
 ### 웹보드 균형·상호작용 마감 (2026-10-20)
 
-- `{grass.scroll_fade}`는 잔디 스크롤 뷰포트 위에 배치한 12px 흰색 그라데이션이다. 해당 방향으로 스크롤할 기록이 남아 있을 때만 표시하며 양 끝 판정 허용 오차는 1px이다. 모든 주가 보이면 양쪽을 숨긴다. 왼쪽 페이드는 실제 고정 요일 열 너비와 열 사이 간격 다음에 배치한다. 클릭을 가로채지 않고 접근성 트리에서도 제외한다. 그리드에 키보드 초점이 있는 동안 양쪽을 즉시 숨겨 셀 윤곽선을 가리지 않는다.
+- `{grass.scroll_fade}`는 잔디 스크롤 뷰포트 위에 배치한 12px 흰색 그라데이션이다. 해당 방향으로 스크롤할 기록이 남아 있을 때만 표시하며 양 끝 판정 허용 오차는 1px이다. 모든 주가 보이면 양쪽을 숨긴다. 왼쪽 페이드는 고정 요일 열의 실제 오른쪽 끝에서 바로 시작한다. 스크롤된 잔디가 요일 열 바로 뒤부터 드러나므로 원래 열 간격 12px을 다시 더하지 않는다. 양쪽 페이드의 위쪽 위치와 높이는 잔디 셀 그리드의 실제 경계에 맞추며 월 이름·위아래 패딩·스크롤바를 덮지 않는다. 클릭을 가로채지 않고 접근성 트리에서도 제외한다. 그리드에 키보드 초점이 있는 동안 양쪽을 즉시 숨겨 셀 윤곽선을 가리지 않는다.
 - 스크롤, 날짜 자동 노출, 뷰포트·그리드·요일 열 크기 변경 때 페이드를 갱신한다. 멤버·연도 전환으로 카드를 폐기하면 ResizeObserver와 스크롤 리스너를 해제한다. 범례·프리뷰·날짜 상세는 페이드 적용 영역 밖에 둔다.
 - 날짜 상세는 `{grass.detail.backgroundColor}`의 흰 바탕·기존 얇은 테두리를 유지하고 말풍선은 `{colors.surface-message}`로 구분한다. 전체·개인·사진을 펼친 상세에 같은 위계를 적용한다.
 - 멤버 칩·찾기·사진·날짜·닫기·연도·일반 동작 버튼과 Discord 링크는 `{motion.feedback}`를 공유한다. 선택된 멤버의 녹색과 비활성 상태는 hover에 덮이지 않는다. hover 효과는 마우스 입력 환경에 적용하며 누름은 즉시 반응한다. focus 윤곽선은 전환 대상에 넣지 않는다.

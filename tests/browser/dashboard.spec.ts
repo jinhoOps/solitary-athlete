@@ -609,6 +609,28 @@ test('grass edge fades follow scroll boundaries, resizing and keyboard navigatio
  await expect(right).toBeVisible();
 });
 
+for(const width of [320,360,768,1280]) test(`grass fades meet the sticky labels and cover only cell rows at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ for(const scale of [100,200]){
+  await page.addStyleTag({content:`html { font-size:${scale}%; }`});
+  await page.locator('.grass-scroll').evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+  await expect(page.locator('.grass-scroll-fade--left')).toBeVisible();
+  await expect(async()=>{
+   const labels=(await page.locator('.weekday-labels').boundingBox())!;
+   const grid=(await page.locator('.grass-grid').boundingBox())!;
+   const months=(await page.locator('.month-labels').boundingBox())!;
+   const left=(await page.locator('.grass-scroll-fade--left').boundingBox())!;
+   expect(Math.abs(left.x-labels.x-labels.width)).toBeLessThan(1);
+   for(const side of ['left','right']){
+    const fade=(await page.locator(`.grass-scroll-fade--${side}`).boundingBox())!;
+    expect(Math.abs(fade.y-grid.y)).toBeLessThan(1);
+    expect(Math.abs(fade.height-grid.height)).toBeLessThan(1);
+    expect(fade.y).toBeGreaterThanOrEqual(months.y+months.height);
+   }
+  }).toPass();
+ }
+});
+
 test('surface motion respects reduced motion and never delays closing or focus restoration',async({page})=>{
  await page.emulateMedia({reducedMotion:'no-preference'});await fixture(page);
  const day=page.locator(`[data-date="${today}"]`);await day.focus();await day.press('Enter');
