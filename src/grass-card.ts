@@ -223,6 +223,7 @@ export function renderGrassCard(options: {
   let disposed = false;
   function updateScrollFades() {
     if (disposed || !card.isConnected) return;
+    months.style.clipPath = `inset(0 0 0 ${Math.max(0,grassScroll.scrollLeft)}px)`;
     const remaining = grassScroll.scrollWidth - grassScroll.clientWidth;
     leftFade.hidden = grassScroll.scrollLeft <= 1;
     rightFade.hidden = remaining - grassScroll.scrollLeft <= 1;

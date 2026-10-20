@@ -873,3 +873,38 @@ for(const width of [320,360,390])test(`member chip scroll preserves selected chi
  await page.setViewportSize({width:768,height:900});await expect(left).toBeHidden();await expect(right).toBeHidden();
  await expect(list.locator('[data-member-id="129"]')).toBeVisible();
 });
+
+for(const width of [320,360,768,1280])test(`grass label geometry remains legible at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page,'normal',true,false,'2029-01-05T09:00:00Z');
+ for(const year of [2028,2027,2026]){
+  await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+  await expect(page.locator('.year-label')).toHaveText(`${year}년`);
+  await expect(page.locator('.grass-cell[data-date]')).toHaveCount(year===2028?366:365);
+  for(const scale of [200,100]){
+   await page.addStyleTag({content:`html{font-size:${scale}%}`});
+   const labels=await page.locator('.weekday-labels > span').evaluateAll(nodes=>nodes.map(n=>{
+    const r=n.getBoundingClientRect();const range=document.createRange();range.selectNodeContents(n);const text=range.getBoundingClientRect();
+    return {top:r.top,bottom:r.bottom,center:(r.top+r.bottom)/2,textTop:text.top,textBottom:text.bottom};
+   }));
+   for(let i=1;i<labels.length;i++){
+    expect(labels[i].top).toBeGreaterThanOrEqual(labels[i-1].bottom-.1);
+    expect(labels[i].textTop).toBeGreaterThanOrEqual(labels[i-1].textBottom-.1);
+   }
+   const dates=await page.locator('.grass-cell[data-date]').evaluateAll(nodes=>nodes.slice(0,7).map(n=>{
+    const r=n.getBoundingClientRect();return {date:(n as HTMLElement).dataset.date!,center:r.y+r.height/2,width:r.width,height:r.height};
+   }));
+   for(const d of dates){expect(d.width).toBe(14);expect(d.height).toBe(14);expect(Math.abs(d.center-labels[new Date(`${d.date}T00:00:00Z`).getUTCDay()].center)).toBeLessThan(1);}
+   const months=await page.locator('.month-labels > span').evaluateAll(nodes=>nodes.filter(n=>n.textContent?.trim()).map(n=>{
+    const range=document.createRange();range.selectNodeContents(n);const r=range.getBoundingClientRect();return {left:r.left,right:r.right};
+   }));
+   expect(months).toHaveLength(12);for(let i=1;i<months.length;i++)expect(months[i].left).toBeGreaterThanOrEqual(months[i-1].right);
+   const scroll=page.locator('.grass-scroll');await scroll.evaluate(e=>{e.scrollLeft=0;});
+   const firstMonth=(await page.locator('.month-labels').boundingBox())!,grid=(await page.locator('.grass-grid').boundingBox())!;
+   expect(Math.abs(firstMonth.x-grid.x)).toBeLessThan(1);
+   await scroll.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+   await expect(page.locator('.month-labels')).not.toHaveCSS('clip-path','none');
+   await scroll.evaluate(e=>{e.scrollLeft=e.scrollWidth;});
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  }
+ }
+});
