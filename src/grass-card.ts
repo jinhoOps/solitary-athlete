@@ -226,7 +226,13 @@ export function renderGrassCard(options: {
     const remaining = grassScroll.scrollWidth - grassScroll.clientWidth;
     leftFade.hidden = grassScroll.scrollLeft <= 1;
     rightFade.hidden = remaining - grassScroll.scrollLeft <= 1;
-    leftFade.style.left = `${weekdays.offsetWidth + parseFloat(getComputedStyle(gridWrap).columnGap)}px`;
+    const bounds = viewport.getBoundingClientRect();
+    const rows = grid.getBoundingClientRect();
+    leftFade.style.left = `${weekdays.getBoundingClientRect().right - bounds.left}px`;
+    for (const fade of [leftFade, rightFade]) {
+      fade.style.top = `${rows.top - bounds.top}px`;
+      fade.style.height = `${rows.height}px`;
+    }
   }
   grassScroll.addEventListener('scroll', updateScrollFades, {passive: true});
   const resizeObserver = new ResizeObserver(updateScrollFades);

@@ -62,7 +62,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .grass-visual { max-width: 100%; min-width: 0; }
 .grass-viewport { position: relative; min-width: 0; }
 .grass-scroll { max-width: 100%; overflow-x: auto; padding: 4px 0; -webkit-overflow-scrolling: touch; }
-.grass-scroll-fade { position: absolute; top: 0; bottom: 0; width: var(--grass-scroll-fade-width); pointer-events: none; z-index: 2; }
+.grass-scroll-fade { position: absolute; width: var(--grass-scroll-fade-width); pointer-events: none; z-index: 2; }
 .grass-scroll-fade--left { background: linear-gradient(to right, white, transparent); }
 .grass-scroll-fade--right { right: 0; background: linear-gradient(to left, white, transparent); }
 .grass-viewport:focus-within .grass-scroll-fade { opacity: 0; }

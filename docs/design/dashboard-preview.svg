@@ -447,7 +447,7 @@
 <text x="71" y="407" font-size="12" fill="#57665B" font-weight="400">목</text>
 <text x="71" y="425" font-size="12" fill="#57665B" font-weight="400">금</text>
 <text x="71" y="443" font-size="12" fill="#57665B" font-weight="400">토</text>
-<rect x="927" y="296" width="12" height="166" fill="url(#scroll-fade-right)" pointer-events="none" />
+<rect x="927" y="324" width="12" height="122" fill="url(#scroll-fade-right)" pointer-events="none" />
 </g>
 <rect x="69" y="456" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none"/>
 <text x="85" y="466" font-size="12" fill="#57665B" font-weight="400">0%</text>
@@ -628,8 +628,8 @@
 <text x="1088" y="401" font-size="12" fill="#57665B" font-weight="400">목</text>
 <text x="1088" y="419" font-size="12" fill="#57665B" font-weight="400">금</text>
 <text x="1088" y="437" font-size="12" fill="#57665B" font-weight="400">토</text>
-<rect x="1110" y="292" width="12" height="150" fill="url(#scroll-fade-left)" pointer-events="none" />
-<rect x="1374" y="292" width="12" height="150" fill="url(#scroll-fade-right)" pointer-events="none" />
+<rect x="1100" y="318" width="12" height="122" fill="url(#scroll-fade-left)" pointer-events="none" />
+<rect x="1374" y="318" width="12" height="122" fill="url(#scroll-fade-right)" pointer-events="none" />
 </g>
 <rect x="1086" y="448" width="12" height="12" rx="3" fill="#E8EDE4" stroke="none"/>
 <text x="1102" y="458" font-size="12" fill="#57665B" font-weight="400">기록 없음</text>
