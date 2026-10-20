@@ -29,6 +29,14 @@ uv run register_cmd.py
 
 수집 성공 후에만 마지막 수집 시각을 갱신한다. 실패한 실행은 0이 아닌 종료 코드로 끝나며 자격 증명을 출력하지 않는다. Message Content Intent와 인증 채널의 본문·사진 읽기, 리액션, 현황판 쓰기 권한이 필요하다. 기록 삭제·28일 이전 수정의 자동 반영은 초기 범위 밖이다. 운영자는 해당 메시지 ID를 확인하여 `Store.save(message_id, None)` 또는 갱신 이벤트로 명시적으로 재집계한다.
 
+## 월간 잔디 참여율 배포 순서
+
+1. `supabase/migrations/20261020000001_mukmuk_monthly_grass.sql`을 묵묵 스키마에 적용한다. 다른 앱의 설정·권한은 변경하지 않는다.
+2. 검증된 수집기 소스로 `uv run python scripts/install_macos_scheduler.py`를 실행해 로컬 런타임을 갱신한다. 다음 성공 수집부터 월간 집계를 보관하며, 두 번째 성공 수집부터 증감을 비교할 수 있다. 기존 성공 회차를 소급 생성하지 않는다.
+3. 화면 변경을 main에 병합한 뒤 Pages 배포와 `release.json`을 확인한다. 집계 전에는 `수집 대기`, 집계 RPC 미배포·일시 장애에는 `집계 불러오기 실패`를 표시하며 나머지 기록은 유지한다.
+
+이 변경의 로컬 검증은 Docker 데몬이 응답하지 않아 새 임시 PostgreSQL 17.11 클러스터에서 같은 마이그레이션과 pytest·Deno DB 검사를 실행했다. 운영 DB에는 테스트 기록을 삽입하지 않았다.
+
 ## GitHub Pages
 
 `Publish Pages`는 main의 화면 변경 시 자동 실행한다. 허용된 릴리스 브랜치 `mukmuk/db-foundation`은 `gh workflow run pages.yml --ref mukmuk/db-foundation`으로 수동 배포한다. 단위 테스트·타입 검사·빌드·브라우저 검사 후 Pages artifact를 배포한다. 공개 설정 두 개만 빌드에 전달한다.
