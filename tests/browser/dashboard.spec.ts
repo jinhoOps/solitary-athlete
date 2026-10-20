@@ -643,6 +643,8 @@ test('surface motion respects reduced motion and never delays closing or focus r
  await expect(detail).toBeHidden();await expect(day).toBeFocused();
  await page.emulateMedia({reducedMotion:'reduce'});
  await day.press('Enter');await expect(detail).toHaveCSS('animation-name','none');
+ // Opening the detail deliberately focuses its heading on the next layout frame.
+ await expect(detail.locator('.detail-heading h4')).toBeFocused();
  const close=detail.getByRole('button',{name:'날짜 상세 닫기',exact:true});
  await close.focus();await expect(close).toHaveCSS('outline-style','solid');
  await expect(close).toHaveCSS('transition-duration',/^0s(?:, 0s)*$/);
