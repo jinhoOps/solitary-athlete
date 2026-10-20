@@ -864,7 +864,9 @@ for(const width of [320,360,390])test(`member chip scroll preserves selected chi
   await page.addStyleTag({content:`html{font-size:${scale}%}`});
   await page.getByRole('button',{name:'멤버 찾기',exact:true}).click();
   await page.locator('#member-search').fill('29');
-  await page.locator('.member-results button').click();
+  await page.locator('#member-search').press('Tab');
+  await expect(page.locator('.member-results button')).toBeFocused();
+  await page.keyboard.press('Enter');
   const chosen=list.locator('[data-member-id="129"]');await expect(chosen).toBeFocused();
   await expect(chosen).toHaveAttribute('aria-pressed','true');
   await expect(async()=>{
@@ -877,6 +879,30 @@ for(const width of [320,360,390])test(`member chip scroll preserves selected chi
  await list.evaluate(e=>{e.scrollLeft=e.scrollWidth;});await expect(right).toBeHidden();
  await page.setViewportSize({width:768,height:900});await expect(left).toBeHidden();await expect(right).toBeHidden();
  await expect(list.locator('[data-member-id="129"]')).toBeVisible();
+});
+
+for(const input of ['click','tap'] as const)test.describe(`member fade ${input} input`,()=>{
+ test.use({hasTouch:input==='tap'});
+ for(const [width,scale] of [[360,100],[320,200]])test(`member chip fades remain visible after ${input} at ${width}px text ${scale}%`,async({page})=>{
+  await page.setViewportSize({width,height:900});await fixture(page,'normal',true,true);
+  await page.addStyleTag({content:`html{font-size:${scale}%}`});
+  const chosen=page.getByRole('button',{name:'하루',exact:true});
+  if(input==='tap')await chosen.tap();else await chosen.click();
+  await expect(chosen).toBeFocused();await expect(chosen).toHaveAttribute('aria-pressed','true');
+  expect(await chosen.evaluate(e=>e.matches(':focus-visible'))).toBe(false);
+  const list=page.locator('.member-options'),left=page.locator('.member-scroll-fade--left'),right=page.locator('.member-scroll-fade--right');
+  await expect(left).toBeVisible();await expect(left).toHaveCSS('opacity','1');
+  const c=(await chosen.boundingBox())!,l=(await list.boundingBox())!;
+  expect(c.x).toBeGreaterThanOrEqual(l.x+14);expect(c.x+c.width).toBeLessThanOrEqual(l.x+l.width-14);
+  await list.evaluate(e=>{e.scrollLeft=(e.scrollWidth-e.clientWidth)/2;});
+  await expect(left).toBeVisible();await expect(right).toBeVisible();
+  await expect(left).toHaveCSS('opacity','1');await expect(right).toHaveCSS('opacity','1');
+  await list.evaluate(e=>{e.scrollLeft=e.scrollWidth;});await expect(right).toBeHidden();
+  // Tab starts keyboard navigation; returning to a chip must protect its focus ring.
+  await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');
+  const focused=page.locator('.member-options button:focus-visible');await expect(focused).toHaveCount(1);
+  await expect(left).toHaveCSS('opacity','0');await expect(right).toHaveCSS('opacity','0');
+ });
 });
 
 for(const width of [320,360,768,1280])test(`grass label geometry remains legible at ${width}px`,async({page})=>{
