@@ -1,5 +1,5 @@
 ---
-version: "1.4.1"
+version: "1.4.2"
 name: mukmuk-design-system
 status: implementation-ready
 updated: "2026-10-20"
@@ -249,7 +249,8 @@ components:
     scrollFadeColor: "{colors.canvas}"
     scrollEdgeTolerance: 1px
     scrollPaddingInline: 15px
-    scrollFadeFocusWithin: hidden
+    scrollFadeFocusVisible: hidden
+    scrollFadePointerFocus: preserved
   member-filter-active:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -284,7 +285,7 @@ components:
     actionsWrap: true
     actionsVariant: secondary
   inception-dialog:
-    maxWidth: 400px
+    maxWidth: 420px
     rounded: "{rounded.card}"
     backgroundColor: "{colors.surface-card}"
     borderColor: "{colors.hairline}"
@@ -312,7 +313,7 @@ components:
   photo-dialog:
     maxWidth: 960px
     padding: "{spacing.md}"
-    rounded: "{rounded.card}"
+    rounded: 12px
     backgroundColor: "{colors.surface-card}"
     textColor: "{colors.ink}"
     borderColor: "{colors.hairline}"
@@ -439,7 +440,7 @@ components:
 
 **오늘도 묵묵히, 잔디 한 칸.** 혼자 운동하는 사람들의 조용한 기록 공간이다. 봇 **묵묵(`mukmuk`)**은 곁에서 기록을 챙기는 존재로 표현한다. 밝은 종이색 바탕, 흰 카드, 작은 사각형 잔디를 사용하며 운동 기록이 화면의 중심이다.
 
-이 문서는 색상·글꼴·간격·컴포넌트·상태·반응형의 단일 기준이다. `DESIGN-cal.md`의 **YAML 토큰 → 시각 원칙 → 컴포넌트 → 반응형 → 변경 가이드** 형식을 참고했다. Cal의 검정 CTA·전용 글꼴·마케팅 카드·어두운 푸터를 가져오는 대신 묵묵의 기존 녹색·한국어 글꼴·기록 화면을 정의한다. 2026-10-15에 전체 합산 그래프·멤버 탐색·오른쪽 연도 탐색 설계가 승인됐다. 이 변경은 구현 전 시각 기준이며 현재 출시 화면과 다를 수 있다.
+이 문서는 색상·글꼴·간격·컴포넌트·상태·반응형의 단일 기준이다. `DESIGN-cal.md`의 **YAML 토큰 → 시각 원칙 → 컴포넌트 → 반응형 → 변경 가이드** 형식을 참고했다. Cal의 검정 CTA·전용 글꼴·마케팅 카드·어두운 푸터를 가져오는 대신 묵묵의 기존 녹색·한국어 글꼴·기록 화면을 정의한다. 2026-10-15에 전체 합산 그래프·멤버 탐색·오른쪽 연도 탐색 설계가 승인됐다. 구현된 컴포넌트의 명세는 현재 화면을 기준으로 유지하며, 문서와 구현의 수치 차이는 실제 사용성 결함과 구분해 정합성을 맞춘다.
 
 제품 동작, 날짜 집계, DB·함수·배포 계약, 실제 서비스 ID와 적용 이력은 [ARCHITECTURE.md](ARCHITECTURE.md)에서 관리한다. 화면을 구현할 때에는 두 문서를 함께 따른다. [대시보드 통합 시안](docs/design/dashboard-preview.svg)과 [데스크톱 시안](docs/design/dashboard-desktop.svg)·[모바일 시안](docs/design/dashboard-mobile.svg)은 가상 기록을 사용하는 정적 구성 시안이다.
 
@@ -536,6 +537,8 @@ components:
 
 기록 카드·메모 행은 `{rounded.card}`, 버튼·상세 영역은 `{rounded.control}`, 잔디는 `{rounded.cell}`을 따른다. 데이터 셀은 작은 정사각형으로 유지한다.
 
+다이얼로그는 현재 구현의 용도별 형태를 유지한다. 인증·멤버 검색·개설 안내의 모서리 반경은 16px, 사진 확대는 12px다. 개설 안내의 최대 폭은 420px, 사진 확대는 960px이며, 사진 확대는 화면 가장자리에서 최소 16px를 확보한다. 다이얼로그의 폭과 여백을 모두 동일하게 맞추는 것을 검수 조건으로 삼지 않는다. 작은 화면과 글자 확대에서는 본문을 읽고 필요한 동작에 도달할 수 있으며, 닫은 뒤 초점이 복귀하는지 확인한다.
+
 마크의 128px 원본에는 `{rounded.mark}` 반경을 사용한다. [마크 원본](assets/brand/mark.svg)의 새싹과 사각 실루엣을 유지하고 최소 24px로 표시한다. 주변 여백은 마크 너비의 1/4 이상이다. [배너](assets/brand/banner.svg)는 README용 가로 소개다. 하단 왼쪽의 초록 라벨 박스는 제거하고, 승인된 대표 포즈를 80px 캔버스(실제 캐릭터 약 65px)로 줄여 좌우 반전해 배치한다. 캐릭터 뒤의 배경·테두리·배지는 두지 않는다. 오른쪽에는 21px·400(보통 굵기) `잔디 심는 묵묵`을 두고 문구 시작을 x=168px로 맞춰 캐릭터와의 간격을 좁힌다. 그림자는 추가하지 않는다. 상단 새싹과 오른쪽 잔디의 크기·위치는 유지한다. PNG는 등록·내보내기용이고 SVG가 수정 원본이다.
 
 ## Components
@@ -570,7 +573,7 @@ components:
 
 ### Member Filter
 
-`{components.member-filter}`는 44px 이상 높이의 일반 버튼이다. 그래프 바로 위에 `전체 멤버`를 첫 번째로 고정하고 개인은 가나다순으로 배치한다. 초기 선택은 전체, 선택 상태는 `{components.member-filter-active}`와 `aria-pressed`로 알린다. 선택 변경은 즉시 칠하며 선택 칩은 hover·누름·일시 비활성 중에도 같은 녹색을 유지한다. 선택 해제 후에도 중간색이 남지 않도록 필터 칩의 hover·누름·선택·비활성은 모두 즉시 적용한다. 다른 컨트롤의 140ms 피드백은 유지한다. 데스크톱은 최대 두 줄까지 개인 버튼을 표시하고 넘치는 멤버는 `멤버 찾기`로 접근한다. 모바일은 전체 버튼과 멤버 찾기를 고정하고 가운데 개인 버튼 목록만 가로 스크롤한다. 목록 양끝에는 페이지 바탕색의 12px 페이드를 두며 끝에 도달한 방향은 숨긴다. 선택 칩은 양끝 15px 여유로 노출하고 키보드 포커스가 목록 안에 있으면 페이드를 즉시 투명하게 한다. 200% 글자 등으로 세 영역이 들어가지 않으면 첫 행 양끝에 전체 멤버와 멤버 찾기를 두고 개인 목록은 둘째 행 전체 폭을 쓴다. 컨테이너와 개별 칩 크기 변경을 관찰하여 글자 확대·폰트 로드 뒤에도 두 줄 제한과 선택 칩 노출을 다시 계산한다. 긴 이름은 버튼 안에서 줄바꿈하며 페이지 가로 넘침을 만들지 않는다.
+`{components.member-filter}`는 44px 이상 높이의 일반 버튼이다. 그래프 바로 위에 `전체 멤버`를 첫 번째로 고정하고 개인은 가나다순으로 배치한다. 초기 선택은 전체, 선택 상태는 `{components.member-filter-active}`와 `aria-pressed`로 알린다. 선택 변경은 즉시 칠하며 선택 칩은 hover·누름·일시 비활성 중에도 같은 녹색을 유지한다. 선택 해제 후에도 중간색이 남지 않도록 필터 칩의 hover·누름·선택·비활성은 모두 즉시 적용한다. 다른 컨트롤의 140ms 피드백은 유지한다. 데스크톱은 최대 두 줄까지 개인 버튼을 표시하고 넘치는 멤버는 `멤버 찾기`로 접근한다. 모바일은 전체 버튼과 멤버 찾기를 고정하고 가운데 개인 버튼 목록만 가로 스크롤한다. 목록 양끝에는 페이지 바탕색의 12px 페이드를 두며 끝에 도달한 방향은 숨긴다. 선택 칩은 양끝 15px 여유로 노출하고 키보드 포커스(`:focus-visible`)가 목록 안에 있으면 페이드를 즉시 투명하게 한다. 클릭·터치로 생긴 포커스에서는 페이드를 유지한다. 200% 글자 등으로 세 영역이 들어가지 않으면 첫 행 양끝에 전체 멤버와 멤버 찾기를 두고 개인 목록은 둘째 행 전체 폭을 쓴다. 컨테이너와 개별 칩 크기 변경을 관찰하여 글자 확대·폰트 로드 뒤에도 두 줄 제한과 선택 칩 노출을 다시 계산한다. 긴 이름은 버튼 안에서 줄바꿈하며 페이지 가로 넘침을 만들지 않는다.
 
 `멤버 찾기`는 이름 검색과 전체 멤버 목록을 제공하는 대화상자다. 제목과 입력 레이블을 제공하며 열면 검색 입력으로 초점을 이동한다. 이름이 같아도 별도 멤버로 유지하고 선택은 사용자 ID로 관리한다. 결과 없음 안내, Escape·닫기, 내부 초점 순환과 닫은 뒤 실행 버튼으로 초점 복귀를 제공한다. 개인을 선택하면 대화상자를 닫고 해당 버튼이 목록에 드러나게 한다. 선택된 개인이 두 줄 범위 밖이면 표시 목록에 포함시킨다.
 

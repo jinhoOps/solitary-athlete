@@ -144,7 +144,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .member-scroll-fade { position:absolute; top:0; bottom:0; width:12px; pointer-events:none; z-index:1; }
 .member-scroll-fade--left { left:0; background:linear-gradient(to right,#F7F8F2,transparent); }
 .member-scroll-fade--right { right:0; background:linear-gradient(to left,#F7F8F2,transparent); }
-.member-options-viewport:focus-within .member-scroll-fade { opacity:0; }
+.member-options-viewport:has(:focus-visible) .member-scroll-fade { opacity:0; }
 .member-options .filter-button { max-width:100%; }
 .member-dialog { width:min(480px,calc(100% - 32px)); max-height:80dvh; padding:24px; border:1px solid var(--border); border-radius:16px; color:inherit; }
 .member-dialog::backdrop { background:rgb(24 39 30 / .4); }
