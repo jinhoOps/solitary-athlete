@@ -16,7 +16,7 @@ h1 { font-size: 2.5rem; line-height: 1.3; letter-spacing: -.02em; }
 h2 { font-size: 1.25rem; line-height: 1.4; }
 h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
 h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
-#app { max-width: 1024px; margin: auto; padding: 24px; }
+#app { max-width: 960px; margin: auto; padding: 24px; }
 .brand-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
 .brand-wrap { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .brand-name { font-size: 1.125rem; font-weight: 700; color: #18271E; }
@@ -50,9 +50,10 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .workout-card { padding: 20px; }
 .empty-card { padding: 24px; }
 .workout-card,.empty-card { border: 1px solid var(--border); border-radius: 16px; background: white; min-width: 0; }
-.card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.metrics { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-bottom: 10px; }
-.metrics > div { display: flex; align-items: baseline; gap: 4px; }
+.card-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 10px; }
+.card-heading > .year-filter { margin-left: auto; }
+.metrics { display: flex; flex: 1 1 auto; min-width: 0; flex-wrap: wrap; align-items: baseline; gap: 14px; }
+.metrics > div { display: flex; min-width: 0; max-width: 100%; align-items: baseline; gap: 4px; }
 .metrics dd { font-size: .875rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .grass-content { display: block; }
 .grass-visual { max-width: 100%; min-width: 0; }
@@ -70,28 +71,31 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .legend>span { display: flex; gap: 4px; align-items: center; }
 .swatch { width: 12px; height: 12px; background: var(--empty); border-radius: 3px; }
 .grass-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.grass-preview { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.grass-footer .legend { min-width: 0; }
+.grass-preview { flex: 1 1 180px; min-width: 0; min-height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
 .date-detail { width: 100%; margin-top: 12px; scroll-margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: #F7F8F2; }
 .detail-heading { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
 .detail-heading h4 { flex: 1; }
 .button { min-height: 44px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: .875rem; font-weight: 600; }
 .secondary { color: var(--primary); background: white; }
 .primary { color: white; background: var(--primary); border-color: var(--primary); }
-.icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; font-size: 1.25rem; background: white; color: var(--muted); }
-.section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 24px 0 12px; }
+.icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; font-size: 1.25rem; background: transparent; border: 0; border-radius: 6px; color: var(--muted); }
+.icon-button:hover, .icon-button:focus-visible { background: rgba(46,85,59,.08); }
+.section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 16px 0 8px; }
+.section-heading h2 { font-size: 1rem; }
 .timeline { display: grid; gap: 16px; }
 .timeline-item, .aggregate-entry { padding: 0; border: 0; min-width: 0; display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 12px; align-items: start; }
 .aggregate-entry + .aggregate-entry { margin-top: 8px; }
-.aggregate-entry h4 { padding-top: 4px; font-size: .8125rem; }
-.date-button { border: 0; padding: 4px 0; min-height: 32px; background: transparent; color: var(--muted); font-weight: 600; font-size: .8125rem; text-align: left; }
+.aggregate-entry h4 { padding-top: 8px; font-size: .8125rem; }
+.date-button { border: 0; padding: 8px 0; min-height: 32px; background: transparent; color: var(--muted); font-weight: 600; font-size: .8125rem; text-align: left; }
 .date-button:hover, .date-button:focus-visible { color: var(--primary); }
-.memo { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; }
+.memo { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .875rem; line-height: 1.6; }
 .more-area { display: grid; justify-items: center; gap: 12px; margin-top: 24px; }
 .error-text, .error-state { color: #A13D36; }
 .error-state { background: #FCEEEB; }
 .error-state p, .empty-card h3 { margin-bottom: 12px; }
 .loading-placeholder { padding: 32px 24px; background: var(--empty); border-radius: 16px; color: var(--muted); }
-.footer { border-top: 1px solid var(--border); margin-top: 40px; padding-top: 20px; }
+.footer { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 14px; }
 .footer p+p { margin-top: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
@@ -107,6 +111,8 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 @media (max-width: 767px) {
   #app { padding: 20px 14px; }
   .workout-card,.empty-card { padding: 16px; }
+  .card-heading > .year-title { flex: 1 1 100px; min-width: 0; }
+  .card-heading > .metrics { order: 1; flex-basis: 100%; }
   .brand-header { flex-wrap: wrap; }
   .brand-wrap { flex-direction: column; gap: 2px; }
   .brand-divider { display: none; }
@@ -151,7 +157,6 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 
 /* Photos are requested only inside an explicitly opened record. */
 .photo-section { margin-top: 8px; }
-.date-detail > .photo-section:last-child:nth-child(2) { margin-top: 0; }
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(128px, 100%), 1fr)); gap: 8px; }
 .photo-open { min-height: 44px; overflow: hidden; padding: 0; }
 .photo-preview { display: block; width: 100%; height: auto; max-height: 240px; object-fit: contain; }
@@ -166,7 +171,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .month-heading::after { content:''; height:1px; background:var(--border); flex:1; }
 .month-records { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
 .timeline-message { min-width:0; width:fit-content; max-width:100%; padding:8px 12px; border-radius:8px; background:#EDF1E9; }
-.timeline-message .memo { display:inline; font-size:.875rem; line-height:1.6; }
+.timeline-message .memo { display:inline; }
 .timeline-message .photo-section { display:inline; margin-top:0; }
 .timeline-message .memo + .photo-section > .photo-toggle { margin-inline-start:.65em; }
 .photo-toggle { min-height:28px; padding:0; border:0; border-radius:2px; background:transparent; color:var(--primary); font-size:.75rem; font-weight:500; line-height:20px; }

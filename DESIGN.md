@@ -1,5 +1,5 @@
 ---
-version: "1.2"
+version: "1.3"
 name: mukmuk-design-system
 status: implementation-ready
 updated: "2026-10-20"
@@ -107,10 +107,10 @@ spacing:
   xxl: 48px
 
 layout:
-  content-max: 1024px
+  content-max: 960px
   gutter-desktop: 24px
   gutter-mobile: 14px
-  section-gap: 24px
+  section-gap: 16px
   card-gap: 16px
   target-min: 44px
   grass-cell: 14px
@@ -162,9 +162,11 @@ components:
     backgroundColor: "{colors.primary-disabled}"
     textColor: "{colors.muted}"
   button-icon:
-    backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
+    backgroundColor: transparent
+    hoverFocusBackground: "rgba(46,85,59,.08)"
+    borderWidth: 0px
+    textColor: "{colors.muted}"
+    rounded: 6px
     minSize: 32px
     iconSize: 20px
   control-focused:
@@ -263,6 +265,8 @@ components:
     rounded: "{rounded.card}"
     padding: 20px
     mobilePadding: 16px
+    headingLayout: date-metrics-year-flex-wrap
+    mobileHeadingLayout: date-year-then-metrics
     headingMarginBottom: 10px
     shadow: none
   stat-metric:
@@ -274,7 +278,7 @@ components:
     labelTypography: "{typography.caption}"
     labelValueGap: 4px
     gap: 14px
-    marginBottom: 10px
+    marginBottom: 0px
   grass-cell-empty:
     backgroundColor: "{colors.grass-empty}"
     rounded: "{rounded.cell}"
@@ -302,15 +306,23 @@ components:
     gap: 8px
     marginTop: 10px
     previewIdle: empty
+    previewFlexBasis: 180px
+    previewMinHeight: 1.5em
+    previewWhitespace: nowrap
+    previewOverflow: ellipsis
+    previewNewlines: space
   date-detail:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.ink}"
-    typography: "{typography.body-md}"
+    typography: "{typography.body-sm}"
     rounded: "{rounded.control}"
     padding: 12px 14px
     closeSize: 32px
+    memoFontSize: 14px
+    memoLineHeight: 1.6
     aggregateRowGap: 8px
-    aggregateMessage: "{components.timeline-message}"
+    message: "{components.timeline-message}"
+    labelPaddingTop: 8px
   timeline-item:
     backgroundColor: transparent
     textColor: "{colors.ink}"
@@ -328,7 +340,9 @@ components:
     gap: 16px
     recordGap: 8px
     headingFontSize: 13px
-    sectionMargin: 24px 0 12px
+    sectionMargin: 16px 0 8px
+    sectionFontSize: 16px
+    datePaddingTop: 8px
     dateColor: "{colors.muted}"
     dateHoverFocusColor: "{colors.primary}"
   status-notice:
@@ -352,7 +366,8 @@ components:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.muted}"
     typography: "{typography.body-sm}"
-    paddingBlock: "{spacing.xl}"
+    marginTop: 24px
+    paddingTop: 14px
     borderColor: "{colors.hairline}"
 ---
 
@@ -414,7 +429,7 @@ components:
 | `{typography.display-sm}` | 28px / 700 / 1.3 | 모바일 대표 문장 |
 | `{typography.title-lg}` | 20px / 700 / 1.4 | 운동 잔디·상세 메모 섹션 |
 | `{typography.title-md}` | 18px / 600 / 1.4 | 브랜드명·멤버명 |
-| `{typography.body-md}` | 16px / 400 / 1.6 | 운동 메모·소개 |
+| `{typography.body-md}` | 16px / 400 / 1.6 | 소개·일반 본문 |
 | `{typography.body-sm}` | 14px / 400 / 1.5 | 날짜·수집 시각·설명 |
 | `{typography.caption}` | 12px / 500 / 1.5 | 요일·월·잔디 범례 |
 | `{typography.metric}` | 19px / 700 / 1.2 | 월간 KPI 값·운동왕 이름 |
@@ -437,7 +452,7 @@ components:
 1. 28px 마크·브랜드명·`묵묵 · 운동 기록`, 마지막 수집 시각과 Discord 링크를 보여주는 헤더.
 2. 전체 멤버 화면의 월간 KPI 5종.
 3. `전체 멤버`·멤버 이름 필터와 같은 톤의 `멤버 찾기` 버튼.
-4. 하나의 연간 잔디 카드. 오늘 날짜·연도 탐색, 인라인 통계, 잔디, 범례·프리뷰 푸터 순서이며 날짜 상세는 아래에 둔다.
+4. 하나의 연간 잔디 카드. 오늘 날짜·인라인 통계·연도 탐색을 묶은 상단, 잔디, 범례·프리뷰 푸터 순서이며 날짜 상세는 아래에 둔다.
 5. 개인 화면의 「남겨 둔 운동」 제목과 월별 메모 타임라인·`더 보기`. 우측 중복 캡션은 두지 않는다.
 6. 멤버 열람 범위·Discord 사진 삭제 가능성과 수집 간격 안내.
 
@@ -501,7 +516,7 @@ components:
 
 ### Workout Card & Stats
 
-`{components.workout-card}`는 전체 또는 선택한 개인의 제목, 기간, 통계, 잔디, 범례, 날짜 상세를 담는 단일 카드다. 전체에서는 오늘 날짜·연도 탐색 아래에 `전체 멤버 20명`, `누적 143일`을 인라인으로 표시한다. 누적은 선택 연도의 사용자별 운동일수를 합한 총 일수이며 하루 두 사람이 운동하면 2일로 집계된다. 개인 통계는 올해 `이번 주 3일`, `연속 4일`, `2026년 운동 32일`, 과거 연도는 해당 연도 운동일만 표시한다. 전체에 개인 연속 일수를 합산한 지표를 만들지 않는다. 기존 이번 달 KPI는 현재 월 기준으로 유지하고 범위를 명시한다. 운동왕 KPI 외의 순위·벌점·단절 경고를 붙이지 않는다.
+`{components.workout-card}`는 전체 또는 선택한 개인의 제목, 기간, 통계, 잔디, 범례, 날짜 상세를 담는 단일 카드다. 전체에서는 오늘 날짜와 같은 상단 행에 `전체 멤버 20명`, `누적 143일`을 인라인으로 표시한다. 누적은 선택 연도의 사용자별 운동일수를 합한 총 일수이며 하루 두 사람이 운동하면 2일로 집계된다. 개인 통계는 올해 `이번 주 3일`, `연속 4일`, `2026년 운동 32일`, 과거 연도는 해당 연도 운동일만 표시한다. 전체에 개인 연속 일수를 합산한 지표를 만들지 않는다. 기존 이번 달 KPI는 현재 월 기준으로 유지하고 범위를 명시한다. 운동왕 KPI 외의 순위·벌점·단절 경고를 붙이지 않는다.
 
 ### Monthly KPI & Workout King
 
@@ -521,7 +536,7 @@ components:
 - `N > 0`: 농도는 `min(k, 50) / min(N, 50)`이다. 2명은 1명당 50%, 4명은 25%, 50명은 2%이며 50명을 넘으면 50명에서 포화된다.
 - `{colors.grass-empty}` 위에 `{colors.grass-record}`를 계산한 불투명도로 한 번 합성한다. 셀 전체의 CSS opacity를 낮추거나 사용자별 반투명 레이어를 중첩하지 않는다.
 - 전체 잔디 셀은 별도 테두리 없이 농도(불투명도)로만 참여 인원을 표현한다. 오늘·선택·키보드 초점의 바깥 윤곽선은 농도와 무관하게 유지한다.
-- 범례는 `색이 진할수록 더 많은 멤버가 운동했어요`와 0·25·50·75·100% 예시를 표시한다. 실제 데이터는 최대 50단계로 계산하며 다섯 등급으로 양자화하지 않는다. 2% 간격은 사람마다 시각적으로 구분하기 어려우므로 정확한 인원은 상세와 접근 가능한 이름으로 제공한다.
+- 범례는 0·25·50·75·100% 예시만 표시한다. 실제 데이터는 최대 50단계로 계산하며 다섯 등급으로 양자화하지 않는다. 2% 간격은 사람마다 시각적으로 구분하기 어려우므로 정확한 인원은 상세와 접근 가능한 이름으로 제공한다.
 - 사진은 전체 그래프의 농도를 가중하지 않는다. 개인 그래프의 텍스트·사진 두 단계는 유지하며 전체 날짜 상세에 `20명 중 4명 운동 · 사진 포함 2명`처럼 표시한다. 50명을 넘더라도 실제 인원과 비율은 정확히 표시한다.
 - 전체 날짜 상세는 인증한 멤버를 가나다순으로 나열하고 각자의 메모·사진 여부를 보여준다. 기록이 없는 날은 `기록 없음`이다. 전체에 개인 카드 여러 개를 나열하지 않는다.
 
@@ -529,7 +544,7 @@ components:
 
 ### Grass Grid & Legend
 
-선택한 **달력 연도의 1월 1일→12월 31일**을 표시한다. 기본 선택은 KST 현재 연도이며, 커뮤니티 개설 연도인 **2026년부터**만 유효한 연도로 제공한다. 별도의 잔디 제목·멤버명·연간 날짜 범위는 표시하지 않는다. 카드 상단(`card-heading`)에 오늘 날짜(KST)를 왼쪽, 연도 탐색을 오른쪽에 통합한다. 연도 탐색은 해당 카드 상단 우측에 화살표 스테퍼(`‹ 2026년 ›`)로 배치하여 데스크톱과 모바일에서 동일하고 깔끔한 UX를 제공한다. 현재 연도(2026)에서 다음 연도(`›`)는 비활성화(disabled)되며, 서비스 개설 연도(2026)에서 이전 연도(`‹`)를 누르면 묵묵 캐릭터 마스코트(`assets/brand/mukmuk/sprites/mukmuk-representative.png`)와 함께 채널 개설일(2026년 10월 14일) 안내와 슬로건을 담은 묵묵 다이얼로그(`inception-dialog`)를 띄운다. 연도 탐색은 날짜 상세를 열어도 제자리에 유지한다.
+선택한 **달력 연도의 1월 1일→12월 31일**을 표시한다. 기본 선택은 KST 현재 연도이며, 커뮤니티 개설 연도인 **2026년부터**만 유효한 연도로 제공한다. 별도의 잔디 제목·멤버명·연간 날짜 범위는 표시하지 않는다. 카드 상단(`card-heading`)에 오늘 날짜(KST)를 왼쪽, 인라인 통계를 가운데, 연도 탐색을 오른쪽에 통합한다. 좁은 화면이나 글자 확대에서는 자연스럽게 줄바꿈한다. 연도 탐색은 해당 카드 상단 우측에 화살표 스테퍼(`‹ 2026년 ›`)로 배치하여 데스크톱과 모바일에서 동일하고 깔끔한 UX를 제공한다. 현재 연도(2026)에서 다음 연도(`›`)는 비활성화(disabled)되며, 서비스 개설 연도(2026)에서 이전 연도(`‹`)를 누르면 묵묵 캐릭터 마스코트(`assets/brand/mukmuk/sprites/mukmuk-representative.png`)와 함께 채널 개설일(2026년 10월 14일) 안내와 슬로건을 담은 묵묵 다이얼로그(`inception-dialog`)를 띄운다. 연도 탐색은 날짜 상세를 열어도 제자리에 유지한다.
 
 평년 365일·윤년 366일을 정확하게 표시한다. 일요일→토요일이 행, 오래된 주→새로운 주가 열이다. 연도 앞뒤 정렬용 빈 공간은 실제 기록 없음 셀과 구분하고 선택·탐색에서 제외한다. 올해의 미래 날짜는 옅게 표시하며 비활성화한다. 셀 크기·간격과 텍스트/사진의 녹색 단계는 기존 YAML 토큰을 사용한다.
 
@@ -630,7 +645,7 @@ components:
 | --- | --- |
 | Compact · 360px 미만 | 좌우 14px 바깥 여백, 헤더·통계 자연 줄바꿈, 잔디 안쪽만 필요 시 가로 스크롤 |
 | Mobile · 360–767px | 좌우 14px·카드 안쪽 16px, 인라인 통계 줄바꿈, 전체 멤버 고정·개인 버튼 가로 스크롤, 상단 연도 선택기 |
-| Desktop · 768px 이상 | 바깥 24px·카드 안쪽 20px, 여백 포함 최대 1024px, 단일 그래프·상단 오른쪽 연도 탐색·아래 날짜 상세 |
+| Desktop · 768px 이상 | 바깥 24px·카드 안쪽 20px, 여백 포함 최대 960px, 단일 그래프·상단 오른쪽 연도 탐색·아래 날짜 상세 |
 
 큰 화면에서 열 수를 늘리는 대신 여백을 늘린다. 320·360·768·1280px와 200% 확대에서 페이지 전체 가로 넘침이 없어야 한다. 통계의 긴 값은 줄바꿈할 수 있으며 자르지 않는다. 잔디만 스크롤하더라도 범례·상세 패널은 화면 폭에 맞게 유지한다.
 
@@ -692,10 +707,10 @@ components:
 
 ### 카드 내부 밀도
 
-- 카드 상단은 왼쪽 오늘 날짜, 오른쪽 `‹ 2026년 ›` 한 줄을 기본으로 한다. 별도 제목·멤버명·연간 범위는 되살리지 않는다.
+- 카드 상단은 왼쪽 오늘 날짜, 가운데 인라인 통계, 오른쪽 `‹ 2026년 ›` 한 줄을 기본으로 한다. 별도 제목·멤버명·연간 범위는 되살리지 않는다.
 - 연도 선택기는 공통 버튼 크기와 분리하고 배경·윤곽·그림자 없이 연도 텍스트 중심으로 표시한다. 화살표 각 28px, 연도 글자 13px/600, 좌우 패딩 4px. 데스크톱의 마우스 입력에서는 평소 화살표를 숨기고 영역 hover 또는 focus-within에서 표시한다. 숨길 때도 너비와 키보드 탐색 순서는 유지하여 위치가 흔들리지 않는다. 모바일·터치 장치에는 화살표를 항상 표시하며 44px 터치 영역을 유지한다. 비활성 화살표는 표시될 때만 옅게 보인다.
-- 카드 안쪽 여백은 데스크톱 20px, 모바일 16px. 상단과 통계 사이 간격은 10px이다.
-- 카드 통계는 flex-wrap 인라인 요약으로 표시한다. 항목 간격 14px, 레이블 12px muted·값 14px bold ink, 레이블-값 간격 4px, 그래프까지 간격 10px이다. 빈 공간을 줄이기 위해 긴 숫자를 자르거나 통계를 중복하지 않는다.
+- 카드 안쪽 여백은 데스크톱 20px, 모바일 16px. 상단 안에서 날짜·통계·연도 사이 가로 간격은 14px, 줄바꿈 간격은 8px이며 상단과 그래프 사이 간격은 10px이다. 모바일에서는 날짜·연도를 먼저 배치하고 통계를 아래 한 행에 모으며, 날짜 영역의 기준 폭은 100px로 둔다. 확대 시에는 각 영역이 필요한 만큼 자연스럽게 줄바꿈한다.
+- 카드 통계는 flex-wrap 인라인 요약으로 표시한다. 상단에 포함하며 별도 하단 마진 없이 항목 간격 14px, 레이블 12px muted·값 14px bold ink, 레이블-값 간격 4px, 그래프까지 간격 10px이다. 빈 공간을 줄이기 위해 긴 숫자를 자르거나 통계를 중복하지 않는다.
 - 월 라벨·요일·잔디 셀 크기와 오늘 표시, 키보드 이동 및 상세 초점 복귀는 유지한다. 320px·200% 확대에서는 필요한 경우 상단만 자연 줄바꿈한다.
 
 ### 월별 대화형 운동 기록
@@ -733,6 +748,8 @@ components:
 
 - 헤더 하단 패딩 12px·마진 14px, 마크 28px, 부제는 `묵묵 · 운동 기록`이다. KPI는 간격 10px·하단 14px, 카드 10px 12px·모서리 10px, 제목과 값 간격 2px, 값 19px, 공동 운동왕 간격 4px이다.
 - 멤버 필터는 간격 6px·하단 14px이다. 멤버 찾기는 칩과 동일한 글자 크기·배경·테두리·높이로 맞춘다.
-- 잔디 푸터는 범례와 프리뷰를 좌우로 배치하고 폭이 부족하면 줄바꿈한다. 간격 8px·상단 10px이며 idle 프리뷰는 빈 문자열이다. hover와 focus 동안만 날짜·요약을 표시하고, 다른 칸의 hover가 끝나면 현재 focus 날짜를 복구한다.
-- 전체 날짜 상세는 이름 열과 인라인 말풍선·사진 버튼의 두 열이다. 이름 뒤 `사진 포함`은 생략한다. 사진만 있는 날은 전체·개인 모두 `사진 인증` 본문을 반복하지 않으며 메모가 있으면 줄바꿈을 보존한다. 상세 패딩은 12px 14px이다.
-- 「남겨 둔 운동」 제목 여백은 24px 0 12px이며 우측 캡션을 생략한다. 날짜는 muted, hover/focus에는 primary를 사용하고 메모 면은 `#EDF1E9`를 유지한다.
+- 잔디 푸터는 범례와 프리뷰를 좌우로 배치하고 폭이 부족하면 줄바꿈한다. 간격 8px·상단 10px이며 idle 프리뷰는 빈 문자열이다. hover와 focus 동안만 날짜·요약을 표시하고, 다른 칸의 hover가 끝나면 현재 focus 날짜를 복구한다. 프리뷰의 줄바꿈은 공백으로 치환하고 한 줄 말줄임으로 표시한다. flex-basis 180px·min-width 0·최소 높이 1.5em을 빈 상태에도 유지해 프리뷰 내용이 바뀌어도 카드 높이가 변하지 않게 한다. 전체 범례의 참여율 0%·25%·50%·75%·100%는 유지하며 농도 설명 문장은 생략한다.
+- 전체 날짜 상세는 이름 열과 인라인 말풍선·사진 버튼의 두 열이다. 이름 뒤 `사진 포함`은 생략한다. 사진만 있는 날은 전체·개인 모두 `사진 인증` 본문을 반복하지 않으며 메모가 있으면 줄바꿈을 보존한다. 상세 패딩은 12px 14px이다. 개인 상세도 같은 말풍선 안에 메모와 사진 버튼을 인라인으로 배치한다. 모든 메모는 14px/1.6이며 상세에서는 원문의 여러 줄을 보존한다. 날짜·이름 열의 위쪽 패딩은 8px이다. 닫기는 투명 배경·무테두리·모서리 6px로 두고 hover/focus에서만 은은한 녹색 배경을 표시한다.
+- 「남겨 둔 운동」 제목은 16px, 여백은 16px 0 8px이며 우측 캡션을 생략한다. 날짜는 muted, hover/focus에는 primary를 사용하고 메모 면은 `#EDF1E9`를 유지한다.
+
+- 공통 푸터는 상단 마진 24px·상단 패딩 14px이다. 페이지 최대 폭은 바깥 패딩 포함 960px이다. 53주 잔디 자체는 14px 셀 53개와 4px 간격 52개로 950px이며 요일 열은 별도다. 셀 크기를 줄이지 않고 잔디 내부 가로 스크롤로 탐색하며, 카드·KPI·상세의 바깥 끝선은 정렬한다.

@@ -584,6 +584,66 @@ test('grass preview clears after hover and focus leave, and restores a focused d
  await expect(preview).toBeEmpty();
 });
 
+for(const width of [320,360,768,1280]) test(`grass preview keeps the card height stable at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ const card=page.locator('.workout-card'),preview=page.locator('.grass-preview');
+ const day=page.locator('[data-date="2026-10-13"]');
+ for(const scale of [100,200]){
+  await page.addStyleTag({content:`html { font-size: ${scale}%; }`});
+  await page.getByRole('button',{name:'하루',exact:true}).focus();await page.mouse.move(0,0);
+  await expect(preview).toBeEmpty();
+  const before=(await card.boundingBox())!.height;
+  await day.hover();
+  await expect(preview).toHaveText('2026-10-13 · 사진 포함 인증 · 가볍게 30분 걷기 스트레칭');
+  expect(await preview.textContent()).toBe('2026-10-13 · 사진 포함 인증 · 가볍게 30분 걷기 스트레칭');
+  expect((await card.boundingBox())!.height).toBe(before);
+  await page.mouse.move(0,0);await expect(preview).toBeEmpty();
+  await day.focus();
+  await expect(preview).toContainText('2026-10-13');
+  expect((await card.boundingBox())!.height).toBe(before);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+});
+
+test('desktop grass heading fits date, statistics and year on one row',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});await fixture(page);
+ for(const member of ['전체 멤버','하루']){
+  await page.getByRole('button',{name:member,exact:true}).click();
+  const date=(await page.locator('.year-title').boundingBox())!;
+  const metrics=(await page.locator('.metrics').boundingBox())!;
+  const year=(await page.locator('.year-stepper').boundingBox())!;
+  expect(metrics.y).toBeLessThan(date.y+date.height);
+  expect(year.y).toBeLessThan(metrics.y+metrics.height);
+  expect(metrics.x).toBeGreaterThanOrEqual(date.x+date.width);
+  expect(year.x).toBeGreaterThanOrEqual(metrics.x+metrics.width);
+ }
+});
+
+for(const width of [320,360]) test(`mobile grass heading uses two rows at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ const date=(await page.locator('.year-title').boundingBox())!;
+ const metrics=(await page.locator('.metrics').boundingBox())!;
+ const year=(await page.locator('.year-stepper').boundingBox())!;
+ expect(year.y).toBeLessThan(date.y+date.height);
+ expect(metrics.y).toBeGreaterThanOrEqual(year.y+year.height);
+});
+
+test('personal date detail keeps memo and photos inline and preserves full multiline text',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});await fixture(page);
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ const day=page.locator('[data-date="2026-10-13"]');
+ await day.focus();await day.press('Enter');
+ const detail=page.locator('.date-detail');
+ await expect(detail.locator('.memo')).toHaveText('가볍게 30분 걷기\n스트레칭');
+ const memo=(await detail.locator('.memo').boundingBox())!;
+ const photo=(await detail.getByRole('button',{name:'사진 보기',exact:true}).boundingBox())!;
+ expect(photo.y).toBeLessThan(memo.y+memo.height);
+ await detail.getByRole('button',{name:'날짜 상세 닫기',exact:true}).click();
+ await expect(day).toBeFocused();
+});
+
 test('aggregate and personal photo-only details omit redundant body labels and preserve mixed memos',async({page})=>{
  await fixture(page);
  await page.locator(`[data-date="${today}"]`).click();
