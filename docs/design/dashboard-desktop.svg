@@ -31,7 +31,7 @@
     <rect x="416.8" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0" />
     <text x="428.8" y="147" font-size="12" fill="#57665B" font-weight="400">함께 심은 잔디</text>
     <text x="428.8" y="170" font-size="19" fill="#18271E" font-weight="700">35.8%</text>
-<text x="428.8" y="193" font-size="12" fill="#57665B" font-weight="500">직전 수집 대비 +0.3%p</text>
+<text x="428.8" y="193" font-size="12" fill="#57665B" font-weight="500">전일 대비 +0.3%p</text>
     <rect x="601.2" y="126" width="174.4" height="86" rx="10" fill="#FFFFFF" stroke="#D3DBD0" />
     <text x="613.2" y="147" font-size="12" fill="#57665B" font-weight="400">가장 푸른 요일</text>
     <text x="613.2" y="170" font-size="19" fill="#18271E" font-weight="700">수요일</text>

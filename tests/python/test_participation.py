@@ -21,7 +21,7 @@ def snapshot(store, month='2026-10-01'):
     with store.conn.transaction():
         return store.conn.execute('SELECT * FROM solitary_athlete.mukmuk_monthly_grass_snapshots WHERE month_start=%s', (month,)).fetchone()
 
-def test_success_captures_monthly_unique_days_members_and_previous_sample(store):
+def test_success_updates_monthly_unique_days_without_inventing_a_daily_baseline(store):
     save(store, '100', '1', '2026-10-13')
     save(store, '101', '1', '2026-10-14')
     save(store, '102', '2', '2026-10-14')
@@ -35,8 +35,7 @@ def test_success_captures_monthly_unique_days_members_and_previous_sample(store)
     store.success(CHANNEL, '105', at('2026-10-14T09:05:00+00:00'))
     second = snapshot(store)
     assert (second['member_count'], second['workout_days']) == (3, 4)
-    assert (second['previous_member_count'], second['previous_workout_days'], second['previous_elapsed_days']) == (2, 3, 14)
-    assert second['previous_collected_at'] == first['collected_at']
+    assert second['previous_collected_at'] is None
     store.save('105', None)
     store.success(CHANNEL, '105', at('2026-10-14T09:10:00+00:00'))
     assert (snapshot(store)['member_count'], snapshot(store)['workout_days']) == (2, 3)
@@ -48,8 +47,8 @@ def test_photo_duplicates_and_retries_do_not_invent_participation_changes(store)
     save(store, '101', '1', '2026-10-14', True)
     store.success(CHANNEL, '101', at('2026-10-14T09:05:00+00:00'))
     before = snapshot(store)
-    assert (before['workout_days'], before['previous_workout_days']) == (1, 1)
-    assert (before['member_count'], before['previous_member_count']) == (1, 1)
+    assert (before['workout_days'], before['member_count']) == (1, 1)
+    assert before['previous_collected_at'] is None
     for timestamp in ['2026-10-14T09:05:00+00:00', '2026-10-14T09:01:00+00:00']:
         store.success(CHANNEL, '99', at(timestamp))
         assert snapshot(store) == before
@@ -106,3 +105,29 @@ def test_monthly_snapshot_aggregates_more_than_a_page_without_annual_color_satur
     store.success(CHANNEL, None, at('2026-10-14T09:00:00+00:00'))
     row = snapshot(store)
     assert (row['member_count'], row['workout_days'], row['elapsed_days']) == (501, 1002, 14)
+
+
+def test_previous_day_final_sample_stays_fixed_through_today_and_skipped_days(store):
+    save(store, '100', '1', '2026-10-13')
+    store.success(CHANNEL, '100', at('2026-10-13T14:50:00+00:00'))
+    save(store, '101', '2', '2026-10-13')
+    store.success(CHANNEL, '101', at('2026-10-13T14:59:59+00:00'))
+    yesterday = snapshot(store)
+    with pytest.raises(psycopg.errors.CheckViolation):
+        store.success('wrong-channel', None, at('2026-10-13T15:00:00+00:00'))
+    assert snapshot(store) == yesterday
+    store.success(CHANNEL, '101', at('2026-10-13T15:00:00+00:00'))  # KST midnight
+    for minute in ['00', '05', '10']:
+        store.success(CHANNEL, '101', at(f'2026-10-14T09:{minute}:00+00:00'))
+        row = snapshot(store)
+        assert row['previous_collected_at'] == yesterday['collected_at']
+        assert (row['previous_member_count'], row['previous_workout_days'], row['previous_elapsed_days']) == (2, 2, 13)
+    today = snapshot(store)
+    store.success(CHANNEL, '99', at('2026-10-13T14:59:59+00:00'))
+    assert snapshot(store) == today
+    store.success(CHANNEL, '101', at('2026-10-14T15:00:00+00:00'))
+    assert snapshot(store)['previous_collected_at'] == today['collected_at']
+    store.success(CHANNEL, '101', at('2026-10-16T15:00:00+00:00'))  # Oct 16 had no collection
+    assert snapshot(store)['previous_collected_at'] is None
+    store.success(CHANNEL, '101', at('2026-10-17T09:00:00+00:00'))
+    assert snapshot(store)['previous_collected_at'] is None

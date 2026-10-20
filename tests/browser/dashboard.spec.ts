@@ -37,7 +37,7 @@ async function fixture(
       const month=route.request().postDataJSON().p_month.slice(0,7);
       const count=mode==='empty'?0:1,days=mode==='empty'?0:14;
       await route.fulfill({json:[{month_start:`${month}-01`,collected_at:`${month}-14T08:17:00Z`,member_count:count,workout_days:days,elapsed_days:14,
-       previous_collected_at:`${month}-14T08:12:00Z`,previous_member_count:count,previous_workout_days:mode==='empty'?0:13,previous_elapsed_days:14}]});return;
+       previous_collected_at:`${month}-13T14:55:00Z`,previous_member_count:count,previous_workout_days:mode==='empty'?0:12,previous_elapsed_days:13}]});return;
     }
     if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       if (mode === 'error') {
@@ -1095,7 +1095,7 @@ test('monthly grass participation replaces the sum and stays monthly while annua
  await fixture(page,'normal',true,true,'2027-01-05T09:00:00Z');
  const kpi=page.locator('.kpi-card').filter({has:page.getByText('함께 심은 잔디',{exact:true})});
  await expect(kpi.locator('.kpi-value')).toHaveText('100%');
- await expect(kpi).toContainText('직전 수집 대비 +7.1%p');
+ await expect(kpi).toContainText('전일 대비 +7.7%p');
  await expect(page.getByText('총 운동 일수',{exact:true})).toHaveCount(0);
  await page.getByRole('button',{name:'이전 연도'}).click();
  await expect(page.locator('.year-label')).toHaveText('2026년');
