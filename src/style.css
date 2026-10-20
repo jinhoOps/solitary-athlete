@@ -44,7 +44,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .member-filter { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 6px; margin-bottom: 14px; }
 .filter-button, .member-filter .member-find { min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--muted); font-size: .8125rem; font-weight: 500; overflow-wrap: anywhere; text-align: left; }
 .filter-button[aria-pressed="true"] { background: var(--primary); color: white; border-color: var(--primary); font-weight: 600; }
-.filter-button:active, .primary:active { background: var(--active); color: white; }
+.primary:active { background: var(--active); color: white; }
 
 .year-filter { display: flex; flex-wrap: wrap; gap: 6px; }
 .year-filter .filter-button, .year-filter .button { min-height: 44px; }
@@ -220,3 +220,9 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  :root { --motion-feedback:0s; --motion-enter:0s; }
  .date-detail:not([hidden]), dialog[open], .modal-box { animation:none; }
 }
+
+/* Selection is a state change, not a hover transition. */
+.filter-button[aria-pressed="true"] {
+ background:var(--primary); color:white; border-color:var(--primary); transition-duration:0s;
+}
+.filter-button:disabled { transition-duration:0s; }

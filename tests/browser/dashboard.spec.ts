@@ -779,3 +779,69 @@ test('loaded photos leave only pagination controls and keep loading, empty, and 
  await expect(photos).toContainText('표시할 사진이 없어요.');
  await expect(photos.getByRole('button',{name:'사진 새로고침',exact:true})).toBeVisible();
 });
+
+for (const recovery of ['retry','year','member'] as const) test(`year reload failure keeps controls usable via ${recovery}`, async ({page}) => {
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await page.route('**/rest/v1/rpc/get_workout_logs_page', route => route.fulfill({status:503,json:{message:'unavailable'}}));
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('.error-state')).toBeVisible();
+ const member=page.locator('.member-filter [data-member-id="2"]');
+ await expect(member).toHaveAttribute('aria-pressed','true');await expect(member).toBeEnabled();
+ await expect(page.locator('.year-label')).toHaveText('2026년');
+ await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeEnabled();
+ await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+ await expect(page.locator('.workout-card')).toHaveCount(0);await expect(page.locator('.timeline')).toBeHidden();
+ if(recovery==='member') {
+  // Changing selection while the API still fails must never render old logs.
+  await page.getByRole('button',{name:'전체 멤버',exact:true}).click();
+  await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  await expect(page.locator('.error-state')).toBeVisible();await expect(page.locator('.workout-card')).toHaveCount(0);
+ }
+ await page.unroute('**/rest/v1/rpc/get_workout_logs_page');
+ if(recovery==='year')await page.getByRole('button',{name:'다음 연도',exact:true}).click();
+ else await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();
+ await expect(page.locator('.workout-card')).toHaveCount(1);await expect(page.locator('.error-state')).toHaveCount(0);
+ await expect(page.locator('.year-label')).toHaveText(recovery==='year'?'2027년':'2026년');
+ await expect(page.locator('.member-filter [aria-pressed="true"]')).toHaveText(recovery==='member'?'전체 멤버':'하루');
+ if(recovery==='retry')await expect(page.locator('.timeline-item').first()).toBeVisible();
+ if(recovery==='year')await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeDisabled();
+ else await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeEnabled();
+});
+
+for(const motion of ['no-preference','reduce'] as const)test(`control feedback locks year reload and preserves selection with ${motion}`,async({page})=>{
+ await page.emulateMedia({reducedMotion:motion});
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ const member=page.getByRole('button',{name:'하루',exact:true});await member.click();
+ // Read immediately after selection, without a CSS-settling sleep or polling.
+ expect(await member.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(50, 108, 67)');
+ await member.hover();await page.mouse.down();
+ expect(await member.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(50, 108, 67)');
+ await page.mouse.up();
+ let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/rest/v1/rpc/get_workout_logs_page',async route=>{await gate;await route.fallback();});
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('#app')).toHaveAttribute('aria-busy','true');await expect(member).toBeDisabled();
+ expect(await member.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(50, 108, 67)');
+ const detachedYearDisabled=await page.evaluate(()=>{
+  // The heading is moved out of view during loading; detached controls are also locked.
+  return document.querySelectorAll('.year-filter button:not(:disabled)').length;
+ });expect(detachedYearDisabled).toBe(0);
+ release();await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+ await expect(member).toBeEnabled();await expect(member).toHaveAttribute('aria-pressed','true');
+ await expect(page.getByRole('button',{name:'다음 연도',exact:true})).toBeEnabled();
+});
+
+test('year reload secret expiry removes prior member data before reauthentication',async({page})=>{
+ await fixture(page,'normal',true,false,'2027-01-05T09:00:00Z');
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await page.route('**/rest/v1/rpc/get_workout_logs_page',route=>route.fulfill({status:400,json:{message:'invalid_or_expired_secret'}}));
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('.modal-error')).toBeVisible();
+ await expect(page.locator('.member-filter')).toHaveCount(0);await expect(page.locator('.kpi-card')).toHaveCount(0);
+ await expect(page.locator('.photo-section')).toHaveCount(0);await expect(page.locator('.workout-card')).toHaveCount(0);
+ await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+ await page.unroute('**/rest/v1/rpc/get_workout_logs_page');
+ await page.locator('.modal-input').fill('test-code');await page.getByRole('button',{name:'확인',exact:true}).click();
+ await expect(page.locator('.workout-card')).toHaveCount(1);await expect(page.locator('.member-all')).toHaveAttribute('aria-pressed','true');
+});
