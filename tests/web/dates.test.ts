@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayAt, stats, calendar, calendarYear } from '../../src/dates';
+import { dayAt, stats, calendar, calendarYear, shortDate } from '../../src/dates';
 
 describe('KST calendar and exercise days', () => {
   it('changes day at KST midnight, independently of the browser zone', () => {
@@ -42,4 +42,14 @@ it('resets the week on Sunday KST and retains Saturday before midnight',()=>{
  const dates=new Set(['2026-10-10','2026-10-11']);
  expect(stats(dates,'2026-10-10').week).toBe(1);
  expect(stats(dates,'2026-10-11').week).toBe(1);
+});
+
+
+it('formats record dates with Korean weekdays across week and year boundaries', () => {
+  expect(shortDate('2026-10-14')).toBe('10월 14일 (수)');
+  expect(shortDate('2026-10-17')).toBe('10월 17일 (토)');
+  expect(shortDate('2026-10-18')).toBe('10월 18일 (일)');
+  expect(shortDate('2026-12-31')).toBe('12월 31일 (목)');
+  expect(shortDate('2027-01-01')).toBe('1월 1일 (금)');
+  expect(shortDate('2024-02-29')).toBe('2월 29일 (목)');
 });
