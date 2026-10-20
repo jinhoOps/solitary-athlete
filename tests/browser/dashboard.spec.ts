@@ -548,3 +548,18 @@ test('failed year reload disposes pending timeline photos immediately',async({pa
  await expect(page.locator('.error-state')).toBeVisible();finish();
  await expect(page.locator('.timeline .photo-section')).toHaveCount(0);
 });
+
+
+test('year arrows reveal on desktop hover and keyboard focus, stay visible on mobile',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});await fixture(page);
+ const stepper=page.locator('.year-stepper'),previous=page.getByRole('button',{name:'이전 연도',exact:true});
+ await page.mouse.move(0,0);await expect(previous).toHaveCSS('opacity','0');
+ await stepper.hover();await expect(previous).toHaveCSS('opacity','1');
+ await page.mouse.move(0,0);await previous.focus();await expect(previous).toHaveCSS('opacity','1');
+ await previous.press('Enter');await expect(page.locator('.inception-dialog')).toBeVisible();
+ await page.locator('.inception-dialog').getByRole('button',{name:'확인',exact:true}).click();
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'전체 멤버',exact:true}).focus();
+ await expect(previous).toHaveCSS('opacity','1');
+ await expect(stepper).toHaveCSS('border-top-width','0px');
+});

@@ -189,16 +189,24 @@ components:
   year-stepper:
     display: inline-flex
     alignItems: center
-    gap: 2px
-    backgroundColor: "{colors.surface-card}"
-    borderColor: "{colors.border}"
-    rounded: "{rounded.badge}"
-    padding: 1px
+    gap: 0px
+    backgroundColor: transparent
+    borderWidth: 0px
+    padding: 0px
     shadow: none
     buttonSize: 28px
-    visualHeight: 32px
     mobileTargetSize: 44px
     fontSize: 13px
+    desktopArrows: hover-or-focus-within
+    touchArrows: always-visible
+  photo-toggle:
+    backgroundColor: transparent
+    borderWidth: 0px
+    fontSize: 12px
+    fontWeight: 500
+    padding: 0px
+    minHeight: 28px
+    mobileMinHeight: 32px
   inception-dialog:
     maxWidth: 400px
     rounded: "{rounded.card}"
@@ -654,7 +662,7 @@ components:
 ### 카드 내부 밀도
 
 - 카드 상단은 왼쪽 오늘 날짜, 오른쪽 `‹ 2026년 ›` 한 줄을 기본으로 한다. 별도 제목·멤버명·연간 범위는 되살리지 않는다.
-- 연도 선택기는 공통 `.button`·`.year-filter .button`의 패딩/최소 높이와 분리한다. 데스크톱 전체 높이 32px, 화살표 각 28px, 연도 글자 13px/600, 좌우 패딩 4px, 외곽 패딩 1px, 모서리 6px, 그림자 없음으로 한다. 모바일은 터치 영역을 44px로 확보하되 내부 테두리·컨트롤의 시각 높이는 32px를 유지한다. 터치 영역끼리 겹치지 않는다.
+- 연도 선택기는 공통 버튼 크기와 분리하고 배경·윤곽·그림자 없이 연도 텍스트 중심으로 표시한다. 화살표 각 28px, 연도 글자 13px/600, 좌우 패딩 4px. 데스크톱의 마우스 입력에서는 평소 화살표를 숨기고 영역 hover 또는 focus-within에서 표시한다. 숨길 때도 너비와 키보드 탐색 순서는 유지하여 위치가 흔들리지 않는다. 모바일·터치 장치에는 화살표를 항상 표시하며 44px 터치 영역을 유지한다. 비활성 화살표는 표시될 때만 옅게 보인다.
 - 카드 안쪽 여백은 데스크톱 20px, 모바일 16px. 상단과 통계 사이 간격은 24px에서 12px로 줄인다.
 - 카드 통계는 세 열을 유지하고 열 간격 12px, 레이블 12px, 값 20px, 레이블-값 간격 2px, 그래프까지 간격 16px로 맞춘다. 빈 공간을 줄이기 위해 긴 숫자를 자르거나 통계를 중복하지 않는다.
 - 월 라벨·요일·잔디 셀 크기와 오늘 표시, 키보드 이동 및 상세 초점 복귀는 유지한다. 320px·200% 확대에서는 필요한 경우 상단만 자연 줄바꿈한다.
@@ -671,6 +679,8 @@ components:
 - 월별 영역에는 머리글을 연결하고 내부 기록은 목록으로 제공한다. 날짜와 사진 버튼은 키보드로 조작할 수 있으며 메모 전체를 클릭 대상으로 만들지 않는다. 날짜 이동 후 상세 닫기는 해당 날짜로 초점을 복구한다.
 
 ### 남겨 둔 운동에서 사진 바로 보기
+
+- `사진 보기`·`사진 접기`는 배경·테두리 없는 12px 텍스트 버튼이다. 패딩 없이 데스크톱 최소 높이 28px, 모바일 32px로 두며 hover에서 밑줄, 키보드 초점에서 윤곽을 표시한다. 사진 확대·재시도 버튼까지 함께 축소하지 않는다.
 
 - 사진 인증이 있는 타임라인 항목에 `사진 보기` 버튼을 직접 제공한다. 날짜 버튼은 기존처럼 잔디의 날짜 상세로 이동하고, 사진 버튼은 페이지를 이동시키지 않고 해당 기록 아래에서 사진을 요청·펼친다.
 - 첫 클릭으로 조회와 썸네일 표시까지 처리한다. 중간 상세 화면이나 두 번째 `사진 보기` 버튼을 요구하지 않는다. 원본 확대는 나타난 썸네일을 클릭했을 때만 실행한다.

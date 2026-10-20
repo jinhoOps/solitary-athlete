@@ -135,7 +135,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .member-results { display:grid; gap:8px; margin:16px 0; max-height:45dvh; overflow:auto; }
 
 .year-stepper { display:inline-flex; align-items:center; gap:2px; background:white; border:1px solid var(--border); border-radius:10px; padding:3px; box-shadow:0 1px 2px rgba(24,39,30,.04); }
-.stepper-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; min-height:34px; padding:0; border:none; background:transparent; color:var(--ink); border-radius:7px; cursor:pointer; transition:background .15s ease, color .15s ease, opacity .15s ease; }
+.stepper-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; min-height:34px; padding:0; border:none; background:transparent; color:var(--ink); border-radius:7px; cursor:pointer; transition:background .15s ease, color .15s ease; }
 .stepper-btn:hover:not(:disabled) { background:rgba(46,85,59,.08); color:var(--primary); }
 .stepper-btn:active:not(:disabled) { background:rgba(46,85,59,.16); }
 .stepper-btn:disabled { opacity:.25; cursor:not-allowed; }
@@ -171,8 +171,9 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .card-heading { gap:8px; margin-bottom:12px; }
 .metrics { gap:12px; margin-bottom:16px; }
 .metrics dd { margin-top:2px; font-size:1.25rem; }
-.year-stepper { padding:1px; border-radius:6px; box-shadow:none; gap:0; }
+.year-stepper { padding:0; border:0; background:transparent; border-radius:0; box-shadow:none; gap:0; }
 .year-filter .stepper-btn { width:28px; height:28px; min-height:28px; padding:0; border:0; border-radius:4px; }
+.year-filter .stepper-btn:disabled { background:transparent; }
 .year-label { min-width:54px; padding:0 4px; font-size:.8125rem; font-weight:600; }
 .timeline { gap:24px; }
 .month-heading { display:flex; align-items:center; gap:12px; font-size:.8125rem; color:var(--muted); margin-bottom:12px; }
@@ -184,15 +185,23 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .timeline-message .memo { font-size:.875rem; line-height:1.6; }
 .timeline-message .photo-section { margin-top:8px; }
 .timeline-message .photo-section:first-child { margin-top:0; }
-.photo-toggle { font-size:.8125rem; padding:4px 10px; background:white; color:var(--primary); }
+.photo-toggle { min-height:28px; padding:0; border:0; border-radius:2px; background:transparent; color:var(--primary); font-size:.75rem; font-weight:500; line-height:20px; }
+.photo-toggle:hover { text-decoration:underline; text-underline-offset:3px; }
 .photo-grid:not(:empty) { margin-top:8px; }
 .timeline-message:has(.photo-preview) { width:100%; }
 @media(max-width:767px) {
  .workout-card { padding:16px; }
- .year-stepper { position:relative; border:0; background:transparent; isolation:isolate; }
- .year-stepper::before { content:''; position:absolute; inset:6px 0; border:1px solid var(--border); border-radius:6px; background:white; z-index:-1; }
  .year-filter .stepper-btn { width:44px; height:44px; min-height:44px; }
  .year-filter .stepper-btn:hover:not(:disabled) { background:transparent; }
  .timeline-item { grid-template-columns:64px minmax(0,1fr); gap:8px; }
  .timeline-item .date-button { min-height:44px; }
+ .photo-toggle { min-height:32px; }
+}
+
+@media(min-width:768px) and (hover:hover) and (pointer:fine) {
+ .year-stepper .stepper-btn { opacity:0; }
+ .year-stepper:hover .stepper-btn:not(:disabled),
+ .year-stepper:focus-within .stepper-btn:not(:disabled) { opacity:1; }
+ .year-stepper:hover .stepper-btn:disabled,
+ .year-stepper:focus-within .stepper-btn:disabled { opacity:.25; }
 }
