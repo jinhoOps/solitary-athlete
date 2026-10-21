@@ -1,6 +1,9 @@
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
-import {loadDashboard} from '../../src/api';
+import {loadDashboard as load} from '../../src/api';
 import {grassParticipationRate,grassParticipationView,parseGrassParticipation} from '../../src/grass-participation';
+
+const loadDashboard:typeof load=(config,code,year,fetcher=fetch)=>load(config,code,year,async(input,init)=>
+ String(input).endsWith('get_dashboard_identity')?Response.json([{enabled:false,revision:0,calculation_version:1}]):fetcher(input,init));
 
 const config={url:'https://example.supabase.co',key:'sb_publishable_fixture'};
 const sample={month_start:'2026-10-01',collected_at:'2026-10-14T09:00:00Z',member_count:2,workout_days:3,elapsed_days:14,previous_collected_at:'2026-10-13T14:55:00Z',previous_member_count:1,previous_workout_days:2,previous_elapsed_days:13};

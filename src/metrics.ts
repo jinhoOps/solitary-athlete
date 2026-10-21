@@ -1,11 +1,12 @@
+import {subjectOf} from './identity';
 import {dayAt} from './dates';
 import {titleProgress,representativeTitle,type BranchProgress} from './titles';
-import type { MonthlyKPIs, WorkoutLog } from './types';
+import type { MonthlyKPIs, WorkoutEntry } from './types';
 
 const WEEKDAY_NAMES = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
 /** Current KST month records, deduplicated per member into date sets. */
-function monthRecords(logs: WorkoutLog[], now: Date) {
+function monthRecords(logs: WorkoutEntry[], now: Date) {
   const kstFormatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Seoul',
     year: 'numeric',
@@ -19,10 +20,10 @@ function monthRecords(logs: WorkoutLog[], now: Date) {
   const photoDays = new Map<string, Set<string>>();
   const memoDays = new Map<string, Set<string>>();
   for (const log of monthlyLogs) {
-    if (!memberDays.has(log.user_id)) memberDays.set(log.user_id, new Set());
-    memberDays.get(log.user_id)!.add(log.log_date);
-    if (log.has_photo) photoDays.set(log.user_id, (photoDays.get(log.user_id) ?? new Set()).add(log.log_date));
-    if (log.memo.trim()) memoDays.set(log.user_id, (memoDays.get(log.user_id) ?? new Set()).add(log.log_date));
+    if (!memberDays.has(subjectOf(log).id)) memberDays.set(subjectOf(log).id, new Set());
+    memberDays.get(subjectOf(log).id)!.add(log.log_date);
+    if (log.has_photo) photoDays.set(subjectOf(log).id, (photoDays.get(subjectOf(log).id) ?? new Set()).add(log.log_date));
+    if (log.memo.trim()) memoDays.set(subjectOf(log).id, (memoDays.get(subjectOf(log).id) ?? new Set()).add(log.log_date));
   }
   const elapsedDays = Number(dayAt(now).slice(8));
   const progressFor = (id: string) => titleProgress({dates:memberDays.get(id) ?? new Set(),photoDates:photoDays.get(id) ?? new Set(),memoDates:memoDays.get(id) ?? new Set(),elapsedDays});
@@ -30,12 +31,12 @@ function monthRecords(logs: WorkoutLog[], now: Date) {
 }
 
 /** The member's title tree for the current KST month, or null without records this month. */
-export function memberMonthTitles(logs: WorkoutLog[], userId: string, now: Date): BranchProgress[] | null {
+export function memberMonthTitles(logs: WorkoutEntry[], subjectId: string, now: Date): BranchProgress[] | null {
   const {memberDays, progressFor} = monthRecords(logs, now);
-  return memberDays.has(userId) ? progressFor(userId) : null;
+  return memberDays.has(subjectId) ? progressFor(subjectId) : null;
 }
 
-export function calculateMonthlyKPIs(logs: WorkoutLog[], now: Date): MonthlyKPIs {
+export function calculateMonthlyKPIs(logs: WorkoutEntry[], now: Date): MonthlyKPIs {
   const {monthlyLogs, memberDays, progressFor} = monthRecords(logs, now);
   const weekdayCounts = new Array(7).fill(0);
   for (const days of memberDays.values()) {
@@ -74,7 +75,7 @@ export function calculateMonthlyKPIs(logs: WorkoutLog[], now: Date): MonthlyKPIs
 
   const maximum=Math.max(0,...[...memberDays.values()].map(d=>d.size));
   const workoutKings=[...memberDays].filter(([,days])=>days.size===maximum).map(([id,days])=>({
-    id,days:days.size,name:monthlyLogs.find(l=>l.user_id===id)!.username,
+    id,days:days.size,name:monthlyLogs.find(l=>subjectOf(l).id===id)!.username,
     title:representativeTitle(progressFor(id)),
   })).sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
   return {
