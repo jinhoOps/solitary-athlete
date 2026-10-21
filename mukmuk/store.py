@@ -54,7 +54,7 @@ class Store:
             state=self.conn.execute('SELECT revision,enabled FROM solitary_athlete.mukmuk_identity_state WHERE singleton').fetchone()
             with self.conn.cursor() as cur:
                 if state['enabled'] or state['revision']>0:
-                    cur.execute('SELECT person_id::text AS user_id,username,log_date,memo,has_photo,verification_count FROM solitary_athlete.mukmuk_person_days(%s) ORDER BY log_date DESC,person_id',(state['revision'],))
+                    cur.execute('SELECT person_id::text AS subject_id,username,log_date,memo,has_photo,verification_count FROM solitary_athlete.mukmuk_person_days(%s) ORDER BY log_date DESC,person_id',(state['revision'],))
                 else:
                     cur.execute('SELECT * FROM solitary_athlete.workout_logs ORDER BY log_date DESC,updated_at DESC,user_id')
                 result = []

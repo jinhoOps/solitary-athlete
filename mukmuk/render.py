@@ -74,7 +74,7 @@ def render_grass_image(rows, now, member_count=None) -> bytes:
     daily_users = {}
     all_users = set()
     for row in rows:
-        uid = str(row['user_id'])
+        uid = str(row.get('subject_id', row.get('user_id')))
         d = str(row['log_date'])
         all_users.add(uid)
         daily_users.setdefault(d, set()).add(uid)

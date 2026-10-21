@@ -38,14 +38,26 @@ export function createDB(url:string, testOnlyNoTLS=false) {
       return result.length===1;
     },
     async daily(userId:string) {
+      return await sql.begin(async tx=>{
+        await tx`SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))`;
+      const identity=await tx`SELECT enabled,revision FROM solitary_athlete.mukmuk_identity_state WHERE singleton`;
+      if(identity[0].enabled||Number(identity[0].revision)>0){
+        const rows=await tx`SELECT d.username,d.log_date::text,d.memo,d.has_photo,d.verification_count FROM
+          solitary_athlete.mukmuk_person_days(${identity[0].revision},NULL,NULL,
+            (SELECT person_id FROM solitary_athlete.mukmuk_person_accounts WHERE user_id=${userId} AND valid_until IS NULL)) d
+          WHERE EXISTS(SELECT 1 FROM solitary_athlete.mukmuk_person_accounts WHERE user_id=${userId} AND valid_until IS NULL)
+          ORDER BY d.log_date DESC`;
+        return rows.map(r=>({...r,user_id:userId})) as WorkoutLog[];
+      }
       const rows:WorkoutLog[]=[];
       for(let offset=0;;offset+=1000) {
-        const page=await sql`SELECT user_id,username,log_date::text,memo,has_photo,verification_count
+        const page=await tx`SELECT user_id,username,log_date::text,memo,has_photo,verification_count
           FROM solitary_athlete.workout_logs WHERE user_id=${userId}
           ORDER BY log_date DESC LIMIT 1000 OFFSET ${offset}`;
         rows.push(...page as unknown as WorkoutLog[]);
         if(page.length<1000)return rows;
       }
+      });
     },
     async reservePublish(id:string,now:Date,attempt?:number) {
       const rows=await sql`UPDATE solitary_athlete.reply_cleanup_jobs

@@ -27,6 +27,7 @@ docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/mi
 docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261020000001_mukmuk_monthly_grass.sql >/dev/null
 docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261020000002_mukmuk_daily_grass_comparison.sql >/dev/null
 docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261020000003_mukmuk_daily_grass_history.sql >/dev/null
+docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261015000001_mukmuk_dashboard_paging.sql >/dev/null
 for file in supabase/migrations/20261021*.sql; do
   if [[ -f "$file" ]]; then
     docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < "$file" >/dev/null
@@ -35,7 +36,7 @@ done
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" uv run pytest
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/cleanup_queue_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/secrets_rpc_test.ts
-docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261015000001_mukmuk_dashboard_paging.sql >/dev/null
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/dashboard_rpc_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/short_db_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/account_inbox_test.ts
+TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/person_dashboard_rpc_test.ts
