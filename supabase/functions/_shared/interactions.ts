@@ -24,7 +24,7 @@ function unhex(hex: string, size: number): Uint8Array<ArrayBuffer> | null {
   return Uint8Array.from(hex.match(/../g)!, b => parseInt(b,16));
 }
 export async function handleInteraction(req: Request, deps: { publicKey:string; guildId:string; appId:string;
-  account?:{online:()=>Promise<boolean>;publish:(body:Reply,action:AccountAction)=>Promise<void>};
+  account?:{online:(deadline?:number)=>Promise<boolean>;publish:(body:Reply,action:AccountAction)=>Promise<void>};
   memberRoleId?:string; refresh?:(body:Reply & {requesterId:string})=>Promise<void>;
   waitUntil:(p:Promise<unknown>)=>void; publish:(body:Reply)=>Promise<void> }): Promise<Response> {
   if (req.method !== 'POST') return new Response('Method not allowed', {status:405});
@@ -48,7 +48,9 @@ export async function handleInteraction(req: Request, deps: { publicKey:string; 
   if(route){
     const deny=(content:string)=>Response.json({type:4,data:{content,flags:64,allowed_mentions:{parse:[]}}});
     if(actor?.bot||route.error)return deny(route.error??'일반 사용자 계정만 이용할 수 있어요.');
-    try {if(!deps.account||!await deps.account.online())return deny(OFFLINE);}catch{return deny(BUSY);}
+    if(!deps.account)return deny(OFFLINE);
+    try {if(!await deps.account.online(Date.now()+1800))return deny(OFFLINE);}catch{if(route.modal)return deny(BUSY);}
+    // An unknown signal is deferred before Discord's deadline; inbox delivery checks it again.
     if(route.modal)return Response.json(route.modal);
     const reply:Reply={id:body.id,token:body.token,application_id:body.application_id,targetId:actor.id,targetName:'운동가'};
     deps.waitUntil(deps.account.publish(reply,route.action!).catch(()=>console.error('mukmuk_account_reply_failed')));

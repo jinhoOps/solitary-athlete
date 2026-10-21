@@ -9,7 +9,7 @@ Deno.serve(req=>handleInteraction(req,{
   publicKey:setting('MUKMUK_DISCORD_PUBLIC_KEY'),guildId:setting('MUKMUK_DISCORD_GUILD_ID'),appId:setting('MUKMUK_DISCORD_APP_ID'),
   memberRoleId:Deno.env.get('MUKMUK_DISCORD_ROLE_MEMBER_ID')??'',
   waitUntil:p=>EdgeRuntime.waitUntil(p),
-  account:{online:()=>Deno.env.get('MUKMUK_ACCOUNT_LINK_ENABLED')==='true'?accounts.online():Promise.resolve(false),
+  account:{online:deadline=>Deno.env.get('MUKMUK_ACCOUNT_LINK_ENABLED')==='true'?accounts.online(deadline):Promise.resolve(false),
     publish:(body,action)=>publishReply(body,{key:setting('MUKMUK_REPLY_TOKEN_KEY'),now:()=>new Date(),dashboardUrl:'',db,discord,
       preparationFailure:BUSY,render:()=>pollAccount(action,accounts)})},
   refresh:body=>publishReply(body,{key:setting('MUKMUK_REPLY_TOKEN_KEY'),now:()=>new Date(),dashboardUrl:'',db,discord,

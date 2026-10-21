@@ -37,3 +37,8 @@ describe('short DB lifetime',()=>{
   const sql=shortSQL('fixture');await sql.end();await expect(sql`SELECT 1`).rejects.toThrow('Database closed');expect(driver.create).not.toHaveBeenCalled();
  });
 });
+it('bounds a business scope by the caller deadline and closes before returning',async()=>{
+ vi.useFakeTimers();const c=client();driver.create.mockReturnValue(c);
+ const result=withShortDB('fixture',()=>new Promise(()=>{}),{deadline:Date.now()+50});
+ const check=expect(result).rejects.toThrow('Database unavailable');await vi.advanceTimersByTimeAsync(51);await check;expect(c.end).toHaveBeenCalledOnce();
+});

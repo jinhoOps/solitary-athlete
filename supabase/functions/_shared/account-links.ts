@@ -1,6 +1,6 @@
 import type {ReplyContent} from './interactions.ts';
 export interface AccountAction {interaction_id:string;actor_id:string;kind:string;target_id?:string;request_id?:string;version?:number;payload?:{reason?:string;command?:boolean}}
-export interface AccountInbox {online:()=>Promise<boolean>;enqueue:(a:AccountAction)=>Promise<void>;result:(id:string,actor:string)=>Promise<ReplyContent|null>}
+export interface AccountInbox {online:(deadline?:number)=>Promise<boolean>;enqueue:(a:AccountAction,deadline?:number)=>Promise<void>;result:(id:string,actor:string,deadline?:number)=>Promise<ReplyContent|null>}
 const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const kinds=['consent','decline','cancel','detail','status','review_list','review_detail','approve','reject_modal','reject'];
 export const OFFLINE='지금은 묵묵이 쉬고 있어요. 온라인일 때 다시 이용해 주세요.';
@@ -45,8 +45,8 @@ export function accountRoute(body:any,caller:{actorId:string;manager:boolean;mem
 export async function pollAccount(action:AccountAction,db:Pick<AccountInbox,'enqueue'|'result'>,now=Date.now,sleep=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms))):Promise<ReplyContent>{
  const until=now()+20000;
  try{
-  await db.enqueue(action);
-  while(now()<until){const result=await db.result(action.interaction_id,action.actor_id);if(result)return {...result,content:result.content.slice(0,1900)+'\n이 안내는 본인에게만 보이며 5분 뒤 사라져요.'};await sleep(Math.min(250,until-now()));}
- }catch{/* Sanitized operational notice; never log SQL or identifiers. */}
+  await db.enqueue(action,until);
+  while(now()<until){const result=await db.result(action.interaction_id,action.actor_id,until);if(result)return {...result,content:result.content.slice(0,1900)+'\n이 안내는 본인에게만 보이며 5분 뒤 사라져요.'};await sleep(Math.min(250,until-now()));}
+ }catch(error){if(error instanceof Error&&error.message===OFFLINE)return {content:OFFLINE+'\n이 안내는 본인에게만 보이며 5분 뒤 사라져요.'};}
  return {content:BUSY+'\n이 안내는 본인에게만 보이며 5분 뒤 사라져요.'};
 }

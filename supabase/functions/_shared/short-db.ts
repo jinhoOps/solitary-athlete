@@ -7,9 +7,12 @@ export async function withShortDB<T>(url:string,work:(sql:Sql)=>Promise<T>,optio
   for(let attempt=0;;attempt++) {
     if(Date.now()>=until)throw new Error('Database unavailable');
     const sql=postgres(url,{max:1,prepare:false,connect_timeout:2,idle_timeout:1,max_lifetime:5,
+      connection:{statement_timeout:5000,lock_timeout:2000},
       ssl:options.testOnlyNoTLS?false:{rejectUnauthorized:true},onnotice:()=>{}});
     let timer:ReturnType<typeof setTimeout>|undefined;
     let acquired=false;
+    let ending:Promise<void>|undefined;
+    const close=()=>ending??=sql.end({timeout:0});
     try {
       const reserved=await Promise.race([sql.reserve(),new Promise<never>((_,reject)=>{
         timer=setTimeout(()=>reject(new Error('Database unavailable')),Math.max(0,until-Date.now()));
@@ -19,13 +22,17 @@ export async function withShortDB<T>(url:string,work:(sql:Sql)=>Promise<T>,optio
       acquired=true;
       // Return the verified connection to this private max:1 client before SQL begins.
       reserved.release();
-      return await work(sql);
+      const result=work(sql);
+      if(options.deadline===undefined)return await result;
+      return await Promise.race([result,new Promise<never>((_,reject)=>{
+        timer=setTimeout(()=>{void close().then(()=>reject(new Error('Database unavailable')),()=>reject(new Error('Database unavailable')));},Math.max(0,options.deadline!-Date.now()));
+      })]);
     } catch(error) {
       if(acquired)throw error;
       if((error as {code?:string})?.code!=='53300'||attempt>=4||Date.now()>=until)throw new Error('Database unavailable');
     } finally {
       clearTimeout(timer);
-      await sql.end({timeout:0});
+      await close();
     }
     await pause(Math.min(100*2**attempt+Math.random()*100,Math.max(0,until-Date.now())));
   }
