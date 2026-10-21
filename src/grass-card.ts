@@ -130,7 +130,8 @@ export function renderGrassCard(options: {
     requestAnimationFrame(() => {
       if (opened !== date || !card.isConnected) return;
       revealDate(date);
-      details.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+      // Scroll only as far as needed; a detail taller than the screen still aligns its start.
+      details.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
       detailHeading.focus({preventScroll:true});
     });
   }

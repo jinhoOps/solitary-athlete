@@ -1159,3 +1159,29 @@ test('mobile member actions and scrolling chips share one top edge',async({page}
   expect(await top('.member-all')).toBe(chip);
   expect(await top('.member-find')).toBe(chip);
 });
+
+for(const [width,height] of [[1280,900],[390,844]])test(`opening a date detail scrolls only as far as needed at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height});await fixture(page);
+  const cell=page.locator(`.workout-card [data-date="${today}"]`);
+  const before=await page.evaluate(()=>scrollY);
+  await cell.click();
+  const title=page.locator('.date-detail .detail-heading h4');
+  await expect(title).toBeFocused();await expect(title).toBeInViewport();
+  await expect(cell).toBeInViewport();
+  const bottom=await page.locator('.date-detail').evaluate(e=>e.getBoundingClientRect().bottom);
+  // Either nothing moved, or the page moved just enough to bring the detail's bottom on screen.
+  if(await page.evaluate(()=>scrollY)!==before)expect(Math.abs(bottom-height)).toBeLessThan(2);
+  else expect(bottom).toBeLessThanOrEqual(height);
+});
+
+test('a date detail taller than the screen still opens at its heading',async({page})=>{
+  await page.setViewportSize({width:390,height:600});await fixture(page);
+  const memo=Array.from({length:80},(_,i)=>`${i+1}세트`).join('\n');
+  // Registered after the fixture so this handler wins, then reload to use it.
+  await page.route('**/rpc/get_workout_logs_page',route=>route.fulfill({json:[{user_id:'2',username:'하루',log_date:today,memo,has_photo:false,verification_count:1}]}));
+  await page.reload();await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  await page.locator(`.workout-card [data-date="${today}"]`).click();
+  const title=page.locator('.date-detail .detail-heading h4');
+  await expect(title).toBeFocused();await expect(title).toBeInViewport();
+  expect(await page.locator('.date-detail').evaluate(e=>e.getBoundingClientRect().height)).toBeGreaterThan(600);
+});
