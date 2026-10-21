@@ -188,3 +188,11 @@ def test_two_reviewers_racing_can_approve_only_once(accounts):
     assert sum(r.get('status') == 'approved' for r in results) == 1
     assert sum(r.get('error_code') == 'request_changed' for r in results) == 1
     assert get_request(service, request['id'])['version'] == request['version']+1
+
+
+def test_command_cancel_reads_current_version_and_replay_stays_cancelled(accounts):
+    service, _ = accounts
+    _, request = pending(service)
+    cancelled = action(service, 201, '1', 'cancel', request_id=str(request['id']), payload={'command':True})
+    assert cancelled.get('status') == 'cancelled', cancelled
+    assert action(service, 201, '1', 'cancel', request_id=str(request['id']), payload={'command':True}) == cancelled

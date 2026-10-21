@@ -177,6 +177,8 @@ class AccountService:
                  'rejected': '요청이 거절됐어요.', 'cancelled': '요청이 취소됐어요.', 'expired': '요청 기간이 지났어요.',
                  'invalidated': '계정 구성이 바뀌어 다시 신청해야 해요.', 'failed': '처리를 마치지 못했어요. 다시 신청해 주세요.'}
         text = f"{names[status]}\n요청 {request['id']}\n대표 <@{request['primary_user_id']}> · 대상 <@{request['target_user_id']}>"
+        if status == 'awaiting_consent':
+            text += '\n상대 계정에서도 /계정연결 현황으로 동의해 주세요.'
         choices = []
         if status == 'awaiting_consent' and actor == request['target_user_id']:
             choices.extend([button('consent', request['id'], request['version'], '동의', 1), button('decline', request['id'], request['version'], '거절')])
@@ -242,7 +244,8 @@ class AccountService:
           AND (%s IS FALSE OR status IN ('pending_review','approved','failed'))
           AND (%s::uuid IS NULL OR id>%s::uuid) ORDER BY id LIMIT 11''',
           (self.guild, review, action['actor_id'], action['actor_id'], review, after, after)).fetchall()
-        buttons = [button('review_detail' if review else 'detail', r['id'], r['version'], f"{'연결' if r['kind']=='link' else '해제'} · {r['status']}") for r in rows[:10]]
+        labels = {'awaiting_consent':'동의 대기','pending_review':'검토 대기','approved':'반영 대기','applied':'반영 완료','rejected':'거절','cancelled':'취소','expired':'만료','invalidated':'재신청 필요','failed':'처리 오류'}
+        buttons = [button('review_detail' if review else 'detail', r['id'], r['version'], f"{'연결' if r['kind']=='link' else '해제'} · {labels[r['status']]}") for r in rows[:10]]
         if len(rows) > 10:
             buttons.append(button('review_list' if review else 'status', rows[9]['id'], 0, '다음 요청'))
         text = '검토할 계정 요청이에요.' if review else '내 계정 연결 현황이에요.'
@@ -291,7 +294,8 @@ class AccountService:
                   source_revision=EXCLUDED.source_revision,impact=EXCLUDED.impact,created_at=clock_timestamp()''',
                   (request['id'], actor, request['version'], state['revision'], state['source_revision'], Jsonb(impact)))
             return self._notice(request, actor, manager=True, impact=impact)
-        if action.get('version') != request['version']:
+        expected_version = request['version'] if kind == 'cancel' and action.get('payload', {}).get('command') else action.get('version')
+        if expected_version != request['version']:
             raise AccountError('request_changed')
         status = request['status']
         if kind == 'consent':
