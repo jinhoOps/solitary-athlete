@@ -2,7 +2,7 @@
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   color: #18271E; background: #F7F8F2; font-synthesis: none;
   --ink: #18271E; --primary: #326C43; --active: #275635; --muted: #57665B; --border: #D3DBD0;
-  --empty: #E8EDE4; --record: #4B8F52; --photo: #216E39;
+  --empty: #E8EDE4; --record: #4B8F52; --photo: #18532A;
   --motion-feedback: 140ms; --motion-enter: 160ms; --motion-easing: ease-out;
   --control-hover: rgba(46,85,59,.08); --control-pressed: rgba(46,85,59,.16);
   --grass-detail-background: #FFFFFF; --grass-scroll-fade-width: 12px;
@@ -19,7 +19,7 @@ h1 { font-size: 2.5rem; line-height: 1.3; letter-spacing: -.02em; }
 h2 { font-size: 1.25rem; line-height: 1.4; }
 h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
 h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
-#app { max-width: 960px; margin: auto; padding: 24px; }
+#app { max-width: 1080px; margin: auto; padding: 24px; }
 .brand-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
 .brand-wrap { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .brand-name { font-size: 1.125rem; font-weight: 700; color: #18271E; }
@@ -36,6 +36,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .status-notice { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 12px; background: #D9E9D9; color: #18271E; border-radius: 9999px; font-size: .75rem; font-weight: 500; line-height: 1.4; }
 .status-notice.warning { color:#8A5A13; background:#FFF4DD; border-radius:10px; padding:16px; max-width:100%; white-space:normal; }
 .status-notice.warning > span { flex-basis:100%; }
+.status-notice:empty { display:none; }
 
 .kpi-section { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .kpi-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 0; }
@@ -137,6 +138,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .aggregate-cell { background: linear-gradient(rgb(75 143 82 / var(--aggregate-opacity)),rgb(75 143 82 / var(--aggregate-opacity))),var(--empty); }
 
 .king-member + .king-member { margin-top: 4px; }
+.king-title { margin-top:4px; color:var(--primary); }
 @media(max-width:767px) { .kpi-card--king { grid-column: 1 / -1; } }
 
 .member-all, .member-find { flex-shrink:0; }
@@ -171,7 +173,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  .member-options-viewport { flex:1 1 96px; }
  .member-find { margin-left:auto; }
  .member-filter--stacked .member-options-viewport { flex-basis:100%; order:1; }
- .member-options { flex-wrap:nowrap; overflow-x:auto; padding:3px 15px; scroll-padding-inline:15px; }
+ .member-options { flex-wrap:nowrap; overflow-x:auto; padding:3px 15px; margin-block:-3px; scroll-padding-inline:15px; }
  .member-options .filter-button { flex-shrink:0; max-width:min(160px,100%); }
  .filter-button,.member-filter .member-find { min-height:44px; }
  .member-all,.member-filter .member-find { padding:8px; }
@@ -197,7 +199,6 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .timeline-message .photo-section { display:inline; margin-top:0; }
 .timeline-message .memo + .photo-section > .photo-toggle { margin-inline-start:.65em; }
 .photo-toggle { min-height:28px; padding:0; border:0; border-radius:2px; background:transparent; color:var(--primary); font-size:.75rem; font-weight:500; line-height:20px; }
-.photo-toggle:hover { text-decoration:underline; text-underline-offset:3px; }
 .photo-grid:not(:empty) { margin-top:8px; }
 .timeline-message:has(.photo-preview) { width:100%; }
 @media(max-width:767px) {
@@ -224,6 +225,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  :is(.filter-button,.member-find):not([aria-pressed="true"]):not(:disabled):hover { background:var(--control-hover); color:var(--primary); }
  :is(.photo-toggle,.date-button,.secondary,.icon-button):not(:disabled):hover { background:var(--control-hover); }
  .primary:not(:disabled):hover { background:var(--active); }
+ .photo-toggle:hover { text-decoration:underline; text-underline-offset:3px; }
 }
 :is(.filter-button,.member-find,.photo-toggle,.date-button,.icon-button,.stepper-btn,.primary,.secondary,.discord-link):active { transition-duration:0s; }
 :is(.photo-toggle,.date-button,.icon-button,.secondary,.member-find,.discord-link):not(:disabled):active { background:var(--control-pressed); }

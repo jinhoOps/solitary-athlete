@@ -12,7 +12,7 @@
     </linearGradient>
   </defs>
   <g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif">
-    <text x="24" y="28" font-size="14" fill="#57665B" font-weight="400">DESKTOP · 최대 폭 960px · 예시 기록</text>
+    <text x="24" y="28" font-size="14" fill="#57665B" font-weight="400">DESKTOP · 최대 폭 1080px(시안은 960px 배치) · 예시 기록</text>
     <rect x="24" y="44" width="960" height="850" rx="16" fill="#F7F8F2" stroke="none" />
     <rect x="48" y="68" width="28" height="28" rx="6" fill="#326C43" stroke="none" />
     <text x="54" y="89" font-size="18" fill="#57665B" font-weight="400">🌱</text>
@@ -480,7 +480,7 @@
     <text x="48" y="658" font-size="12" fill="#57665B" font-weight="400">인증된 멤버만 표시명·운동 날짜·메모와 선택한 사진을 볼 수 있습니다.</text>
     <text x="48" y="678" font-size="12" fill="#57665B" font-weight="400">사진은 Discord에서 불러오며, 원본 삭제 시 표시가 중단될 수 있어요.</text>
     <text x="48" y="738" font-size="12" fill="#57665B" font-weight="400">프리뷰는 빈 상태에도 한 줄 높이를 유지하며, hover·focus 요약만 말줄임합니다.</text>
-    <text x="48" y="762" font-size="12" fill="#57665B" font-weight="400">53주 잔디는 14px 셀·4px 간격을 유지하고 카드 안에서 가로로 탐색합니다.</text>
+    <text x="48" y="762" font-size="12" fill="#57665B" font-weight="400">53주 잔디는 14px 셀·4px 간격을 유지하며 1080px 폭에서 모두 보이고, 더 좁으면 카드 안에서 가로로 탐색합니다.</text>
   </g>
   </g>
 </svg>

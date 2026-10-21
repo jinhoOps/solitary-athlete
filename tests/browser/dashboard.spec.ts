@@ -290,7 +290,8 @@ for(const width of [360,1280])test(`workout king is first and spans mobile row a
  await page.setViewportSize({width,height:900});await fixture(page);
  const cards=page.locator('.kpi-card');await expect(cards).toHaveCount(5);
  await expect(cards.first().locator('.kpi-title')).toHaveText('운동왕 👑');
- await expect(cards.first()).toHaveText('운동왕 👑하루');
+ await expect(cards.first().locator('.king-member .kpi-value')).toHaveText('하루');
+ await expect(cards.first().locator('.king-title')).toHaveText('빈칸 없는 잔디');
  const first=await cards.nth(0).boundingBox(),next=await cards.nth(1).boundingBox(),section=await page.locator('.kpi-section').boundingBox();
  if(width===360){expect(first!.width).toBeCloseTo(section!.width);expect(next!.y).toBeGreaterThan(first!.y);}
  else {expect(first!.y).toBe(next!.y);expect(first!.x).toBeLessThan(next!.x);}
@@ -618,7 +619,7 @@ test('grass edge fades follow scroll boundaries, resizing and keyboard navigatio
  await expect(right).toBeVisible();
 });
 
-for(const width of [320,360,768,1280]) test(`grass fades meet the sticky labels and cover only cell rows at ${width}px`,async({page})=>{
+for(const width of [320,360,768,1000]) test(`grass fades meet the sticky labels and cover only cell rows at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});await fixture(page);
  for(const scale of [100,200]){
   await page.addStyleTag({content:`html { font-size:${scale}%; }`});
@@ -1117,4 +1118,44 @@ for(const state of ['first','pending','error','sql-error','permission-error'] as
  await expect(page.locator('.workout-card')).toHaveCount(1);
  await expect(page.locator('.modal-box')).toHaveCount(0);
  expect(await page.evaluate(()=>localStorage.getItem('mukmuk_secret_code'))).toBe('test-code');
+});
+
+test('desktop shows the whole year without scrolling and narrower screens keep inner scrolling',async({page})=>{
+  await page.setViewportSize({width:1080,height:800});await fixture(page);
+  const scroll=page.locator('.workout-card .grass-scroll');
+  const fits=()=>scroll.evaluate(e=>e.scrollWidth<=e.clientWidth);
+  expect(await fits()).toBe(true);
+  await expect(page.locator('.workout-card .grass-scroll-fade')).toHaveCount(2);
+  for(const fade of await page.locator('.workout-card .grass-scroll-fade').all())await expect(fade).toBeHidden();
+  await page.setViewportSize({width:1000,height:800});
+  await expect.poll(fits).toBe(false);
+});
+
+test('aggregate cells start at a visible minimum density and KPI cards each carry a context line',async({page})=>{
+  await fixture(page);
+  // One of three members on the day: ratio 1/3 maps to .2 + .8/3.
+  const opacity=await page.locator(`.workout-card [data-date="${today}"]`).evaluate(e=>Number(e.style.getPropertyValue('--aggregate-opacity')));
+  expect(opacity).toBeCloseTo(.2+.8/3);
+  expect(await page.locator('.workout-card [data-date="2026-10-13"]').evaluate(e=>e.style.getPropertyValue('--aggregate-opacity'))).not.toBe('0');
+  const swatches=await page.locator('.legend .swatch').evaluateAll(els=>els.map(e=>Number((e as HTMLElement).style.getPropertyValue('--aggregate-opacity'))));
+  expect(swatches[0]).toBe(0);expect(swatches[4]).toBe(1);expect(swatches[1]).toBeCloseTo(.4);
+  const cards=page.locator('.kpi-card');
+  await expect(cards.locator('.kpi-change')).toHaveCount(4);
+  await expect(cards.nth(0).locator('.king-title')).toHaveCount(1);
+  await expect(cards.nth(1)).toContainText('전체 3명 중');
+  await expect(cards.nth(3)).toContainText(/이번 달 \d+칸/);
+  await expect(cards.nth(4)).toContainText('14일 중');
+});
+
+test('status badge stays hidden until a collection time exists',async({page})=>{
+  await fixture(page,'normal',false);
+  await expect(page.locator('.brand-header .status-notice')).toBeHidden();
+});
+
+test('mobile member actions and scrolling chips share one top edge',async({page})=>{
+  await page.setViewportSize({width:390,height:800});await fixture(page);
+  const top=(selector:string)=>page.locator(selector).first().evaluate(e=>Math.round(e.getBoundingClientRect().top));
+  const chip=await top('.member-options .filter-button');
+  expect(await top('.member-all')).toBe(chip);
+  expect(await top('.member-find')).toBe(chip);
 });

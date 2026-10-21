@@ -137,17 +137,18 @@ function renderKPIs() {
   else {
     for(const winner of kpis.workoutKings){
       const person=el('div','king-member');
-      person.append(el('div','kpi-value',winner.name));
+      person.append(el('div','kpi-value',winner.name),el('div','caption king-title',winner.title));
       king.append(person);
     }
   }
   kpiSection.append(king);
   const grass=grassParticipationView(data.grassParticipation);
+  // Context lines explain each value's basis; they never rank anyone beyond the king card.
   const items: {title:string;value:string;change?:string;description?:string}[] = [
-    { title: '이번 달 고운', value: `${kpis.activeMembers}명` },
+    { title: '이번 달 고운', value: `${kpis.activeMembers}명`, change:`전체 ${data.roster.length}명 중` },
     { title: '함께 심은 잔디', value: grass.value, change:grass.change, description:grass.description },
-    { title: '가장 푸른 요일', value: kpis.mostActiveWeekday },
-    { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일` },
+    { title: '가장 푸른 요일', value: kpis.mostActiveWeekday, change:kpis.mostActiveWeekdayDays?`이번 달 ${kpis.mostActiveWeekdayDays}칸`:undefined },
+    { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일`, change:`${Number(today.slice(8))}일 중` },
   ];
   for (const item of items) {
     const card = el('div', 'kpi-card');
