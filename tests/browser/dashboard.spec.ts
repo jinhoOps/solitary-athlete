@@ -291,7 +291,7 @@ for(const width of [360,1280])test(`workout king is first and spans mobile row a
  const cards=page.locator('.kpi-card');await expect(cards).toHaveCount(5);
  await expect(cards.first().locator('.kpi-title')).toHaveText('운동왕 👑');
  await expect(cards.first().locator('.king-member .kpi-value')).toHaveText('하루');
- await expect(cards.first().locator('.king-title')).toHaveText('빈칸 없는 잔디');
+ await expect(cards.first().locator('.king-title')).toHaveText('빈틈없는 들판');
  const first=await cards.nth(0).boundingBox(),next=await cards.nth(1).boundingBox(),section=await page.locator('.kpi-section').boundingBox();
  if(width===360){expect(first!.width).toBeCloseTo(section!.width);expect(next!.y).toBeGreaterThan(first!.y);}
  else {expect(first!.y).toBe(next!.y);expect(first!.x).toBeLessThan(next!.x);}
