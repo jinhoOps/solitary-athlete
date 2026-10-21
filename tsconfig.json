@@ -3,6 +3,7 @@
     "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM"], "strict": true, "noEmit": true,
     "allowImportingTsExtensions": true, "skipLibCheck": true,
+    "paths": {"npm:postgres@3.4.9":["./node_modules/postgres/types/index.d.ts"]},
     "types": ["vite/client", "node"]
   },
   "include": ["src", "tests/web", "tests/browser", "tests/edge", "vite.config.ts", "playwright.config.ts"]

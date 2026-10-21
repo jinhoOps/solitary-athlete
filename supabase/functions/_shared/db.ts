@@ -1,12 +1,11 @@
-import postgres from 'npm:postgres@3.4.9';
+import {shortSQL} from './short-db.ts';
 import type { Reply, ReplyDB } from './interactions.ts';
 import type { CleanupDB, CleanupJob } from './cleanup.ts';
 import type { SecretDB } from './monthly_code.ts';
 import type { WorkoutLog } from '../../../src/types.ts';
 
 export function createDB(url:string, testOnlyNoTLS=false) {
-  const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,idle_timeout:20,max_lifetime:60,
-    ssl:testOnlyNoTLS?false:{rejectUnauthorized:true},onnotice:()=>{}});
+  const sql=shortSQL(url,testOnlyNoTLS);
   const db:ReplyDB & CleanupDB & SecretDB={
     async activeSecret(now) {
       const rows=await sql`SELECT secret_code FROM solitary_athlete.channel_access_secrets
