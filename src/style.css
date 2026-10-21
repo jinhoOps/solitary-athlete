@@ -60,6 +60,10 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .card-heading > .year-filter { margin-left: auto; }
 .metrics { display: flex; flex: 1 1 auto; min-width: 0; flex-wrap: wrap; align-items: baseline; gap: 14px; }
 .metrics > div { display: flex; min-width: 0; max-width: 100%; align-items: baseline; gap: 4px; }
+.metrics:has(+ .member-title) { flex-grow: 0; }
+.member-title { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; max-width: 100%; padding: 2px 10px; border-radius: 9999px; background: #D9E9D9; font-size: .75rem; line-height: 1.5; overflow-wrap: anywhere; }
+.member-title-label { color: var(--muted); font-weight: 500; }
+.member-title-name { color: var(--primary); font-weight: 600; }
 .metrics dd { font-size: .875rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .grass-content { display: block; }
 .grass-visual { max-width: 100%; min-width: 0;
@@ -127,6 +131,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
   .workout-card,.empty-card { padding: 16px; }
   .card-heading > .year-title { flex: 1 1 100px; min-width: 0; }
   .card-heading > .metrics { order: 1; flex-basis: 100%; }
+  .card-heading > .member-title { order: 2; }
   .brand-header { flex-wrap: wrap; }
   .brand-wrap { flex-direction: column; gap: 2px; }
   .brand-divider { display: none; }

@@ -6,6 +6,8 @@ import type {Member,WorkoutLog,DashboardData} from './types';
 export function renderGrassCard(options: {
  heading?:HTMLElement;year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
  photos?:(log:WorkoutLog)=>HTMLElement;
+ /** Selected member's achievement title for the current month, with its month label. */
+ title?:{month:number;name:string}|null;
  logs:WorkoutLog[];currentStats?:DashboardData['currentStats'];
 }) {
   const {year:selectedYear,today,roster}=options;
@@ -36,6 +38,12 @@ export function renderGrassCard(options: {
   }
   top.querySelector('.metrics')?.remove();
   top.insertBefore(metrics, top.querySelector('.year-filter'));
+  top.querySelector('.member-title')?.remove();
+  if (options.title) {
+    const badge = el('p', 'member-title');
+    badge.append(el('span', 'member-title-label', `${options.title.month}월의 칭호`), el('span', 'member-title-name', options.title.name));
+    top.insertBefore(badge, top.querySelector('.year-filter'));
+  }
 
   const content = el('div', 'grass-content');
   const visual = el('div', 'grass-visual');

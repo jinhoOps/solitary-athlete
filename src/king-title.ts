@@ -27,9 +27,10 @@ const isWeekend=(date:string)=>[0,6].includes(sundayIndex(date));
 // Achievement-style titles in the grass-and-garden world. First match wins,
 // so rarer patterns sit above common ones.
 const RULES:{title:string;when:(m:KingMonth,days:number)=>boolean}[]=[
+ {title:'뿌리 깊은 거목',when:(_,days)=>days>=30},
  {title:'빈틈없는 들판',when:(m,days)=>m.elapsedDays>=7&&days===m.elapsedDays},
  {title:'깊게 내린 뿌리',when:m=>longestStreak(m.dates)>=14},
- {title:'무성한 잔디',when:(_,days)=>days>=20},
+ {title:'풍성한 잔디',when:(_,days)=>days>=20},
  {title:'이어진 오솔길',when:m=>longestStreak(m.dates)>=7},
  {title:'빛으로 새긴 날들',when:(m,days)=>days>=3&&m.photoDates.size===days},
  {title:'주말의 정원사',when:(m,days)=>days>=3&&[...m.dates].filter(isWeekend).length*2>=days},

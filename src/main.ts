@@ -7,6 +7,7 @@ import {photoSection} from './photo-view';
 import {renderGrassCard} from './grass-card';
 import {renderDashboardControls, SERVICE_START_YEAR} from './dashboard-controls';
 import {grassParticipationView} from './grass-participation';
+import {memberMonthTitle} from './metrics';
 import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -165,7 +166,10 @@ function renderCards() {
   todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();cardReveals.clear();
   const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
-  const card=renderGrassCard({heading:yearBar,year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,
+  // Titles describe the current month, so they appear only beside this year's statistics.
+  const titleName=selected&&selectedYear===currentYear?memberMonthTitle(data.logs,selected,new Date()):null;
+  const title=titleName?{month:Number(today.slice(5,7)),name:titleName}:null;
+  const card=renderGrassCard({heading:yearBar,year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,title,
     photos:log=>photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,knownMembers.get(log.user_id)??log.username)});
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(card.element);
@@ -365,7 +369,7 @@ async function init(preserveSelection = false) {
       );
       if(data){
         renderFilters(focusedControl);
-        yearBar.querySelector('.metrics')?.remove();
+        yearBar.querySelector('.metrics')?.remove();yearBar.querySelector('.member-title')?.remove();
         yearBar.hidden=false;
         cards.replaceChildren(yearBar,error);
       } else cards.replaceChildren(error);

@@ -1185,3 +1185,26 @@ test('a date detail taller than the screen still opens at its heading',async({pa
   await expect(title).toBeFocused();await expect(title).toBeInViewport();
   expect(await page.locator('.date-detail').evaluate(e=>e.getBoundingClientRect().height)).toBeGreaterThan(600);
 });
+
+test('a selected member shows their monthly title beside the statistics',async({page})=>{
+  await page.setViewportSize({width:1280,height:900});await fixture(page);
+  await expect(page.locator('.member-title')).toHaveCount(0);
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  const badge=page.locator('.workout-card .member-title');
+  await expect(badge).toHaveText(/10월의 칭호\s*빈틈없는 들판/);
+  const metrics=(await page.locator('.metrics').boundingBox())!,box=(await badge.boundingBox())!;
+  expect(Math.abs((box.y+box.height/2)-(metrics.y+metrics.height/2))).toBeLessThan(4);
+  // No records this month: no badge rather than an empty one.
+  await page.getByRole('button',{name:'과거 전용',exact:true}).click();
+  await expect(page.locator('.member-title')).toHaveCount(0);
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  await expect(badge).toBeVisible();
+});
+
+test('mobile title badge sits on its own row below the statistics',async({page})=>{
+  await page.setViewportSize({width:360,height:800});await fixture(page);
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  const metrics=(await page.locator('.metrics').boundingBox())!,badge=(await page.locator('.member-title').boundingBox())!;
+  expect(badge.y).toBeGreaterThanOrEqual(metrics.y+metrics.height);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
