@@ -13,6 +13,11 @@ def store():
     url=os.environ.get('TEST_DATABASE_URL')
     if not url: pytest.skip('Use scripts/test-db.sh for the isolated PostgreSQL integration suite')
     with psycopg.connect(url, autocommit=True) as admin:
+        extra = [name for name in ('mukmuk_person_accounts', 'mukmuk_people', 'mukmuk_identity_state')
+                 if admin.execute('SELECT to_regclass(%s)', ('solitary_athlete.'+name,)).fetchone()[0]]
+        if extra:
+            admin.execute('TRUNCATE '+','.join('solitary_athlete.'+name for name in extra))
+            admin.execute('INSERT INTO solitary_athlete.mukmuk_identity_state DEFAULT VALUES')
         admin.execute('TRUNCATE solitary_athlete.mukmuk_daily_grass_history, solitary_athlete.mukmuk_monthly_grass_snapshots, solitary_athlete.workout_events, solitary_athlete.workout_logs, solitary_athlete.sync_state, solitary_athlete.sync_status, solitary_athlete.reply_cleanup_jobs, solitary_athlete.channel_access_secrets, solitary_athlete.workout_refresh_jobs')
     with psycopg.connect(url) as conn:
         conn.execute('SET ROLE mukmuk_worker'); conn.commit()
