@@ -47,15 +47,20 @@ def components(buttons):
 
 
 class AccountService:
-    def __init__(self, store, api, settings):
+    def __init__(self, store, api, settings, runtime_guard=None):
         self.store, self.api, self.settings = store, api, settings
         self.guild = settings['DISCORD_GUILD_ID']
+        self.runtime_guard = runtime_guard
 
     @contextmanager
     def transaction(self):
-        method = getattr(self.store, 'transaction', self.store.conn.transaction)
-        with method():
-            yield self.store.conn
+        if hasattr(self.store, 'session'):
+            with self.store.session() as store:
+                with store.transaction():
+                    yield store.conn
+        else:
+            with self.store.transaction():
+                yield self.store.conn
 
     def _member(self, user_id, deadline):
         if not numeric(user_id):
@@ -335,6 +340,8 @@ class AccountService:
             return {'error_code': code, 'content': MESSAGES.get(code, MESSAGES['invalid_request'])}
         with self.transaction() as db:
             db.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
+            if self.runtime_guard:
+                self.runtime_guard(db)
             self._expire(db)
             prior = db.execute('SELECT * FROM solitary_athlete.mukmuk_account_link_actions WHERE interaction_id=%s FOR UPDATE', (action['interaction_id'],)).fetchone()
             if prior and prior['actor_id'] != action['actor_id']:
@@ -358,6 +365,8 @@ class AccountService:
             except AccountError as error:
                 code = str(error)
                 result = {'error_code': code, 'content': MESSAGES.get(code, MESSAGES['invalid_request'])}
+            if self.runtime_guard:
+                self.runtime_guard(db)
             db.execute("UPDATE solitary_athlete.mukmuk_account_link_actions SET status='done',result=%s,request_id=%s WHERE interaction_id=%s",
                        (Jsonb(result), result.get('request_id'), action['interaction_id']))
             return result
