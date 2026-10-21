@@ -51,8 +51,12 @@ class Store:
 
     def logs(self):
         with self.transaction():
+            state=self.conn.execute('SELECT revision,enabled FROM solitary_athlete.mukmuk_identity_state WHERE singleton').fetchone()
             with self.conn.cursor() as cur:
-                cur.execute('SELECT * FROM solitary_athlete.workout_logs ORDER BY log_date DESC,updated_at DESC,user_id')
+                if state['enabled'] or state['revision']>0:
+                    cur.execute('SELECT person_id::text AS user_id,username,log_date,memo,has_photo,verification_count FROM solitary_athlete.mukmuk_person_days(%s) ORDER BY log_date DESC,person_id',(state['revision'],))
+                else:
+                    cur.execute('SELECT * FROM solitary_athlete.workout_logs ORDER BY log_date DESC,updated_at DESC,user_id')
                 result = []
                 while page := cur.fetchmany(1000): result.extend(page)
                 return result
@@ -75,17 +79,25 @@ class Store:
         with self.transaction():
             self.conn.execute('UPDATE solitary_athlete.workout_events SET reacted_at=now() WHERE message_id=%s', (mid,))
 
-    def success(self, channel, cursor, now):
+    def success(self, channel, cursor, now, account_context=None):
         with self.transaction():
             self.conn.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
             previous = self.conn.execute('SELECT last_success_at FROM solitary_athlete.sync_state WHERE channel_id=%s FOR UPDATE', (channel,)).fetchone()
             if previous and previous['last_success_at'] and previous['last_success_at'] >= now:
                 return
+            latest=self.conn.execute('SELECT max(collected_at) AS at FROM solitary_athlete.mukmuk_daily_grass_history').fetchone()['at']
+            if latest and latest>=now:
+                return
+            applied=False
+            if account_context:
+                applied=account_context.apply(self.conn,now)
             self.conn.execute('SELECT solitary_athlete.capture_monthly_grass_snapshot(%s)', (now,))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_state(channel_id,last_message_id,last_success_at) VALUES(%s,%s,%s)
                 ON CONFLICT(channel_id) DO UPDATE SET last_message_id=COALESCE(EXCLUDED.last_message_id,solitary_athlete.sync_state.last_message_id),last_success_at=EXCLUDED.last_success_at''', (channel, cursor, now))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_status(singleton,last_success_at) VALUES(true,%s)
                 ON CONFLICT(singleton) DO UPDATE SET last_success_at=EXCLUDED.last_success_at''', (now,))
+            if applied:
+                account_context.guard(self.conn)
 
     def photo_events(self, after):
         with self.transaction():

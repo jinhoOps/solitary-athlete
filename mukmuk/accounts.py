@@ -374,3 +374,81 @@ class AccountService:
             db.execute("UPDATE solitary_athlete.mukmuk_account_link_actions SET status='done',result=%s,request_id=%s WHERE interaction_id=%s",
                        (Jsonb(result), result.get('request_id'), action['interaction_id']))
             return result
+
+
+    def defer_application(self, request, code, delay=60, failure=True, fatal=False):
+        with self.transaction() as db:
+            db.execute("""UPDATE solitary_athlete.mukmuk_account_link_requests SET
+              status=CASE WHEN %s THEN 'invalidated' WHEN failures+%s>=10 THEN 'failed' ELSE status END,
+              version=version+CASE WHEN %s OR failures+%s>=10 THEN 1 ELSE 0 END,
+              failures=failures+%s,error_code=%s,lease_until=NULL,
+              next_attempt_at=clock_timestamp()+%s*interval '1 second'
+              WHERE id=%s AND status='approved' AND attempts=%s""",
+              (fatal,int(failure),fatal,int(failure),int(failure),code,delay,request['id'],request['attempts']))
+
+    def prepare_apply(self, guard):
+        try:
+            with self.transaction() as db:
+                guard(db)
+                request=db.execute("""WITH due AS (
+                  SELECT id FROM solitary_athlete.mukmuk_account_link_requests WHERE status='approved'
+                  AND next_attempt_at<=clock_timestamp() AND (lease_until IS NULL OR lease_until<=clock_timestamp())
+                  ORDER BY approved_at,id FOR UPDATE SKIP LOCKED LIMIT 1)
+                  UPDATE solitary_athlete.mukmuk_account_link_requests r SET attempts=attempts+1,
+                    lease_until=clock_timestamp()+interval '45 seconds'
+                  FROM due WHERE r.id=due.id RETURNING r.*""").fetchone()
+        except AccountError:
+            return None
+        if not request:
+            return None
+        try:
+            manager,_=self._verify({'actor_id':request['reviewer_id'],'kind':'approve','request_id':str(request['id'])},time.monotonic()+30)
+            if not manager:
+                raise AccountError('permission_denied')
+        except AccountError as error:
+            self.defer_application(request,str(error),fatal=True)
+            return None
+        except DiscordError as error:
+            rate=error.status==429
+            self.defer_application(request,'member_unavailable',delay=error.retry_after or 60,failure=not rate,fatal=error.status==404)
+            return None
+        except (KeyError,TypeError):
+            self.defer_application(request,'member_unavailable')
+            return None
+        return ApplyContext(self,request,guard)
+
+
+class ApplyContext:
+    """Fresh REST proof plus an immutable local session guard, used once at success."""
+    def __init__(self, service, request, guard):
+        self.service, self.request, self.guard = service, request, guard
+        self.checked_at = time.monotonic()
+
+    def apply(self, db, now):
+        if time.monotonic()-self.checked_at>15:
+            raise AccountError('expired_action')
+        self.guard(db)
+        request=db.execute('''SELECT * FROM solitary_athlete.mukmuk_account_link_requests
+          WHERE id=%s AND status='approved' AND version=%s AND attempts=%s
+          AND lease_until>clock_timestamp() FOR UPDATE''',
+          (self.request['id'],self.request['version'],self.request['attempts'])).fetchone()
+        if not request:
+            return False
+        service=self.service
+        if service._fingerprint(db,request['primary_user_id'],request['target_user_id'])!=request['group_fingerprint']:
+            db.execute("UPDATE solitary_athlete.mukmuk_account_link_requests SET status='invalidated',version=version+1,lease_until=NULL,error_code='group_changed' WHERE id=%s",(request['id'],))
+            return False
+        service._independent(db,request,request['reviewer_id'])
+        revision=service._state(db)['revision']+1
+        service._move(db,request,revision)
+        db.execute('UPDATE solitary_athlete.mukmuk_identity_state SET revision=%s',(revision,))
+        db.execute('''INSERT INTO solitary_athlete.mukmuk_identity_changes(revision,request_id,reviewer_id,changed_at,change)
+          VALUES(%s,%s,%s,%s,%s)''',(revision,request['id'],request['reviewer_id'],now,
+          Jsonb({'kind':request['kind'],'before':request['group_fingerprint'],
+                 'after':service._fingerprint(db,request['primary_user_id'],request['target_user_id'])})))
+        db.execute("""UPDATE solitary_athlete.mukmuk_account_link_requests SET status='applied',applied_at=%s,
+          version=version+1,failures=0,lease_until=NULL,error_code=NULL WHERE id=%s""",(now,request['id']))
+        return True
+
+    def failed(self, code='storage_failed'):
+        self.service.defer_application(self.request,code)

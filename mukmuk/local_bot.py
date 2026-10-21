@@ -87,6 +87,13 @@ class LocalBot(discord.Client):
             self.owner.touch()
             await asyncio.sleep(5)
 
+    def _application_context(self):
+        from .accounts import AccountService
+        fence=self.runtime.fence
+        def guard(conn):
+            self.runtime._guard(conn,fence)
+        return AccountService(self.database,self.api,self.settings).prepare_apply(guard)
+
     def _collect_once(self):
         try:
             with collector_watchdog():
@@ -100,7 +107,8 @@ class LocalBot(discord.Client):
                                 raise InterruptedError('local_bot_stopping')
                             lock.execute('SELECT 1')
                         try:
-                            run_sync(api, store, self.settings, check_lock=check)
+                            run_sync(api, store, self.settings, check_lock=check,
+                                     account_context=self._application_context)
                         finally:
                             api.client.close()
 
