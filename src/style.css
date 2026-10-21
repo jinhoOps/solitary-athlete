@@ -60,10 +60,24 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
 .card-heading > .year-filter { margin-left: auto; }
 .metrics { display: flex; flex: 1 1 auto; min-width: 0; flex-wrap: wrap; align-items: baseline; gap: 14px; }
 .metrics > div { display: flex; min-width: 0; max-width: 100%; align-items: baseline; gap: 4px; }
-.metrics:has(+ .member-title) { flex-grow: 0; }
-.member-title { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; max-width: 100%; padding: 2px 10px; border-radius: 9999px; background: #D9E9D9; font-size: .75rem; line-height: 1.5; overflow-wrap: anywhere; }
-.member-title-label { color: var(--muted); font-weight: 500; }
-.member-title-name { color: var(--primary); font-weight: 600; }
+/* Monthly title badges and the personal title tree */
+.member-titles { position: relative; flex-basis: 100%; min-width: 0; }
+.title-badges { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 100%; min-height: 32px; padding: 2px 6px 2px 0; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: .75rem; line-height: 1.5; text-align: left; }
+.member-title-label { color: var(--muted); font-weight: 500; margin-right: 2px; }
+.title-badge { padding: 2px 10px; border-radius: 9999px; background: #D9E9D9; color: var(--primary); font-weight: 600; overflow-wrap: anywhere; }
+.title-badges-caret { flex-shrink: 0; color: var(--muted); transition: transform var(--motion-feedback) var(--motion-easing); }
+.title-badges[aria-expanded="true"] .title-badges-caret { transform: rotate(180deg); }
+.title-tree { position: absolute; top: 100%; left: 0; z-index: 5; width: min(640px, 100%); padding-top: 6px; }
+.title-tree-surface { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: white; }
+.title-tree:not([hidden]) { animation: surface-enter var(--motion-enter) var(--motion-easing); }
+.title-branch { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; align-items: start; }
+.title-branch-label { margin: 0; font-size: .75rem; font-weight: 600; color: var(--ink); padding-top: 5px; }
+.title-tiers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.title-tier { display: grid; align-content: start; gap: 1px; padding: 5px 8px; word-break: keep-all; border: 1px dashed var(--border); border-radius: 8px; min-width: 0; }
+.title-tier[data-earned="true"] { border: 1px solid #D9E9D9; background: #D9E9D9; }
+.title-tier-name { font-size: .75rem; font-weight: 600; color: var(--muted); overflow-wrap: anywhere; }
+.title-tier[data-earned="true"] .title-tier-name { color: var(--primary); }
+.title-tier-condition { font-size: .6875rem; color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
 .metrics dd { font-size: .875rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .grass-content { display: block; }
 .grass-visual { max-width: 100%; min-width: 0;
@@ -131,7 +145,10 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
   .workout-card,.empty-card { padding: 16px; }
   .card-heading > .year-title { flex: 1 1 100px; min-width: 0; }
   .card-heading > .metrics { order: 1; flex-basis: 100%; }
-  .card-heading > .member-title { order: 2; }
+  .card-heading > .member-titles { order: 2; }
+  .title-branch { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .title-branch-label { padding-top: 0; }
+  .title-badges { min-height: 44px; }
   .brand-header { flex-wrap: wrap; }
   .brand-wrap { flex-direction: column; gap: 2px; }
   .brand-divider { display: none; }
@@ -231,6 +248,7 @@ h4 { font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
  :is(.photo-toggle,.date-button,.secondary,.icon-button):not(:disabled):hover { background:var(--control-hover); }
  .primary:not(:disabled):hover { background:var(--active); }
  .photo-toggle:hover { text-decoration:underline; text-underline-offset:3px; }
+ .title-badges:hover { background:var(--control-hover); }
 }
 :is(.filter-button,.member-find,.photo-toggle,.date-button,.icon-button,.stepper-btn,.primary,.secondary,.discord-link):active { transition-duration:0s; }
 :is(.photo-toggle,.date-button,.icon-button,.secondary,.member-find,.discord-link):not(:disabled):active { background:var(--control-pressed); }

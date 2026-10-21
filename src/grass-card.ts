@@ -2,12 +2,14 @@ import {el,button} from './dom';
 import {calendarYear,sundayIndex,stats} from './dates';
 import {aggregateDays,aggregateDisplayOpacity} from './aggregate';
 import type {Member,WorkoutLog,DashboardData} from './types';
+import {renderTitleBadges} from './title-badges';
+import type {BranchProgress} from './titles';
 
 export function renderGrassCard(options: {
  heading?:HTMLElement;year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
  photos?:(log:WorkoutLog)=>HTMLElement;
- /** Selected member's achievement title for the current month, with its month label. */
- title?:{month:number;name:string}|null;
+ /** Selected member's title tree for the current month, with its month label. */
+ titles?:{month:number;progress:BranchProgress[]}|null;
  logs:WorkoutLog[];currentStats?:DashboardData['currentStats'];
 }) {
   const {year:selectedYear,today,roster}=options;
@@ -38,11 +40,11 @@ export function renderGrassCard(options: {
   }
   top.querySelector('.metrics')?.remove();
   top.insertBefore(metrics, top.querySelector('.year-filter'));
-  top.querySelector('.member-title')?.remove();
-  if (options.title) {
-    const badge = el('p', 'member-title');
-    badge.append(el('span', 'member-title-label', `${options.title.month}월의 칭호`), el('span', 'member-title-name', options.title.name));
-    top.insertBefore(badge, top.querySelector('.year-filter'));
+  top.querySelectorAll('.member-titles').forEach(old => {old.dispatchEvent(new Event('dispose'));old.remove();});
+  if (options.titles) {
+    const titles = renderTitleBadges(options.titles.month, options.titles.progress);
+    top.append(titles);
+    card.addEventListener('dispose', () => titles.dispatchEvent(new Event('dispose')));
   }
 
   const content = el('div', 'grass-content');

@@ -1186,25 +1186,39 @@ test('a date detail taller than the screen still opens at its heading',async({pa
   expect(await page.locator('.date-detail').evaluate(e=>e.getBoundingClientRect().height)).toBeGreaterThan(600);
 });
 
-test('a selected member shows their monthly title beside the statistics',async({page})=>{
+test('a selected member shows every earned branch title and opens the title tree',async({page})=>{
   await page.setViewportSize({width:1280,height:900});await fixture(page);
-  await expect(page.locator('.member-title')).toHaveCount(0);
+  await expect(page.locator('.member-titles')).toHaveCount(0);
   await page.getByRole('button',{name:'하루',exact:true}).click();
-  const badge=page.locator('.workout-card .member-title');
-  await expect(badge).toHaveText(/10월의 칭호\s*빈틈없는 들판/);
-  const metrics=(await page.locator('.metrics').boundingBox())!,box=(await badge.boundingBox())!;
-  expect(Math.abs((box.y+box.height/2)-(metrics.y+metrics.height/2))).toBeLessThan(4);
-  // No records this month: no badge rather than an empty one.
+  const toggle=page.locator('.workout-card .title-badges'),tree=page.locator('.workout-card .title-tree');
+  // 하루: Oct 1–14 every day, photos and memos not on every day.
+  await expect(toggle.locator('.title-badge')).toHaveText(['곧게 뻗은 줄기','빈틈없는 들판','일곱 이랑의 농부']);
+  await expect(toggle).toHaveAttribute('aria-expanded','false');await expect(tree).toBeHidden();
+  // Mouse hover previews the tree; leaving closes it.
+  await toggle.hover();await expect(tree).toBeVisible();
+  await expect(tree.locator('.title-tier[data-earned="true"]')).toHaveCount(5);
+  await expect(tree.locator('.title-branch')).toHaveCount(5);
+  await expect(tree.locator('.title-tier').last()).toHaveText(/\?\?\?\s*숨은 업적/);
+  await page.mouse.move(5,5);await expect(tree).toBeHidden();
+  // Click pins it open; Escape closes it without closing the card and restores focus.
+  await toggle.click();await page.mouse.move(5,5);await expect(tree).toBeVisible();
+  await page.keyboard.press('Escape');await expect(tree).toBeHidden();await expect(toggle).toBeFocused();
+  await toggle.click();await page.locator('.brand-name').click();await expect(tree).toBeHidden();
+  // No records this month: no badges rather than an empty row.
   await page.getByRole('button',{name:'과거 전용',exact:true}).click();
-  await expect(page.locator('.member-title')).toHaveCount(0);
-  await page.getByRole('button',{name:'하루',exact:true}).click();
-  await expect(badge).toBeVisible();
+  await expect(page.locator('.member-titles')).toHaveCount(0);
 });
 
-test('mobile title badge sits on its own row below the statistics',async({page})=>{
+test('mobile title badges sit below the statistics and tap opens the tree inside the screen',async({page})=>{
   await page.setViewportSize({width:360,height:800});await fixture(page);
   await page.getByRole('button',{name:'하루',exact:true}).click();
-  const metrics=(await page.locator('.metrics').boundingBox())!,badge=(await page.locator('.member-title').boundingBox())!;
-  expect(badge.y).toBeGreaterThanOrEqual(metrics.y+metrics.height);
+  const metrics=(await page.locator('.metrics').boundingBox())!,badges=(await page.locator('.title-badges').boundingBox())!;
+  expect(badges.y).toBeGreaterThanOrEqual(metrics.y+metrics.height);
+  expect(badges.height).toBeGreaterThanOrEqual(44);
+  await page.locator('.title-badges').click();
+  const tree=page.locator('.title-tree');await expect(tree).toBeVisible();
+  const box=(await tree.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(360);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('.title-badges').click();await expect(tree).toBeHidden();
 });

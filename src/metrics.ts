@@ -1,5 +1,5 @@
 import {dayAt} from './dates';
-import {kingTitle} from './king-title';
+import {titleProgress,representativeTitle,type BranchProgress} from './titles';
 import type { MonthlyKPIs, WorkoutLog } from './types';
 
 const WEEKDAY_NAMES = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -25,18 +25,18 @@ function monthRecords(logs: WorkoutLog[], now: Date) {
     if (log.memo.trim()) memoDays.set(log.user_id, (memoDays.get(log.user_id) ?? new Set()).add(log.log_date));
   }
   const elapsedDays = Number(dayAt(now).slice(8));
-  const titleFor = (id: string) => kingTitle({dates:memberDays.get(id) ?? new Set(),photoDates:photoDays.get(id) ?? new Set(),memoDates:memoDays.get(id) ?? new Set(),elapsedDays});
-  return {monthlyLogs, memberDays, titleFor};
+  const progressFor = (id: string) => titleProgress({dates:memberDays.get(id) ?? new Set(),photoDates:photoDays.get(id) ?? new Set(),memoDates:memoDays.get(id) ?? new Set(),elapsedDays});
+  return {monthlyLogs, memberDays, progressFor};
 }
 
-/** The member's achievement title for the current KST month, or null without records this month. */
-export function memberMonthTitle(logs: WorkoutLog[], userId: string, now: Date): string | null {
-  const {memberDays, titleFor} = monthRecords(logs, now);
-  return memberDays.has(userId) ? titleFor(userId) : null;
+/** The member's title tree for the current KST month, or null without records this month. */
+export function memberMonthTitles(logs: WorkoutLog[], userId: string, now: Date): BranchProgress[] | null {
+  const {memberDays, progressFor} = monthRecords(logs, now);
+  return memberDays.has(userId) ? progressFor(userId) : null;
 }
 
 export function calculateMonthlyKPIs(logs: WorkoutLog[], now: Date): MonthlyKPIs {
-  const {monthlyLogs, memberDays, titleFor} = monthRecords(logs, now);
+  const {monthlyLogs, memberDays, progressFor} = monthRecords(logs, now);
   const weekdayCounts = new Array(7).fill(0);
   for (const days of memberDays.values()) {
     for (const date of days) {
@@ -75,7 +75,7 @@ export function calculateMonthlyKPIs(logs: WorkoutLog[], now: Date): MonthlyKPIs
   const maximum=Math.max(0,...[...memberDays.values()].map(d=>d.size));
   const workoutKings=[...memberDays].filter(([,days])=>days.size===maximum).map(([id,days])=>({
     id,days:days.size,name:monthlyLogs.find(l=>l.user_id===id)!.username,
-    title:titleFor(id),
+    title:representativeTitle(progressFor(id)),
   })).sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
   return {
     workoutKings,
