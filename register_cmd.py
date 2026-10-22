@@ -3,19 +3,13 @@ from dotenv import load_dotenv
 from mukmuk.discord import Discord
 
 def account_commands():
-    user = {'name':'유저','description':'연결하거나 해제할 계정','type':6,'required':True}
-    request = {'name':'요청','description':'현황에서 확인한 요청 번호','type':3,'required':True,'min_length':36,'max_length':36}
-    def sub(name, description, options=()):
-        return {'name':name,'description':description,'type':1,'options':list(options)}
+    # Single entries: Discord lists every subcommand separately in the / picker.
+    # Consent, cancel, unlink and review continue through buttons and menus.
     return [
-        {'name':'계정연결','description':'두 계정의 동의와 관리자 검토로 하나의 잔디를 사용합니다.','type':1,
-         'options':[sub('신청','대표 계정에서 보조 계정 연결을 신청합니다.',[user]),
-                    sub('현황','내 계정과 요청을 확인하고 동의합니다.'),
-                    sub('취소','승인 전 내 요청을 취소합니다.',[request]),
-                    sub('해제','내 그룹의 보조 계정을 분리 요청합니다.',[user])]},
+        {'name':'계정연결','description':'내 계정 연결 현황을 봅니다. 유저를 지정하면 바로 연결을 신청합니다.','type':1,
+         'options':[{'name':'유저','description':'연결할 계정 (비워두면 현황)','type':6,'required':False}]},
         {'name':'계정검토','description':'관리자가 계정 요청의 영향을 확인하고 검토합니다.','type':1,
-         'default_member_permissions':'32','options':[sub('목록','검토 대기와 반영 대기 요청을 확인합니다.'),
-                                                    sub('상세','영향을 확인하고 승인 또는 거절합니다.',[request])]},
+         'default_member_permissions':'32','options':[]},
     ]
 
 def main():

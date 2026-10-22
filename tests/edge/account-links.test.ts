@@ -2,7 +2,7 @@ import {it,expect,vi} from 'vitest';
 import {handleInteraction,publishReply,type ReplyDB} from '../../supabase/functions/_shared/interactions.ts';
 import {accountRoute,pollAccount,type AccountAction} from '../../supabase/functions/_shared/account-links.ts';
 const rid='00000000-0000-4000-8000-000000000001';
-const base={type:2,id:'100',token:'test-only',application_id:'42',guild_id:'1',member:{user:{id:'10'},roles:['member'],permissions:'0'},data:{name:'계정연결',options:[{name:'신청',type:1,options:[{name:'유저',value:'20',type:6}]}]}};
+const base={type:2,id:'100',token:'test-only',application_id:'42',guild_id:'1',member:{user:{id:'10'},roles:['member'],permissions:'0'},data:{name:'계정연결',options:[{name:'유저',value:'20',type:6}]}};
 async function signed(body:unknown){const p=await crypto.subtle.generateKey('Ed25519',true,['sign','verify']);const raw=JSON.stringify(body),timestamp='1791968400';const hex=(a:ArrayBuffer)=>[...new Uint8Array(a)].map(v=>v.toString(16).padStart(2,'0')).join('');return {request:new Request('https://fixture.test',{method:'POST',body:raw,headers:{'X-Signature-Timestamp':timestamp,'X-Signature-Ed25519':hex(await crypto.subtle.sign('Ed25519',p.privateKey,new TextEncoder().encode(timestamp+raw)))}}),publicKey:hex(await crypto.subtle.exportKey('raw',p.publicKey))};}
 it('signed commands and clicks get a new private reply and own cleanup, preserving parent',async()=>{
  const actions:AccountAction[]=[];const jobs=new Map([['parent',50]]);let now=1000;const pending:Promise<unknown>[]=[];
@@ -32,4 +32,26 @@ it('waits at most twenty seconds without accepting an expired or restarted actio
 });
 it('never delivers a business action if cleanup preparation fails',async()=>{
  const render=vi.fn();let content='';await publishReply({id:'100',token:'test',application_id:'42',targetId:'10',targetName:'운동가'},{key:btoa(String.fromCharCode(...new Uint8Array(32))),now:()=>new Date(),dashboardUrl:'',db:{prepare:async()=>{throw new Error()},reservePublish:async()=>0,daily:async()=>[],lastSuccess:async()=>null,schedule:async()=>{}},render,preparationFailure:'잠시 뒤 다시 이용해 주세요.',discord:async(_m,_p,b)=>{content=String(b?.content);return Response.json({});}});expect(render).not.toHaveBeenCalled();expect(content).not.toContain('5분');
+});
+it('routes single commands and menus: status by default, user or menu to request, menu to unlink, review list by default',()=>{
+ const member={actorId:'10',manager:false,member:true},manager={actorId:'10',manager:true,member:true};
+ const users={'20':{id:'20'},'30':{id:'30',bot:true}};
+ const cmd=(name:string,options?:unknown[])=>({...base,data:{name,...(options?{options}:{}),resolved:{users}}});
+ const menu=(kind:string,values:unknown)=>({...base,type:3,data:{custom_id:`mukmuk-account:${kind}:00000000-0000-0000-0000-000000000000:0`,values,resolved:{users}}});
+ expect(accountRoute(cmd('계정연결'),member)?.action).toMatchObject({kind:'status'});
+ expect(accountRoute(cmd('계정연결',[{name:'유저',value:'20',type:6}]),member)?.action).toMatchObject({kind:'request',target_id:'20'});
+ expect(accountRoute(cmd('계정연결',[{name:'유저',value:'30',type:6}]),member)?.error).toBeTruthy();
+ expect(accountRoute(cmd('계정연결',[{name:'해제',value:true,type:5}]),member)?.error).toBeTruthy();
+ expect(accountRoute(cmd('계정연결',[{name:'신청',type:1,options:[{name:'유저',value:'20',type:6}]}]),member)?.error).toBeTruthy();
+ expect(accountRoute(cmd('계정검토'),manager)?.action).toMatchObject({kind:'review_list'});
+ expect(accountRoute(cmd('계정검토'),member)?.error).toBeTruthy();
+ expect(accountRoute(cmd('계정검토',[{name:'목록',type:1}]),manager)?.error).toBeTruthy();
+ const picked=accountRoute(menu('request_select',['20']),member)?.action;
+ expect(picked).toMatchObject({kind:'request',target_id:'20'});expect(picked?.request_id).toBeUndefined();
+ expect(accountRoute(menu('unlink_select',['20']),member)?.action).toMatchObject({kind:'unlink',target_id:'20'});
+ expect(accountRoute(menu('request_select',['30']),member)?.error).toBeTruthy();
+ expect(accountRoute(menu('request_select',['20','21']),member)?.error).toBeTruthy();
+ expect(accountRoute(menu('request_select',[]),member)?.error).toBeTruthy();
+ expect(accountRoute({...base,type:3,data:{custom_id:'mukmuk-account:status:00000000-0000-0000-0000-000000000000:0'}},member)?.action).toMatchObject({kind:'status'});
+ expect(accountRoute({...base,type:3,data:{custom_id:'mukmuk-account:review_list:00000000-0000-0000-0000-000000000000:0'}},member)?.error).toBeTruthy();
 });

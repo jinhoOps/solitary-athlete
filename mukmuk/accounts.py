@@ -45,6 +45,22 @@ def components(buttons):
     return [{'type': 1, 'components': buttons[i:i+5]} for i in range(0, min(len(buttons), 25), 5)]
 
 
+# Navigation buttons carry no request; list views treat the nil id as "from the start".
+NIL = '00000000-0000-0000-0000-000000000000'
+
+
+def nav(kind, label):
+    return button(kind, NIL, 0, label)
+
+
+def select(kind, placeholder, options=None):
+    menu = {'type': 3 if options else 5, 'custom_id': f'mukmuk-account:{kind}:{NIL}:0',
+            'placeholder': placeholder, 'min_values': 1, 'max_values': 1}
+    if options:
+        menu['options'] = options[:25]
+    return {'type': 1, 'components': [menu]}
+
+
 class AccountService:
     def __init__(self, store, api, settings, runtime_guard=None):
         self.store, self.api, self.settings = store, api, settings
@@ -90,7 +106,7 @@ class AccountService:
         people = {action['actor_id']: actor}
         request = None
         # Request rows are re-read under the write lock before any transition.
-        if action.get('request_id'):
+        if action.get('request_id') and action['kind'] not in ('status', 'review_list'):
             request = self._find(action['request_id'])
             if action['kind'].startswith('review') or action['kind'] in ('approve', 'reject'):
                 if not manager:
@@ -178,7 +194,7 @@ class AccountService:
             proposed = self._counts(db, state['revision']+1, today)
         return {'current': current, 'proposed': proposed}
 
-    def _notice(self, request, actor, manager=False, impact=None):
+    def _notice(self, request, actor, manager=False, impact=None, admin=False):
         status = request['status']
         names = {'awaiting_consent': '상대 계정의 동의를 기다리고 있어요.', 'pending_review': '관리자 검토를 기다리고 있어요.',
                  'approved': '승인됐어요. 다음 성공 수집에서 기록과 통계에 함께 반영해요.', 'applied': '계정 변경이 반영됐어요.',
@@ -198,7 +214,7 @@ class AccountService:
             reason = re.sub(r'([\\`*_~|>\[\]()])', r'\\\1', reason)
             text += '\n거절 사유 · '+reason
         if status == 'awaiting_consent':
-            text += '\n상대 계정에서도 /계정연결 현황으로 동의해 주세요.'
+            text += '\n상대 계정에서도 /계정연결로 현황을 열어 동의해 주세요.'
         choices = []
         if status == 'awaiting_consent' and actor == request['target_user_id']:
             choices.extend([button('consent', request['id'], request['version'], '동의', 1), button('decline', request['id'], request['version'], '거절')])
@@ -208,6 +224,14 @@ class AccountService:
             choices.extend([button('review_detail', request['id'], request['version'], '영향 다시 확인'),
                             button('approve', request['id'], request['version'], '승인', 1),
                             button('reject_modal', request['id'], request['version'], '거절', 4)])
+        if manager:
+            choices.append(nav('review_list', '목록으로'))
+        else:
+            if admin and status == 'pending_review':
+                choices.append(button('review_detail', request['id'], request['version'], '검토하기', 1))
+            elif admin:
+                choices.append(nav('review_list', '검토 목록'))
+            choices.append(nav('status', '현황으로'))
         result = {'content': text[:1700], 'components': components(choices), 'request_id': str(request['id']),
                   'status': status, 'version': request['version']}
         if impact:
@@ -216,7 +240,7 @@ class AccountService:
             result['content'] += f"\n월간 {a['members']}명·{a['days']}칸·{a['rate']:.1f}% → {b['members']}명·{b['days']}칸·{b['rate']:.1f}%\n전체 인증 이력 {a['total_members']}명 → {b['total_members']}명\n원본과 지난 날짜의 관측값은 보존해요."
         return result
 
-    def _create(self, db, action, people):
+    def _create(self, db, action, people, admin=False):
         actor, target = action['actor_id'], action.get('target_id')
         if not numeric(target) or (actor == target and action['kind'] != 'unlink'):
             raise AccountError('invalid_member')
@@ -240,14 +264,14 @@ class AccountService:
           AND (primary_user_id=ANY(%s) OR target_user_id=ANY(%s)) ORDER BY created_at LIMIT 1''', (list(ACTIVE), [primary, target], [primary, target])).fetchone()
         if existing:
             if existing['primary_user_id'] == primary and existing['target_user_id'] == target and existing['kind'] == ('unlink' if unlink else 'link'):
-                return self._notice(existing, actor)
+                return self._notice(existing, actor, admin=admin)
             raise AccountError('account_busy')
         request = db.execute('''INSERT INTO solitary_athlete.mukmuk_account_link_requests
           (creation_interaction_id,guild_id,kind,requester_id,primary_user_id,target_user_id,person_id,group_fingerprint,status)
           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *''',
           (action['interaction_id'], self.guild, 'unlink' if unlink else 'link', actor, primary, target, own['person_id'],
            Jsonb(self._fingerprint(db, primary, target)), 'pending_review' if unlink else 'awaiting_consent')).fetchone()
-        return self._notice(request, actor)
+        return self._notice(request, actor, admin=admin)
 
     def _list(self, db, action, manager):
         review = action['kind'] == 'review_list'
@@ -259,25 +283,43 @@ class AccountService:
                 UUID(str(after))
             except ValueError:
                 raise AccountError('invalid_request') from None
+        # Status keeps rows free for the link/unlink menus; Discord allows five rows.
+        limit = 10 if review else 5
         rows = db.execute('''SELECT * FROM solitary_athlete.mukmuk_account_link_requests
           WHERE guild_id=%s AND (%s OR primary_user_id=%s OR target_user_id=%s)
           AND (%s IS FALSE OR status IN ('pending_review','approved','failed'))
-          AND (%s::uuid IS NULL OR id>%s::uuid) ORDER BY id LIMIT 11''',
-          (self.guild, review, action['actor_id'], action['actor_id'], review, after, after)).fetchall()
+          AND (%s::uuid IS NULL OR id>%s::uuid) ORDER BY id LIMIT %s''',
+          (self.guild, review, action['actor_id'], action['actor_id'], review, after, after, limit+1)).fetchall()
         labels = {'awaiting_consent':'동의 대기','pending_review':'검토 대기','approved':'반영 대기','applied':'반영 완료','rejected':'거절','cancelled':'취소','expired':'만료','invalidated':'재신청 필요','failed':'처리 오류'}
-        buttons = [button('review_detail' if review else 'detail', r['id'], r['version'], f"{'연결' if r['kind']=='link' else '해제'} · {labels[r['status']]}") for r in rows[:10]]
-        if len(rows) > 10:
-            buttons.append(button('review_list' if review else 'status', rows[9]['id'], 0, '다음 요청'))
+        buttons = [button('review_detail' if review else 'detail', r['id'], r['version'], f"{'연결' if r['kind']=='link' else '해제'} · {labels[r['status']]}") for r in rows[:limit]]
+        navigation = []
+        if len(rows) > limit:
+            navigation.append(button('review_list' if review else 'status', rows[limit-1]['id'], 0, '다음 요청'))
         text = '검토할 계정 요청이에요.' if review else '내 계정 연결 현황이에요.'
-        if not review:
-            account = db.execute('''SELECT p.primary_user_id,a.user_id FROM solitary_athlete.mukmuk_person_accounts a
-              JOIN solitary_athlete.mukmuk_people p USING(person_id) WHERE a.valid_until IS NULL AND a.person_id=(
+        menus = []
+        if review:
+            navigation.append(nav('status', '내 현황'))
+        else:
+            if manager:
+                navigation.append(nav('review_list', '검토 목록'))
+            account = db.execute('''SELECT p.primary_user_id,a.user_id,own.username FROM solitary_athlete.mukmuk_person_accounts a
+              JOIN solitary_athlete.mukmuk_people p USING(person_id)
+              LEFT JOIN solitary_athlete.mukmuk_people own ON own.primary_user_id=a.user_id
+              WHERE a.valid_until IS NULL AND a.person_id=(
               SELECT person_id FROM solitary_athlete.mukmuk_person_accounts WHERE user_id=%s AND valid_until IS NULL) ORDER BY a.user_id''', (action['actor_id'],)).fetchall()
+            primary = account[0]['primary_user_id'] if account else action['actor_id']
             if account:
-                text += '\n대표 <@'+account[0]['primary_user_id']+'>\n연결 계정 '+', '.join('<@'+a['user_id']+'>' for a in account)
+                text += '\n대표 <@'+primary+'>\n연결 계정 '+', '.join('<@'+a['user_id']+'>' for a in account)
+            if primary == action['actor_id']:
+                menus.append(select('request_select', '연결할 계정 선택'))
+            # Same rule as _create: the primary detaches any alt, an alt only itself.
+            detachable = [a for a in account if a['user_id'] != primary and action['actor_id'] in (primary, a['user_id'])]
+            if detachable:
+                menus.append(select('unlink_select', '해제할 계정 선택',
+                                    [{'label': (a['username'] or '연결 계정')[:100], 'value': a['user_id']} for a in detachable]))
         if not rows:
             text += '\n진행 중인 요청이 없어요.'
-        return {'content': text[:1900], 'components': components(buttons)}
+        return {'content': text[:1900], 'components': components(buttons) + components(navigation) + menus}
 
     def _perform(self, db, action, manager, people, party_ineligible=False):
         if not self._state(db)['enabled']:
@@ -286,7 +328,7 @@ class AccountService:
             self._ensure(db, member)
         kind, actor = action['kind'], action['actor_id']
         if kind in ('request', 'unlink'):
-            return self._create(db, action, people)
+            return self._create(db, action, people, manager)
         if kind in ('status', 'review_list'):
             return self._list(db, action, manager)
         request = self._find(action.get('request_id'), lock=True)
@@ -299,12 +341,12 @@ class AccountService:
             raise AccountError('request_expired')
         if self._fingerprint(db, request['primary_user_id'], request['target_user_id']) != request['group_fingerprint'] and request['status'] in ACTIVE:
             db.execute("UPDATE solitary_athlete.mukmuk_account_link_requests SET status='invalidated',version=version+1 WHERE id=%s", (request['id'],))
-            return self._notice(self._find(request['id']), actor)
+            return self._notice(self._find(request['id']), actor, admin=manager)
         if party_ineligible and request['status'] in ACTIVE:
             db.execute("UPDATE solitary_athlete.mukmuk_account_link_requests SET status='invalidated',version=version+1,lease_until=NULL,error_code='participant_ineligible' WHERE id=%s", (request['id'],))
-            return self._notice(self._find(request['id']), actor)
+            return self._notice(self._find(request['id']), actor, admin=manager)
         if kind == 'detail':
-            return self._notice(request, actor)
+            return self._notice(request, actor, admin=manager)
         if kind == 'review_detail':
             impact = self._preview(db, request) if request['status'] == 'pending_review' else None
             if impact:
@@ -316,8 +358,7 @@ class AccountService:
                   source_revision=EXCLUDED.source_revision,impact=EXCLUDED.impact,created_at=clock_timestamp()''',
                   (request['id'], actor, request['version'], state['revision'], state['source_revision'], Jsonb(impact)))
             return self._notice(request, actor, manager=True, impact=impact)
-        expected_version = request['version'] if kind == 'cancel' and action.get('payload', {}).get('command') else action.get('version')
-        if expected_version != request['version']:
+        if action.get('version') != request['version']:
             raise AccountError('request_changed')
         status = request['status']
         if kind == 'consent':
@@ -353,7 +394,7 @@ class AccountService:
           approved_at=CASE WHEN %s='approve' THEN clock_timestamp() ELSE approved_at END,
           rejection_reason=CASE WHEN %s='reject' THEN %s ELSE rejection_reason END WHERE id=%s RETURNING *''',
           (target_status, kind, kind, actor, kind, kind, kind, action.get('payload', {}).get('reason'), request['id'])).fetchone()
-        return self._notice(request, actor)
+        return self._notice(request, actor, admin=manager)
 
     def handle(self, action, deadline):
         if not numeric(action.get('interaction_id')) or not numeric(action.get('actor_id')):
