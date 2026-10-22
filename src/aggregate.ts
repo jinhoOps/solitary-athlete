@@ -16,3 +16,9 @@ export function aggregateDays(logs:WorkoutLog[],memberCount:number):Map<string,A
   return [date,{count:daily.length,photoCount:daily.filter(l=>l.has_photo).length,opacity:memberCount>0?Math.min(daily.length,50)/Math.min(memberCount,50):0,logs:daily}];
  }));
 }
+
+/** Any participation starts at 20% so a single member stays visible against an empty cell. */
+export const AGGREGATE_MIN_OPACITY=.2;
+export function aggregateDisplayOpacity(ratio:number):number{
+ return ratio>0?AGGREGATE_MIN_OPACITY+(1-AGGREGATE_MIN_OPACITY)*Math.min(ratio,1):0;
+}

@@ -7,6 +7,7 @@ import {photoSection} from './photo-view';
 import {renderGrassCard} from './grass-card';
 import {renderDashboardControls, SERVICE_START_YEAR} from './dashboard-controls';
 import {grassParticipationView} from './grass-participation';
+import {memberMonthTitles} from './metrics';
 import type { DashboardData, WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -137,17 +138,18 @@ function renderKPIs() {
   else {
     for(const winner of kpis.workoutKings){
       const person=el('div','king-member');
-      person.append(el('div','kpi-value',winner.name));
+      person.append(el('div','kpi-value',winner.name),el('div','caption king-title',winner.title));
       king.append(person);
     }
   }
   kpiSection.append(king);
   const grass=grassParticipationView(data.grassParticipation);
+  // Context lines explain each value's basis; they never rank anyone beyond the king card.
   const items: {title:string;value:string;change?:string;description?:string}[] = [
-    { title: '이번 달 고운', value: `${kpis.activeMembers}명` },
+    { title: '이번 달 고운', value: `${kpis.activeMembers}명`, change:`전체 ${data.roster.length}명 중` },
     { title: '함께 심은 잔디', value: grass.value, change:grass.change, description:grass.description },
-    { title: '가장 푸른 요일', value: kpis.mostActiveWeekday },
-    { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일` },
+    { title: '가장 푸른 요일', value: kpis.mostActiveWeekday, change:kpis.mostActiveWeekdayDays?`이번 달 ${kpis.mostActiveWeekdayDays}칸`:undefined },
+    { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일`, change:`${Number(today.slice(8))}일 중` },
   ];
   for (const item of items) {
     const card = el('div', 'kpi-card');
@@ -164,7 +166,10 @@ function renderCards() {
   todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();cardReveals.clear();
   const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
-  const card=renderGrassCard({heading:yearBar,year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,
+  // Titles describe the current month, so they appear only beside this year's statistics.
+  const progress=selected&&selectedYear===currentYear?memberMonthTitles(data.logs,selected,new Date()):null;
+  const titles=progress?{month:Number(today.slice(5,7)),progress}:null;
+  const card=renderGrassCard({heading:yearBar,year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,titles,
     photos:log=>photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,knownMembers.get(log.user_id)??log.username)});
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(card.element);
@@ -364,7 +369,7 @@ async function init(preserveSelection = false) {
       );
       if(data){
         renderFilters(focusedControl);
-        yearBar.querySelector('.metrics')?.remove();
+        yearBar.querySelector('.metrics')?.remove();yearBar.querySelectorAll('.member-titles').forEach(e=>{e.dispatchEvent(new Event('dispose'));e.remove();});
         yearBar.hidden=false;
         cards.replaceChildren(yearBar,error);
       } else cards.replaceChildren(error);

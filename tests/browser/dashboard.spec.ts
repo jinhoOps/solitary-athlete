@@ -290,7 +290,8 @@ for(const width of [360,1280])test(`workout king is first and spans mobile row a
  await page.setViewportSize({width,height:900});await fixture(page);
  const cards=page.locator('.kpi-card');await expect(cards).toHaveCount(5);
  await expect(cards.first().locator('.kpi-title')).toHaveText('운동왕 👑');
- await expect(cards.first()).toHaveText('운동왕 👑하루');
+ await expect(cards.first().locator('.king-member .kpi-value')).toHaveText('하루');
+ await expect(cards.first().locator('.king-title')).toHaveText('빈틈없는 들판');
  const first=await cards.nth(0).boundingBox(),next=await cards.nth(1).boundingBox(),section=await page.locator('.kpi-section').boundingBox();
  if(width===360){expect(first!.width).toBeCloseTo(section!.width);expect(next!.y).toBeGreaterThan(first!.y);}
  else {expect(first!.y).toBe(next!.y);expect(first!.x).toBeLessThan(next!.x);}
@@ -618,7 +619,7 @@ test('grass edge fades follow scroll boundaries, resizing and keyboard navigatio
  await expect(right).toBeVisible();
 });
 
-for(const width of [320,360,768,1280]) test(`grass fades meet the sticky labels and cover only cell rows at ${width}px`,async({page})=>{
+for(const width of [320,360,768,1000]) test(`grass fades meet the sticky labels and cover only cell rows at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});await fixture(page);
  for(const scale of [100,200]){
   await page.addStyleTag({content:`html { font-size:${scale}%; }`});
@@ -1117,4 +1118,107 @@ for(const state of ['first','pending','error','sql-error','permission-error'] as
  await expect(page.locator('.workout-card')).toHaveCount(1);
  await expect(page.locator('.modal-box')).toHaveCount(0);
  expect(await page.evaluate(()=>localStorage.getItem('mukmuk_secret_code'))).toBe('test-code');
+});
+
+test('desktop shows the whole year without scrolling and narrower screens keep inner scrolling',async({page})=>{
+  await page.setViewportSize({width:1080,height:800});await fixture(page);
+  const scroll=page.locator('.workout-card .grass-scroll');
+  const fits=()=>scroll.evaluate(e=>e.scrollWidth<=e.clientWidth);
+  expect(await fits()).toBe(true);
+  await expect(page.locator('.workout-card .grass-scroll-fade')).toHaveCount(2);
+  for(const fade of await page.locator('.workout-card .grass-scroll-fade').all())await expect(fade).toBeHidden();
+  await page.setViewportSize({width:1000,height:800});
+  await expect.poll(fits).toBe(false);
+});
+
+test('aggregate cells start at a visible minimum density and KPI cards each carry a context line',async({page})=>{
+  await fixture(page);
+  // One of three members on the day: ratio 1/3 maps to .2 + .8/3.
+  const opacity=await page.locator(`.workout-card [data-date="${today}"]`).evaluate(e=>Number(e.style.getPropertyValue('--aggregate-opacity')));
+  expect(opacity).toBeCloseTo(.2+.8/3);
+  expect(await page.locator('.workout-card [data-date="2026-10-13"]').evaluate(e=>e.style.getPropertyValue('--aggregate-opacity'))).not.toBe('0');
+  const swatches=await page.locator('.legend .swatch').evaluateAll(els=>els.map(e=>Number((e as HTMLElement).style.getPropertyValue('--aggregate-opacity'))));
+  expect(swatches[0]).toBe(0);expect(swatches[4]).toBe(1);expect(swatches[1]).toBeCloseTo(.4);
+  const cards=page.locator('.kpi-card');
+  await expect(cards.locator('.kpi-change')).toHaveCount(4);
+  await expect(cards.nth(0).locator('.king-title')).toHaveCount(1);
+  await expect(cards.nth(1)).toContainText('전체 3명 중');
+  await expect(cards.nth(3)).toContainText(/이번 달 \d+칸/);
+  await expect(cards.nth(4)).toContainText('14일 중');
+});
+
+test('status badge stays hidden until a collection time exists',async({page})=>{
+  await fixture(page,'normal',false);
+  await expect(page.locator('.brand-header .status-notice')).toBeHidden();
+});
+
+test('mobile member actions and scrolling chips share one top edge',async({page})=>{
+  await page.setViewportSize({width:390,height:800});await fixture(page);
+  const top=(selector:string)=>page.locator(selector).first().evaluate(e=>Math.round(e.getBoundingClientRect().top));
+  const chip=await top('.member-options .filter-button');
+  expect(await top('.member-all')).toBe(chip);
+  expect(await top('.member-find')).toBe(chip);
+});
+
+for(const [width,height] of [[1280,900],[390,844]])test(`opening a date detail scrolls only as far as needed at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height});await fixture(page);
+  const cell=page.locator(`.workout-card [data-date="${today}"]`);
+  const before=await page.evaluate(()=>scrollY);
+  await cell.click();
+  const title=page.locator('.date-detail .detail-heading h4');
+  await expect(title).toBeFocused();await expect(title).toBeInViewport();
+  await expect(cell).toBeInViewport();
+  const bottom=await page.locator('.date-detail').evaluate(e=>e.getBoundingClientRect().bottom);
+  // Either nothing moved, or the page moved just enough to bring the detail's bottom on screen.
+  if(await page.evaluate(()=>scrollY)!==before)expect(Math.abs(bottom-height)).toBeLessThan(2);
+  else expect(bottom).toBeLessThanOrEqual(height);
+});
+
+test('a date detail taller than the screen still opens at its heading',async({page})=>{
+  await page.setViewportSize({width:390,height:600});await fixture(page);
+  const memo=Array.from({length:80},(_,i)=>`${i+1}세트`).join('\n');
+  // Registered after the fixture so this handler wins, then reload to use it.
+  await page.route('**/rpc/get_workout_logs_page',route=>route.fulfill({json:[{user_id:'2',username:'하루',log_date:today,memo,has_photo:false,verification_count:1}]}));
+  await page.reload();await expect(page.locator('#app')).toHaveAttribute('aria-busy','false');
+  await page.locator(`.workout-card [data-date="${today}"]`).click();
+  const title=page.locator('.date-detail .detail-heading h4');
+  await expect(title).toBeFocused();await expect(title).toBeInViewport();
+  expect(await page.locator('.date-detail').evaluate(e=>e.getBoundingClientRect().height)).toBeGreaterThan(600);
+});
+
+test('a selected member shows every earned branch title and opens the title tree',async({page})=>{
+  await page.setViewportSize({width:1280,height:900});await fixture(page);
+  await expect(page.locator('.member-titles')).toHaveCount(0);
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  const toggle=page.locator('.workout-card .title-badges'),tree=page.locator('.workout-card .title-tree');
+  // 하루: Oct 1–14 every day, photos and memos not on every day.
+  await expect(toggle.locator('.title-badge')).toHaveText(['곧게 뻗은 줄기','빈틈없는 들판','일곱 이랑의 농부']);
+  await expect(toggle).toHaveAttribute('aria-expanded','false');await expect(tree).toBeHidden();
+  // Mouse hover previews the tree; leaving closes it.
+  await toggle.hover();await expect(tree).toBeVisible();
+  await expect(tree.locator('.title-tier[data-earned="true"]')).toHaveCount(5);
+  await expect(tree.locator('.title-branch')).toHaveCount(5);
+  await expect(tree.locator('.title-tier').last()).toHaveText(/\?\?\?\s*숨은 업적/);
+  await page.mouse.move(5,5);await expect(tree).toBeHidden();
+  // Click pins it open; Escape closes it without closing the card and restores focus.
+  await toggle.click();await page.mouse.move(5,5);await expect(tree).toBeVisible();
+  await page.keyboard.press('Escape');await expect(tree).toBeHidden();await expect(toggle).toBeFocused();
+  await toggle.click();await page.locator('.brand-name').click();await expect(tree).toBeHidden();
+  // No records this month: no badges rather than an empty row.
+  await page.getByRole('button',{name:'과거 전용',exact:true}).click();
+  await expect(page.locator('.member-titles')).toHaveCount(0);
+});
+
+test('mobile title badges sit below the statistics and tap opens the tree inside the screen',async({page})=>{
+  await page.setViewportSize({width:360,height:800});await fixture(page);
+  await page.getByRole('button',{name:'하루',exact:true}).click();
+  const metrics=(await page.locator('.metrics').boundingBox())!,badges=(await page.locator('.title-badges').boundingBox())!;
+  expect(badges.y).toBeGreaterThanOrEqual(metrics.y+metrics.height);
+  expect(badges.height).toBeGreaterThanOrEqual(44);
+  await page.locator('.title-badges').click();
+  const tree=page.locator('.title-tree');await expect(tree).toBeVisible();
+  const box=(await tree.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(360);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('.title-badges').click();await expect(tree).toBeHidden();
 });

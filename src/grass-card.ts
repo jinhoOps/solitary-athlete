@@ -1,11 +1,15 @@
 import {el,button} from './dom';
 import {calendarYear,sundayIndex,stats} from './dates';
-import {aggregateDays} from './aggregate';
+import {aggregateDays,aggregateDisplayOpacity} from './aggregate';
 import type {Member,WorkoutLog,DashboardData} from './types';
+import {renderTitleBadges} from './title-badges';
+import type {BranchProgress} from './titles';
 
 export function renderGrassCard(options: {
  heading?:HTMLElement;year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
  photos?:(log:WorkoutLog)=>HTMLElement;
+ /** Selected member's title tree for the current month, with its month label. */
+ titles?:{month:number;progress:BranchProgress[]}|null;
  logs:WorkoutLog[];currentStats?:DashboardData['currentStats'];
 }) {
   const {year:selectedYear,today,roster}=options;
@@ -36,6 +40,12 @@ export function renderGrassCard(options: {
   }
   top.querySelector('.metrics')?.remove();
   top.insertBefore(metrics, top.querySelector('.year-filter'));
+  top.querySelectorAll('.member-titles').forEach(old => {old.dispatchEvent(new Event('dispose'));old.remove();});
+  if (options.titles) {
+    const titles = renderTitleBadges(options.titles.month, options.titles.progress);
+    top.append(titles);
+    card.addEventListener('dispose', () => titles.dispatchEvent(new Event('dispose')));
+  }
 
   const content = el('div', 'grass-content');
   const visual = el('div', 'grass-visual');
@@ -130,7 +140,8 @@ export function renderGrassCard(options: {
     requestAnimationFrame(() => {
       if (opened !== date || !card.isConnected) return;
       revealDate(date);
-      details.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+      // Scroll only as far as needed; a detail taller than the screen still aligns its start.
+      details.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
       detailHeading.focus({preventScroll:true});
     });
   }
@@ -165,7 +176,7 @@ export function renderGrassCard(options: {
     if(aggregate){
       cell.classList.add('aggregate-cell');
       cell.dataset.count=String(daily.get(date)?.count??0);
-      cell.style.setProperty('--aggregate-opacity',String(daily.get(date)?.opacity??0));
+      cell.style.setProperty('--aggregate-opacity',String(aggregateDisplayOpacity(daily.get(date)?.opacity??0)));
     } else cell.dataset.level = String(levelFor(date));
     cell.disabled = date > today;
     cell.tabIndex = date === entryDate ? 0 : -1;
@@ -269,7 +280,7 @@ export function renderGrassCard(options: {
   for (const [level, text] of (aggregate?['0%','25%','50%','75%','100%']:['기록 없음', '텍스트 인증', '사진 포함']).entries()) {
     const item = el('span');
     const swatch = el('span', 'swatch');
-    if(aggregate){swatch.classList.add('aggregate-cell');swatch.style.setProperty('--aggregate-opacity',String(level/4));}
+    if(aggregate){swatch.classList.add('aggregate-cell');swatch.style.setProperty('--aggregate-opacity',String(aggregateDisplayOpacity(level/4)));}
     else swatch.dataset.level = String(level);
     item.append(swatch, document.createTextNode(text));
     legend.append(item);
