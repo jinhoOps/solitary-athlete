@@ -491,7 +491,7 @@ Orca의 로그인된 Supabase SQL Editor에서 `20261020000001_mukmuk_monthly_gr
 
 상태: 설계 검토본, 구현·실서비스 적용 전. [묵묵 계정 연결 · 승인과 집계 설계](docs/superpowers/specs/2026-10-21-account-link-design.md)에 사용자 신청·두 계정 동의·다른 관리자 승인, 로컬 묵묵봇 온라인 중에만 계정 기능 사용, 원본 보존, 사람 단위 집계, 연결 전후 증감 비교 제외, 해제·배포 전환·수용 기준을 정리했다. 기존 `/잔디`·`/기록갱신`은 현재 Edge 방식을 유지하며 GitHub 보완 수집은 계정 연결을 적용하지 않는 설계다. 구현 기준으로 worker 연결 3개 예산·새 비공개 버튼 응답과 독립 삭제 예약·SQL 함수형 person_day도 구체화했다. 현재 Discord ID 기준의 운영 계약은 아직 변경하지 않았다.
 
-## 계정 연결 구현 (2026-10-21, 운영 활성화 전)
+## 계정 연결 구현 (2026-10-21 구현, 2026-10-22 운영 활성화)
 
 [계정 연결 명세](docs/superpowers/specs/2026-10-21-account-link-design.md)와 [구현 계획](docs/superpowers/plans/2026-10-21-account-link.md)에 따라 구현했다. 원본 `workout_events.user_id`와 계정별 `workout_logs`는 보존한다. 현재 사람 집계는 revision별 소속 기간과 `mukmuk_person_days` SQL 함수에서 계산하며 별도 person_day 테이블은 만들지 않는다. 대표 표시명과 person UUID만 웹에 전달하고 연결 계정 목록·동의·검토는 서버 전용이다.
 
@@ -510,3 +510,7 @@ Orca의 로그인된 Supabase SQL Editor에서 `20261020000001_mukmuk_monthly_gr
 ### 2026-10-22 계정 연결 비활성 운영 반영
 
 사용자 승인으로 대시보드 PR #31을 먼저 병합하고 계정 연결 PR #32를 최신 main 위로 rebase·재검증했다. `20261021000001`~`20261021000004` 마이그레이션을 운영 묵묵 스키마에 적용하고 새 RPC의 정상 응답과 기존 집계·원본 보존을 확인한 뒤 #32를 병합했다. Pages의 배포 소스는 `3e8fb83`이며 기존 Edge 네 함수와 macOS 설치 런타임 `c9798e0dbd5d27f8`을 대응 코드로 갱신했다. DB enabled=false/revision=0, 로컬·Edge 플래그 false 기본값, 신규 요청·적용 0건을 유지했다. 실제 pooler의 서버 인증서 검증과 worker 연결 2개 + Edge 조회의 동시 실행, 비공개 권한, 실제 웹 표시와 수집 정상 종료를 확인했다. 신규 계정 명령 등록·로컬 메인 시작·기능 활성화·실제 사용자 연결은 수행하지 않았다. 상세 버전·검증 범위·남은 수용 검사는 [운영 반영 이력](docs/operations.md#2026-10-22-비활성-운영-반영-이력)을 따른다.
+
+### 2026-10-22 계정 연결 운영 활성화
+
+같은 날 사용자 요청으로 별도 수용 검사 없이 기능을 켰다. 로컬 `.env`·Edge Secret의 `MUKMUK_ACCOUNT_LINK_ENABLED=true`와 DB `enabled=true`를 적용하고 `/계정연결`·`/계정검토`를 길드 명령으로 등록했다. 로컬 메인은 설치 런타임 `c9798e0dbd5d27f8`로 Orca 터미널에서 실행 중이다. 활성화 시점 revision은 0이며 실제 신청·승인·적용은 첫 실사용에서 확인한다. 상세는 [활성화 이력](docs/operations.md#2026-10-22-운영-활성화-이력)을 따른다.
