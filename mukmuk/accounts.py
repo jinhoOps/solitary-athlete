@@ -311,8 +311,12 @@ class AccountService:
               WHERE a.valid_until IS NULL AND a.person_id=(
               SELECT person_id FROM solitary_athlete.mukmuk_person_accounts WHERE user_id=%s AND valid_until IS NULL) ORDER BY a.user_id''', (action['actor_id'],)).fetchall()
             primary = account[0]['primary_user_id'] if account else action['actor_id']
-            if account:
-                text += '\n대표 <@'+primary+'>\n연결 계정 '+', '.join('<@'+a['user_id']+'>' for a in account)
+            # Same quoted source → destination lines as request notices.
+            alts = [a['user_id'] for a in account if a['user_id'] != primary]
+            if alts:
+                text += ''.join(f'\n> <@{alt}> → <@{primary}> (대표)' for alt in alts)
+            elif account:
+                text += f'\n> <@{primary}> (대표)\n연결된 계정이 없어요.'
             if primary == action['actor_id']:
                 menus.append(select('request_select', '연결할 계정 선택'))
             # Same rule as _create: the primary detaches any alt, an alt only itself.

@@ -286,6 +286,7 @@ def test_status_offers_link_and_unlink_menus_by_role(accounts):
     alone = action(service, 400, '1', 'status', request_id=NIL)
     assert alone.get('error_code') is None, alone
     assert kinds(alone) == ['request_select'] and parts(alone)[0]['type'] == 5
+    assert '\n> <@1> (대표)\n연결된 계정이 없어요.' in alone['content']
     with service.store.conn.transaction():
         for user in ('1', '2'):
             service.store.conn.execute('SELECT solitary_athlete.mukmuk_ensure_person(%s,%s,%s)', (user, '가상'+user, GUILD))
@@ -294,6 +295,7 @@ def test_status_offers_link_and_unlink_menus_by_role(accounts):
     menu = parts(primary)[-1]
     assert kinds(primary) == ['request_select', 'unlink_select']
     assert menu['options'] == [{'label': '가상2', 'value': '2'}]
+    assert '\n> <@2> → <@1> (대표)' in primary['content'] and '연결된 계정이 없어요' not in primary['content']
     alt = action(service, 402, '2', 'status')
     assert kinds(alt) == ['unlink_select'] and parts(alt)[0]['options'][0]['value'] == '2'
     manager = action(service, 403, '3', 'status')
