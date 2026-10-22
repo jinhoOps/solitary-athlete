@@ -202,9 +202,9 @@ class AccountService:
                  'invalidated': '계정 구성이나 자격이 바뀌어 다시 신청해야 해요.', 'failed': '처리를 마치지 못했어요. 다시 신청해 주세요.'}
         operation = '계정 연결' if request['kind'] == 'link' else '계정 해제'
         primary, target = f"<@{request['primary_user_id']}> (대표)", f"<@{request['target_user_id']}>"
-        # Source > destination: the alt joins the primary's grass, or leaves it.
-        direction = f"{target} > {primary}" if request['kind'] == 'link' else f"{primary} > {target}"
-        text = f"{operation} 요청 · {names[status]}\n{direction}\n요청 {request['id']}"
+        # Quoted source → destination: the alt joins the primary's grass, or leaves it.
+        direction = f"{target} → {primary}" if request['kind'] == 'link' else f"{primary} → {target}"
+        text = f"{operation} 요청 · {names[status]}\n> {direction}\n요청 {request['id']}"
         def consent_time(value):
             return value.astimezone(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M KST') if value else '대기 중'
         text += '\n신청 계정 동의 · '+consent_time(request['requester_consented_at'])

@@ -257,8 +257,8 @@ def test_review_notice_identifies_action_consent_policy_and_rejection_reason(acc
     assert '계정 연결 요청' in link['content']
     assert '계정 해제 요청' in unlink['content']
     # Direction reads source > destination: an alt joins the primary, or leaves it.
-    assert '<@2> > <@1> (대표)' in link['content']
-    assert '<@1> (대표) > <@2>' in unlink['content']
+    assert '\n> <@2> → <@1> (대표)\n' in link['content']
+    assert '\n> <@1> (대표) → <@2>\n' in unlink['content']
     assert '신청 계정 동의' in link['content'] and '상대 계정 동의' in link['content']
     assert 'KST' in link['content']
     assert '추가 동의' in unlink['content']
