@@ -12,7 +12,6 @@ ACTIVE = ('awaiting_consent', 'pending_review', 'approved')
 MESSAGES = {
     'permission_denied': '이 기능을 사용할 권한이 없어요.',
     'not_participant': '본인이 관련된 요청만 확인할 수 있어요.',
-    'independent_review_required': '본인 계정의 요청은 다른 관리자가 검토해야 해요.',
     'invalid_member': '이 서버의 일반 사용자 계정만 연결할 수 있어요.',
     'account_busy': '해당 계정에 진행 중인 요청이 있어요.',
     'request_changed': '요청 상태가 바뀌었어요. 현황을 다시 확인해 주세요.',
@@ -145,12 +144,6 @@ class AccountService:
     def _fingerprint(self, db, primary, target):
         return {'primary': self._group(db, primary), 'target': self._group(db, target)}
 
-    def _independent(self, db, request, actor):
-        group = self._group(db, actor)
-        involved = self._fingerprint(db, request['primary_user_id'], request['target_user_id'])
-        if any(group['person_id'] == entry['person_id'] for entry in involved.values()):
-            raise AccountError('independent_review_required')
-
     def _ensure(self, db, member):
         user = member['user']
         name = member.get('nick') or user.get('global_name') or user.get('username') or '운동가'
@@ -199,7 +192,7 @@ class AccountService:
         if request['kind'] == 'link':
             text += '\n상대 계정 동의 · '+consent_time(request['target_consented_at'])
         else:
-            text += '\n해제는 당사자 한쪽이 신청하며, 상대 계정의 추가 동의 없이 다른 관리자가 검토해요.'
+            text += '\n해제는 당사자 한쪽이 신청하며, 상대 계정의 추가 동의 없이 관리자가 검토해요.'
         if status == 'rejected' and request.get('rejection_reason'):
             reason = re.sub(r'[\r\n]+', ' ', request['rejection_reason'])
             reason = re.sub(r'([\\`*_~|>\[\]()])', r'\\\1', reason)
@@ -313,7 +306,6 @@ class AccountService:
         if kind == 'detail':
             return self._notice(request, actor)
         if kind == 'review_detail':
-            self._independent(db, request, actor)
             impact = self._preview(db, request) if request['status'] == 'pending_review' else None
             if impact:
                 state = self._state(db)
@@ -337,7 +329,6 @@ class AccountService:
                 raise AccountError('request_changed')
             target_status = 'cancelled' if kind == 'cancel' else 'rejected'
         elif kind in ('approve', 'reject'):
-            self._independent(db, request, actor)
             if status != 'pending_review':
                 raise AccountError('request_changed')
             if kind == 'approve':
@@ -470,7 +461,6 @@ class ApplyContext:
         if service._fingerprint(db,request['primary_user_id'],request['target_user_id'])!=request['group_fingerprint']:
             db.execute("UPDATE solitary_athlete.mukmuk_account_link_requests SET status='invalidated',version=version+1,lease_until=NULL,error_code='group_changed' WHERE id=%s",(request['id'],))
             return False
-        service._independent(db,request,request['reviewer_id'])
         revision=service._state(db)['revision']+1
         service._move(db,request,revision)
         db.execute('UPDATE solitary_athlete.mukmuk_identity_state SET revision=%s',(revision,))
