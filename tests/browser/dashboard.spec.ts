@@ -1243,6 +1243,9 @@ for(const width of [360,1280])test(`person dashboard preserves layout and explic
  await page.evaluate(()=>document.documentElement.style.fontSize='200%');
  await page.getByRole('button',{name:'하루',exact:true}).click();
  await expect(page.locator(`[data-date="${today}"]`)).toHaveAttribute('data-level','2');
+  await expect(page.locator('.title-badges .title-badge')).toHaveText(['✨']);
+  await page.locator('.title-badges').click();await expect(page.locator('.title-tree')).toBeVisible();
+  await page.keyboard.press('Escape');await expect(page.locator('.title-tree')).toBeHidden();
  await page.locator('.timeline-item').first().getByRole('button',{name:'사진 보기',exact:true}).click();
  await expect(page.locator('.timeline-item').first()).toContainText('표시할 사진이 없어요');expect(photos).toBe(1);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
