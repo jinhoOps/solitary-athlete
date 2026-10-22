@@ -133,7 +133,7 @@ export function createDB(url:string, testOnlyNoTLS=false) {
           WHERE actor_id=${action.actor_id} AND status IN ('queued','processing') AND expires_at<=clock_timestamp()`;
         await tx`INSERT INTO solitary_athlete.mukmuk_account_link_actions
           (interaction_id,actor_id,kind,payload,runtime_session,runtime_fence)
-          VALUES(${action.interaction_id},${action.actor_id},${action.kind},${JSON.stringify(action)}::jsonb,
+          VALUES(${action.interaction_id},${action.actor_id},${action.kind},${tx.json(action as unknown as Parameters<typeof tx.json>[0])},
           ${runtime[0].session_id},${runtime[0].fence}) ON CONFLICT(interaction_id) DO NOTHING`;
       }),{deadline,testOnlyNoTLS});
     },

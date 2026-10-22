@@ -13,6 +13,9 @@ Deno.test('Edge inbox gates session, replays once, and never creates business re
   await Promise.all([edge.accounts.enqueue(action),edge.accounts.enqueue(action)]);
   const count=await admin`SELECT count(*)::int AS n FROM solitary_athlete.mukmuk_account_link_actions WHERE interaction_id='901'`;
   if(count[0].n!==1)throw new Error('duplicate action');
+  // The local runtime reads payload as a JSON object; a double-encoded string stalls the action.
+  const stored=await admin`SELECT jsonb_typeof(payload) AS t,payload->>'kind' AS kind FROM solitary_athlete.mukmuk_account_link_actions WHERE interaction_id='901'`;
+  if(stored[0].t!=='object'||stored[0].kind!=='status')throw new Error(`payload stored as ${stored[0].t}`);
   const after=await admin`SELECT count(*)::int AS n FROM solitary_athlete.mukmuk_account_link_requests`;
   if(before[0].n!==after[0].n)throw new Error('Edge created business state');
   if(await edge.accounts.result('901','903'))throw new Error('private result leaked');
