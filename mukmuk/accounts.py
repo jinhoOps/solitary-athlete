@@ -1,6 +1,6 @@
 """Local-only account consent and review. Source authors are never reassigned."""
 from contextlib import contextmanager
-from datetime import timedelta
+from datetime import timedelta, timezone
 import re
 import time
 from uuid import UUID
@@ -66,7 +66,10 @@ class AccountService:
         if not numeric(user_id):
             raise AccountError('invalid_member')
         member = self.api.once('GET', f'/guilds/{self.guild}/members/{user_id}', deadline)
-        if not isinstance(member, dict) or member.get('user', {}).get('id') != user_id or member['user'].get('bot'):
+        if (not isinstance(member, dict) or not isinstance(member.get('user'), dict)
+                or member['user'].get('id') != user_id or not isinstance(member.get('roles'), list)):
+            raise DiscordError('invalid_member_response')
+        if member['user'].get('bot'):
             raise AccountError('invalid_member')
         return member
 
@@ -86,6 +89,7 @@ class AccountService:
         actor = self._member(action['actor_id'], deadline)
         manager = self._identity(actor, roles, guild.get('owner_id'))
         people = {action['actor_id']: actor}
+        request = None
         # Request rows are re-read under the write lock before any transition.
         if action.get('request_id'):
             request = self._find(action['request_id'])
@@ -94,14 +98,25 @@ class AccountService:
                     raise AccountError('permission_denied')
             elif action['actor_id'] not in (request['primary_user_id'], request['target_user_id']):
                 raise AccountError('not_participant')
-            ids = (request['primary_user_id'], request['target_user_id'])
+            needs_parties = action['kind'] in ('consent', 'review_detail', 'approve') and request['status'] in ACTIVE
+            ids = (request['primary_user_id'], request['target_user_id']) if needs_parties else ()
         else:
             ids = (action.get('target_id'),) if action.get('target_id') else ()
         for uid in ids:
             if uid not in people:
-                people[uid] = self._member(uid, deadline)
-                self._identity(people[uid], roles, guild.get('owner_id'))
-        return manager, people
+                try:
+                    member = self._member(uid, deadline)
+                    self._identity(member, roles, guild.get('owner_id'))
+                    people[uid] = member
+                except AccountError:
+                    if request:
+                        return manager, people, True
+                    raise
+                except DiscordError as error:
+                    if request and error.status == 404:
+                        return manager, people, True
+                    raise
+        return manager, people, False
 
     def _find(self, request_id, lock=False):
         try:
@@ -175,8 +190,20 @@ class AccountService:
         names = {'awaiting_consent': '상대 계정의 동의를 기다리고 있어요.', 'pending_review': '관리자 검토를 기다리고 있어요.',
                  'approved': '승인됐어요. 다음 성공 수집에서 기록과 통계에 함께 반영해요.', 'applied': '계정 변경이 반영됐어요.',
                  'rejected': '요청이 거절됐어요.', 'cancelled': '요청이 취소됐어요.', 'expired': '요청 기간이 지났어요.',
-                 'invalidated': '계정 구성이 바뀌어 다시 신청해야 해요.', 'failed': '처리를 마치지 못했어요. 다시 신청해 주세요.'}
-        text = f"{names[status]}\n요청 {request['id']}\n대표 <@{request['primary_user_id']}> · 대상 <@{request['target_user_id']}>"
+                 'invalidated': '계정 구성이나 자격이 바뀌어 다시 신청해야 해요.', 'failed': '처리를 마치지 못했어요. 다시 신청해 주세요.'}
+        operation = '계정 연결' if request['kind'] == 'link' else '계정 해제'
+        text = f"{operation} 요청 · {names[status]}\n요청 {request['id']}\n대표 <@{request['primary_user_id']}> · 대상 <@{request['target_user_id']}>"
+        def consent_time(value):
+            return value.astimezone(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M KST') if value else '대기 중'
+        text += '\n신청 계정 동의 · '+consent_time(request['requester_consented_at'])
+        if request['kind'] == 'link':
+            text += '\n상대 계정 동의 · '+consent_time(request['target_consented_at'])
+        else:
+            text += '\n해제는 당사자 한쪽이 신청하며, 상대 계정의 추가 동의 없이 다른 관리자가 검토해요.'
+        if status == 'rejected' and request.get('rejection_reason'):
+            reason = re.sub(r'[\r\n]+', ' ', request['rejection_reason'])
+            reason = re.sub(r'([\\`*_~|>\[\]()])', r'\\\1', reason)
+            text += '\n거절 사유 · '+reason
         if status == 'awaiting_consent':
             text += '\n상대 계정에서도 /계정연결 현황으로 동의해 주세요.'
         choices = []
@@ -259,7 +286,7 @@ class AccountService:
             text += '\n진행 중인 요청이 없어요.'
         return {'content': text[:1900], 'components': components(buttons)}
 
-    def _perform(self, db, action, manager, people):
+    def _perform(self, db, action, manager, people, party_ineligible=False):
         if not self._state(db)['enabled']:
             raise AccountError('feature_disabled')
         for member in people.values():
@@ -279,6 +306,9 @@ class AccountService:
             raise AccountError('request_expired')
         if self._fingerprint(db, request['primary_user_id'], request['target_user_id']) != request['group_fingerprint'] and request['status'] in ACTIVE:
             db.execute("UPDATE solitary_athlete.mukmuk_account_link_requests SET status='invalidated',version=version+1 WHERE id=%s", (request['id'],))
+            return self._notice(self._find(request['id']), actor)
+        if party_ineligible and request['status'] in ACTIVE:
+            db.execute("UPDATE solitary_athlete.mukmuk_account_link_requests SET status='invalidated',version=version+1,lease_until=NULL,error_code='participant_ineligible' WHERE id=%s", (request['id'],))
             return self._notice(self._find(request['id']), actor)
         if kind == 'detail':
             return self._notice(request, actor)
@@ -338,7 +368,7 @@ class AccountService:
         if not numeric(action.get('interaction_id')) or not numeric(action.get('actor_id')):
             return {'error_code': 'invalid_request', 'content': MESSAGES['invalid_request']}
         try:
-            manager, people = self._verify(action, deadline)
+            manager, people, party_ineligible = self._verify(action, deadline)
         except (AccountError, DiscordError, KeyError, TypeError) as error:
             code = str(error) if isinstance(error, AccountError) else 'discord_unavailable'
             return {'error_code': code, 'content': MESSAGES.get(code, MESSAGES['invalid_request'])}
@@ -360,7 +390,7 @@ class AccountService:
                 with db.transaction():
                     if time.monotonic() >= deadline:
                         raise AccountError('expired_action')
-                    result = self._perform(db, action, manager, people)
+                    result = self._perform(db, action, manager, people, party_ineligible)
                     if time.monotonic() >= deadline:
                         raise AccountError('expired_action')
                     expired = db.execute('SELECT expires_at<=clock_timestamp() AS expired FROM solitary_athlete.mukmuk_account_link_actions WHERE interaction_id=%s', (action['interaction_id'],)).fetchone()['expired']
@@ -402,7 +432,9 @@ class AccountService:
         if not request:
             return None
         try:
-            manager,_=self._verify({'actor_id':request['reviewer_id'],'kind':'approve','request_id':str(request['id'])},time.monotonic()+30)
+            manager,_,party_ineligible=self._verify({'actor_id':request['reviewer_id'],'kind':'approve','request_id':str(request['id'])},time.monotonic()+30)
+            if party_ineligible:
+                raise AccountError('invalid_member')
             if not manager:
                 raise AccountError('permission_denied')
         except AccountError as error:

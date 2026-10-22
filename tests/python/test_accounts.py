@@ -196,3 +196,68 @@ def test_command_cancel_reads_current_version_and_replay_stays_cancelled(account
     cancelled = action(service, 201, '1', 'cancel', request_id=str(request['id']), payload={'command':True})
     assert cancelled.get('status') == 'cancelled', cancelled
     assert action(service, 201, '1', 'cancel', request_id=str(request['id']), payload={'command':True}) == cancelled
+
+
+@pytest.mark.parametrize('failure', [404, 'role', 503])
+def test_cancel_and_history_do_not_depend_on_counterpart_eligibility(accounts, failure):
+    service, api = accounts
+    _, request = pending(service)
+    original = api.once
+    if failure == 'role':
+        api.users['2']['roles'] = []
+    else:
+        def once(method, path, deadline):
+            if path.endswith('/members/2'):
+                raise DiscordError(failure)
+            return original(method, path, deadline)
+        api.once = once
+    detail = action(service, 300, '1', 'detail', request_id=str(request['id']))
+    assert detail.get('status') == 'awaiting_consent', detail
+    cancelled = action(service, 301, '1', 'cancel', request_id=str(request['id']), version=request['version'])
+    assert cancelled.get('status') == 'cancelled', cancelled
+    archived = action(service, 302, '1', 'detail', request_id=str(request['id']))
+    assert archived.get('status') == 'cancelled', archived
+
+
+@pytest.mark.parametrize('failure', [404, 'role', 503, 'shape'])
+def test_review_invalidates_confirmed_ineligible_party_but_preserves_transient_errors(accounts, failure):
+    service, api = accounts
+    _, request = consenting(service)
+    original = api.once
+    if failure == 'role':
+        api.users['2']['roles'] = []
+    else:
+        def once(method, path, deadline):
+            if path.endswith('/members/2'):
+                if failure == 'shape':
+                    return {'user': {'id': '2'}}  # Incomplete 200 is not loss of eligibility.
+                raise DiscordError(failure)
+            return original(method, path, deadline)
+        api.once = once
+    result = preview(service, request, mid=300)
+    if failure in (404, 'role'):
+        assert result.get('status') == 'invalidated', result
+        assert get_request(service, request['id'])['status'] == 'invalidated'
+        assert action(service, 300, '3', 'review_detail', request_id=str(request['id'])) == result
+    else:
+        assert result.get('error_code') == 'discord_unavailable', result
+        assert get_request(service, request['id'])['status'] == 'pending_review'
+    with service.store.transaction():
+        assert service.store.conn.execute('SELECT revision FROM solitary_athlete.mukmuk_identity_state').fetchone()['revision'] == 0
+
+
+def test_review_notice_identifies_action_consent_policy_and_rejection_reason(accounts):
+    service, _ = accounts
+    _, request = consenting(service)
+    link = service._notice(request, '3', manager=True)
+    unlink = service._notice({**request, 'kind':'unlink'}, '3', manager=True)
+    assert '계정 연결 요청' in link['content']
+    assert '계정 해제 요청' in unlink['content']
+    assert '신청 계정 동의' in link['content'] and '상대 계정 동의' in link['content']
+    assert 'KST' in link['content']
+    assert '추가 동의' in unlink['content']
+    assert '다른 관리자' in unlink['content']
+    reason = '계정 확인이 필요해요.'
+    rejected = action(service, 300, '3', 'reject', request_id=str(request['id']), version=request['version'], payload={'reason':reason})
+    assert rejected.get('status') == 'rejected'
+    assert f'거절 사유 · {reason}' in rejected['content']

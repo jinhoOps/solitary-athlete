@@ -10,7 +10,7 @@
 
 **Spec:** [묵묵 계정 연결 · 승인과 집계 설계](../specs/2026-10-21-account-link-design.md)
 
-현재 상태: Task 1~9 구현·로컬 전체 검증을 완료하고 최종 독립 검토 중이다. 실제 Discord 계정 변경·원격 DB 적용·명령 등록·운영 봇 시작은 이 계획의 코드 구현과 별도 배포 단계다. 작업 기준은 `aae422d`, 작업 공간은 `/Users/jinho/orca/workspaces/solitary-athlete/mukmuk-account-link`다. 별도 대시보드 브랜치의 미병합 변경을 가져오거나 수정하지 않는다.
+현재 상태: Task 1~9 구현·로컬 전체 검증과 최종 독립 검토의 중요 보완 2건을 완료했다. 검증 결과와 남은 운영 단계는 [완료 검토 기록](../reviews/2026-10-22-account-link.md)을 따른다. 실제 Discord 계정 변경·원격 DB 적용·명령 등록·운영 봇 시작은 이 계획의 코드 구현과 별도 배포 단계다. 작업 기준은 `aae422d`, 작업 공간은 `/Users/jinho/orca/workspaces/solitary-athlete/mukmuk-account-link`다. 별도 대시보드 브랜치의 미병합 변경을 가져오거나 수정하지 않는다.
 
 ## Global Constraints
 
