@@ -2,9 +2,12 @@ import type {ReplyContent} from './interactions.ts';
 export interface AccountAction {interaction_id:string;actor_id:string;kind:string;target_id?:string;request_id?:string;version?:number;payload?:{reason?:string;command?:boolean}}
 export interface AccountInbox {online:(deadline?:number)=>Promise<boolean>;enqueue:(a:AccountAction,deadline?:number)=>Promise<void>;result:(id:string,actor:string,deadline?:number)=>Promise<ReplyContent|null>}
 const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-const kinds=['consent','decline','cancel','detail','status','review_list','review_detail','approve','reject_modal','reject'];
+const kinds=['consent','decline','cancel','detail','status','review_list','review_detail','approve','reject_modal','reject','request_select','unlink_select'];
 export const OFFLINE='지금은 묵묵이 쉬고 있어요. 온라인일 때 다시 이용해 주세요.';
 export const BUSY='지금은 요청을 확인하지 못했어요. 잠시 뒤 현황을 다시 확인해 주세요.';
+function userTarget(body:any,target:unknown):string|undefined{
+ if(typeof target!=='string'||!/^\d{1,22}$/.test(target)||body.data?.resolved?.users?.[target]?.bot)return '이 서버의 일반 사용자 계정만 연결할 수 있어요.';
+}
 export function accountRoute(body:any,caller:{actorId:string;manager:boolean;member:boolean}):{action?:AccountAction;modal?:Record<string,unknown>;error?:string}|null {
  const command=body.type===2&&['계정연결','계정검토'].includes(body.data?.name);
  const component=[3,5].includes(body.type)&&String(body.data?.custom_id??'').startsWith('mukmuk-account:');
@@ -13,24 +16,22 @@ export function accountRoute(body:any,caller:{actorId:string;manager:boolean;mem
  if(!/^\d{1,22}$/.test(caller.actorId)||!/^\d{1,22}$/.test(body.id)||typeof body.token!=='string')return {error:'요청을 확인하지 못했어요.'};
  const action:AccountAction={interaction_id:body.id,actor_id:caller.actorId,kind:''};
  if(command){
-  const sub=body.data.options?.[0];const review=body.data.name==='계정검토';
-  const map:Record<string,string>=review?{'목록':'review_list','상세':'review_detail'}:{'신청':'request','현황':'status','취소':'cancel','해제':'unlink'};
-  action.kind=map[sub?.name];if(!action.kind||body.data.options.length!==1)return {error:'명령을 확인하지 못했어요.'};
-  const opts=sub.options??[];
-  if(['request','unlink'].includes(action.kind)){
-   const target=opts.find((o:any)=>o.name==='유저')?.value;
-   if(typeof target!=='string'||!/^\d{1,22}$/.test(target)||body.data.resolved?.users?.[target]?.bot)return {error:'이 서버의 일반 사용자 계정만 연결할 수 있어요.'};
-   action.target_id=target;
-  }
-  if(['cancel','review_detail'].includes(action.kind)){
-   const id=opts.find((o:any)=>o.name==='요청')?.value;
-   if(typeof id!=='string'||!new RegExp(`^${UUID}$`,'i').test(id))return {error:'요청 번호를 확인해 주세요.'};
-   action.request_id=id;action.payload={command:true};
-  }
+  // One entry per command keeps the Discord picker short; the rest continues through buttons and menus.
+  const opts:any[]=body.data.options??[];const review=body.data.name==='계정검토';
+  if(opts.some((o:any)=>o?.name!=='유저'||o?.type!==6)||(review&&opts.length))return {error:'명령을 확인하지 못했어요.'};
+  const target=opts[0]?.value;
+  if(review)action.kind='review_list';
+  else if(target===undefined)action.kind='status';
+  else{const error=userTarget(body,target);if(error)return {error};action.kind='request';action.target_id=target;}
  }else{
   const parsed=new RegExp(`^mukmuk-account:([a-z_]+):(${UUID}):(0|[1-9][0-9]{0,8})$`,'i').exec(body.data.custom_id);
   if(!parsed||!kinds.includes(parsed[1]))return {error:'요청을 확인하지 못했어요.'};
   action.kind=parsed[1];action.request_id=parsed[2];action.version=Number(parsed[3]);
+  if(['request_select','unlink_select'].includes(action.kind)){
+   const values=body.data.values;const target=Array.isArray(values)&&values.length===1?values[0]:undefined;
+   const error=userTarget(body,target);if(error)return {error};
+   action.kind=action.kind==='request_select'?'request':'unlink';action.target_id=target;delete action.request_id;delete action.version;
+  }
   if(body.type===5){
    if(action.kind!=='reject')return {error:'요청을 확인하지 못했어요.'};
    const reason=body.data.components?.flatMap((row:any)=>row.components??[]).find((c:any)=>c.custom_id==='reason')?.value;

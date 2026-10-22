@@ -191,12 +191,14 @@ def test_two_reviewers_racing_can_approve_only_once(accounts):
     assert get_request(service, request['id'])['version'] == request['version']+1
 
 
-def test_command_cancel_reads_current_version_and_replay_stays_cancelled(accounts):
+def test_button_cancel_checks_version_and_replay_stays_cancelled(accounts):
     service, _ = accounts
     _, request = pending(service)
-    cancelled = action(service, 201, '1', 'cancel', request_id=str(request['id']), payload={'command':True})
+    stale = action(service, 200, '1', 'cancel', request_id=str(request['id']), version=request['version']-1)
+    assert stale['error_code'] == 'request_changed'
+    cancelled = action(service, 201, '1', 'cancel', request_id=str(request['id']), version=request['version'])
     assert cancelled.get('status') == 'cancelled', cancelled
-    assert action(service, 201, '1', 'cancel', request_id=str(request['id']), payload={'command':True}) == cancelled
+    assert action(service, 201, '1', 'cancel', request_id=str(request['id']), version=request['version']) == cancelled
 
 
 @pytest.mark.parametrize('failure', [404, 'role', 503])
@@ -262,3 +264,52 @@ def test_review_notice_identifies_action_consent_policy_and_rejection_reason(acc
     rejected = action(service, 300, '3', 'reject', request_id=str(request['id']), version=request['version'], payload={'reason':reason})
     assert rejected.get('status') == 'rejected'
     assert f'거절 사유 · {reason}' in rejected['content']
+
+
+NIL = '00000000-0000-0000-0000-000000000000'
+
+
+def parts(result):
+    return [c for row in result.get('components', []) for c in row['components']]
+
+
+def kinds(result):
+    return [c['custom_id'].split(':')[1] for c in parts(result)]
+
+
+def test_status_offers_link_and_unlink_menus_by_role(accounts):
+    from test_identity import link
+    service, _ = accounts
+    alone = action(service, 400, '1', 'status', request_id=NIL)
+    assert alone.get('error_code') is None, alone
+    assert kinds(alone) == ['request_select'] and parts(alone)[0]['type'] == 5
+    with service.store.conn.transaction():
+        for user in ('1', '2'):
+            service.store.conn.execute('SELECT solitary_athlete.mukmuk_ensure_person(%s,%s,%s)', (user, '가상'+user, GUILD))
+    link(service.store, '2', '1', 1)
+    primary = action(service, 401, '1', 'status')
+    menu = parts(primary)[-1]
+    assert kinds(primary) == ['request_select', 'unlink_select']
+    assert menu['options'] == [{'label': '가상2', 'value': '2'}]
+    alt = action(service, 402, '2', 'status')
+    assert kinds(alt) == ['unlink_select'] and parts(alt)[0]['options'][0]['value'] == '2'
+    manager = action(service, 403, '3', 'status')
+    assert 'review_list' in kinds(manager)
+
+
+def test_screens_link_to_the_next_step(accounts):
+    service, api = accounts
+    _, request = pending(service)
+    shown = action(service, 410, '2', 'detail', request_id=str(request['id']))
+    assert kinds(shown) == ['consent', 'decline', 'cancel', 'status']
+    consented = action(service, 411, '2', 'consent', request_id=str(request['id']), version=request['version'])
+    assert kinds(consented)[-1] == 'status' and 'review_detail' not in kinds(consented)
+    api.users['1']['roles'] = ['60']
+    mine = action(service, 412, '1', 'detail', request_id=str(request['id']))
+    assert kinds(mine) == ['cancel', 'review_detail', 'status']
+    review = action(service, 413, '1', 'review_detail', request_id=str(request['id']))
+    assert kinds(review)[-1] == 'review_list' and 'approve' in kinds(review)
+    queue = action(service, 414, '1', 'review_list', request_id=NIL)
+    assert kinds(queue) == ['review_detail', 'status']
+    approved = action(service, 415, '1', 'approve', request_id=str(request['id']), version=get_request(service, request['id'])['version'])
+    assert approved['status'] == 'approved' and kinds(approved) == ['review_list', 'status']
