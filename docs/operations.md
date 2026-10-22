@@ -210,20 +210,31 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 
 중단·복구 시 기능 플래그와 DB enabled를 꺼 신규 변경을 막고 기존 수집/삭제는 유지한다. 이미 revision>0이면 person 모드와 구버전 409를 유지한다. raw 방식으로 롤백하거나 과거 관측을 덮어쓰지 않는다. HTTP 게시만 실패했다면 DB 적용은 유지되고 다음 수집이 현황판 게시를 다시 시도한다. 무기록 부계정을 연결해도 운동일은 새로 생기지 않는다.
 
-로컬 자동 검증은 `npm test`, 공개 테스트 설정의 `npm run build`·`npm run test:browser`, 임시 PostgreSQL의 Python/Deno 통합 검사와 Edge entrypoint `deno check`로 수행했다. Docker daemon이 응답하지 않아 이 세션의 후반 DB 검증은 소유한 별도 로컬 PostgreSQL 클러스터로 진행했다. CI는 기존 `scripts/test-db.sh`의 PostgreSQL17 Docker 경로를 유지한다. 실제 pooler, Discord 버튼·모달 수신, 운영 사용자 연결, 운영 런타임 갱신과 배포는 미확인이다.
+구현 당시 로컬 자동 검증은 `npm test`, 공개 테스트 설정의 `npm run build`·`npm run test:browser`, 임시 PostgreSQL의 Python/Deno 통합 검사와 Edge entrypoint `deno check`로 수행했다. 당시 Docker daemon이 응답하지 않아 후반 DB 검증은 별도 로컬 PostgreSQL 클러스터로 진행했다. 이후 rebase 검증에서는 기존 `scripts/test-db.sh`의 PostgreSQL17 Docker 경로도 통과했다. 비활성 운영 반영 결과는 아래 이력을 따른다. 실제 Discord 버튼·모달과 운영 사용자 연결은 아직 검증하지 않았다.
 
 
 ## 계정 연결 운영 검증과 롤백 절차
 
-상태: **절차 작성만 완료, 실행 전**. 이 문서 정리와 PR 개설은 main 병합, 운영 DB 마이그레이션, Edge·Pages·로컬 런타임 배포, 명령 등록, 기능 활성화를 포함하지 않는다. 아래 운영 변경과 실제 계정 검증은 별도 승인된 작업 창에서 수행한다. 실제 계정·메모·사진·토큰은 검증 보고에 넣지 않고 버전·건수·성공 여부만 남긴다.
+상태: **2026-10-22 사용자 승인에 따라 비활성 운영 배포 완료**. 대시보드 PR #31 병합 → 계정 연결 PR #32 rebase·재검증 → 운영 SQL 4개 적용·RPC 확인 → #32 병합·Pages·Edge·로컬 런타임 갱신 순서로 진행했다. 계정 연결 기능 활성화, 신규 계정 명령 등록, 실제 신청·동의·승인·적용은 수행하지 않았다. 실제 계정 검증은 별도 승인된 작업 창에서 수행한다. 계정·메모·사진·토큰은 보고에 넣지 않고 버전·건수·성공 여부만 남긴다.
+
+### 2026-10-22 비활성 운영 반영 이력
+
+- 병합: #31 `19a4d94`, #32 `3e8fb83`. #32는 #31 위로 rebase했고 칭호·KPI·잔디 시각 개선과 사람 집계를 함께 검증했다. Vitest 92개, Python 94개, Deno DB 7개, Chromium 116개, 타입·빌드·공개 산출물 검사와 Edge entrypoint 5개의 타입 검사가 통과했다. [병합 후 Checks](https://github.com/jinhoOps/solitary-athlete/actions/runs/39705462956)도 성공했다.
+- DB: 아래 네 `20261021` SQL을 Orca의 로그인된 Supabase SQL Editor에서 각각 순서대로 적용했다. 적용 전 묵묵 스키마·원본·일별 집계·관측·성공 상태와 기존 Edge 소스를 비공개 로컬 백업했다. 운영 콘솔 적용 이력은 이 문서로 기록하며 공용 CLI migration history에는 섞지 않았다.
+- 보존·권한: 원본 작성자·메시지·날짜·내용·사진 단계, 기존 관측의 N/S/D와 닫힌 날짜 수집 시각을 대조했다. 당일 수집 시각은 정상 정기 수집으로 전진했다. revision 0의 계정/사람 RPC 결과가 일치하며 비공개 테이블 8개의 RLS와 anon/authenticated/service_role 직접 조회 차단을 확인했다. DB `enabled=false`, `revision=0`, 계산 버전 1, 요청·전달·적용 이력 0건과 worker 연결 제한 3을 확인했다.
+- Pages: [배포 실행](https://github.com/jinhoOps/solitary-athlete/actions/runs/39705462859) 성공 후 공개 `release.json.sourceCommit=3e8fb8334816a9cfbf53ff49b4be7aa8a3e037b2`를 확인했다. 실제 코드 인증, KPI 5개·잔디 표시, 첫 화면 사진 요청 0건, 360/1280px 가로 넘침 없음, 브라우저 오류 0건을 확인했다.
+- Edge: 운영 중인 `mukmuk-discord-grass` v16, `mukmuk-discord-cleanup` v11, `mukmuk-discord-photos` v5, `mukmuk-weekly-code` v26을 갱신했다. 타입 검사된 `node scripts/bundle-edge.mjs` 산출물을 로그인된 Dashboard 세션에서 Management API로 배포하고, 다시 불러온 원격 소스와 번들의 일치를 확인했다. 기존 JWT 설정을 유지했다. 월간 코드 Cron은 기존 `mukmuk-weekly-code` 호환 경로를 유지하며 별도 `mukmuk-monthly-code` 함수는 신설하지 않았다.
+- 런타임: main에서 `uv run python scripts/install_macos_scheduler.py`를 실행해 `4602fd522b3125f8` → `c9798e0dbd5d27f8`로 갱신했다. 새 런타임의 수집 두 차례가 종료 코드 0으로 끝났다. 로컬 메인은 시작하지 않았고 launchd의 5분 수집을 유지했다. GitHub 보완 수집도 대응 코드가 main에 반영됐다.
+- 운영 접속: Dashboard CA와 `sslmode=verify-full`로 실제 pooler를 검증했다. 검증된 TLS의 worker 트랜잭션 2개를 유지한 동안 새 Edge 사진 조회가 HTTP200으로 완료됐고, 사진 없는 기존 기록의 빈 결과를 확인했다. Edge의 `rejectUnauthorized:true`는 유지했다. 네 함수의 무인증 요청은 모두 401로 거부됐으며 기존 묵묵 Cron 3개의 활성·최근 SQL 실행 성공을 확인했다.
+- 남은 검증: Gateway 수명·오프라인 전환, 실제 두 계정 동의·독립 관리자 승인, 300초 비공개 응답 삭제, 실제 관계 적용은 미실행이다. 로컬 플래그는 false 기본값, Edge 플래그는 미설정으로 false이며 DB도 false다. 검증을 위해 기능을 열거나 요청·인증 데이터를 생성하지 않았다.
 
 ### 운영 반영 전 준비
 
 1. 적용 후보 커밋과 직전 정상 버전의 Pages 소스·Edge 소스·macOS 설치 해시·GitHub 보완 수집 소스를 기록한다. 묵묵 데이터와 관측·감사의 백업 및 복구 가능 여부를 기존 백업 절차로 확인한다. 공용 프로젝트 전체 복원은 다른 앱에 영향을 주므로 이 기능의 롤백 수단으로 사용하지 않는다.
-2. 후보 커밋의 Checks 전체 성공과 마이그레이션 적용 현황을 확인한다. 이번 변경은 위 네 SQL 파일이며 각 파일은 자체 트랜잭션이다. 다른 앱의 스키마·키·프로젝트 전역 설정·worker 연결 제한을 바꾸지 않는다. 운영 DB에는 지금 이 문서에 따라 SQL을 실행하지 않는다.
+2. 후보 커밋의 Checks 전체 성공과 마이그레이션 적용 현황을 확인한다. 이번 변경은 위 네 SQL 파일이며 각 파일은 자체 트랜잭션이다. 이미 적용한 파일을 재실행하지 않는다. 다른 앱의 스키마·키·프로젝트 전역 설정·worker 연결 제한을 바꾸지 않는다.
 3. 로컬·Edge의 `MUKMUK_ACCOUNT_LINK_ENABLED=false`, DB `mukmuk_identity_state.enabled=false`를 준비값으로 둔다. DB 상태 조회는 해당 테이블을 만든 뒤에 가능하다. 계정 기능을 끈 상태에서 기존 기록 조회·갱신·삭제 Cron이 정상인지 확인한다.
 4. **첫 연결 적용 전에 모든 수집 경로가 사람 집계에 대응해야 한다.** 로컬 메인, 설치된 launchd fallback, GitHub 일일 보완 수집의 실제 실행 소스를 대조한다. main 병합 전의 기존 GitHub 수집 코드를 그대로 둔 채 운영 연결을 활성화하지 않는다.
-5. 네 마이그레이션을 순서대로 적용한 뒤 새 RPC와 이에 대응하는 Edge·웹·Python을 비활성 상태로 준비한다. 새 웹이 사용하는 `get_dashboard_identity`가 먼저 준비돼야 한다. 코드·역할·개인 테이블 비공개 권한과 `revision=0`에서의 기존 결과 일치를 확인한다. `.github/workflows/pages.yml`은 main의 웹 코드 변경을 자동 배포하므로, 향후 병합도 배포 단계로 취급한다. 운영 DB와 새 RPC가 준비되기 전에 이 PR을 main에 병합하지 않는다. 이 순서의 운영 작업은 각각 별도 승인 후 진행하며, 이번 PR 개설로 실행하지 않는다.
+5. 미적용 마이그레이션을 순서대로 적용한 뒤 새 RPC와 이에 대응하는 Edge·웹·Python을 비활성 상태로 준비한다. 새 웹이 사용하는 `get_dashboard_identity`가 먼저 준비돼야 한다. 코드·역할·개인 테이블 비공개 권한과 `revision=0`에서의 기존 결과 일치를 확인한다. `.github/workflows/pages.yml`은 main의 웹 코드 변경을 자동 배포하므로 병합도 배포 단계로 취급한다. 새 RPC가 준비되기 전에 해당 웹 변경을 main에 병합하지 않는다. 운영 반영과 기능 활성화는 구분해 사용자가 승인한 범위에서만 진행한다.
 
 ### 검증 항목과 통과 기준
 
