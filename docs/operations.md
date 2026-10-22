@@ -236,6 +236,7 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 - Edge: 프로젝트 Secret `MUKMUK_ACCOUNT_LINK_ENABLED=true`를 추가했다. 대시보드 폼 입력이 한 차례 잘못된 값으로 저장돼 로그인된 Dashboard 세션의 Management API로 다시 저장했고, 목록의 SHA256 digest가 `true`와 일치함을 확인했다. 잘못된 값이던 약 3분은 Edge 비활성과 같은 상태였다.
 - 명령: `uv run python register_cmd.py`로 길드 명령을 등록했다. 등록 목록은 `/잔디`, `/기록갱신`, `/계정연결`(신청·현황·취소·해제), `/계정검토`(목록·상세, 기본 권한 MANAGE_GUILD)다.
 - 로컬 메인: 설치 런타임 `c9798e0dbd5d27f8`의 `scripts/macos_local.py`를 Orca 터미널 "묵묵 로컬 메인"에서 전경 실행했다. DB에서 `ready=true`, fence 1, 임대 갱신을 확인했고 시작 직후 수집이 성공 시각을 갱신했다. 맥 종료·잠자기·터미널 종료 시 계정 명령만 오프라인이 되고 `/잔디`·수집·웹은 기존대로 유지된다.
+- 첫 실사용 수정: 첫 `/계정연결 신청`이 "처리 시간이 지났어요"로 끝났다. Edge가 `JSON.stringify(action)`을 jsonb 매개변수로 넘겨 postgres.js가 다시 인코딩했고, 로컬 메인이 문자열 payload를 읽지 못해 15초 뒤 만료된 것이다. 업무 상태는 생성되지 않았다. [PR #33](https://github.com/jinhoOps/solitary-athlete/pull/33)에서 객체 그대로 저장하도록 고치고 payload 형식 검사를 추가했다. 같은 요청을 rollback 트랜잭션에서 재현해 정상 처리(약 1.6초)를 확인한 뒤 `mukmuk-discord-grass` v19를 배포했다. 다른 Edge 함수는 이 경로를 쓰지 않아 재배포하지 않았다.
 - 중단: 로컬 `.env`, Edge Secret, DB enabled를 false로 되돌리고 로컬 메인을 Ctrl-C로 종료한다. 상세 순서는 아래 [중단과 코드 복구](#중단과-코드-복구)를 따른다.
 
 ### 운영 반영 전 준비
