@@ -64,7 +64,7 @@ def preview(service, request, actor='3', mid=102):
     return action(service, mid, actor, 'review_detail', request_id=str(request['id']))
 
 
-def test_two_consents_and_independent_manager_approval_preserve_pending_source(accounts):
+def test_two_consents_and_sole_manager_self_approval_preserve_pending_source(accounts):
     service, api = accounts
     result, request = pending(service)
     assert request['status'] == 'awaiting_consent'
@@ -74,12 +74,13 @@ def test_two_consents_and_independent_manager_approval_preserve_pending_source(a
     accepted = action(service, 111, '2', 'consent', request_id=str(request['id']), version=request['version'])
     request = get_request(service, request['id'])
     assert request['status'] == 'pending_review'
+    # A server with one admin must be able to review that admin's own accounts.
     api.users['1']['roles'] = ['60']
-    own = action(service, 112, '1', 'approve', request_id=str(request['id']), version=request['version'])
-    assert own['error_code'] == 'independent_review_required'
-    shown = preview(service, request)
+    unpreviewed = action(service, 112, '1', 'approve', request_id=str(request['id']), version=request['version'])
+    assert unpreviewed['error_code'] == 'preview_required'
+    shown = preview(service, request, actor='1')
     assert shown['impact']['current']['members'] == 0 and shown['impact']['proposed']['members'] == 0
-    approved = action(service, 113, '3', 'approve', request_id=str(request['id']), version=request['version'])
+    approved = action(service, 113, '1', 'approve', request_id=str(request['id']), version=request['version'])
     assert approved['status'] == 'approved'
     with service.store.conn.transaction():
         assert service.store.conn.execute('SELECT revision FROM solitary_athlete.mukmuk_identity_state').fetchone()['revision'] == 0
@@ -147,7 +148,7 @@ def test_bot_or_other_group_target_is_rejected_and_viewing_another_request_is_pr
     assert stranger['error_code'] == 'account_busy'
 
 
-def test_linked_manager_cannot_review_their_group_and_alt_can_request_own_unlink(accounts):
+def test_linked_manager_can_review_their_group_and_alt_can_request_own_unlink(accounts):
     from test_identity import link
     service, api = accounts
     with service.store.conn.transaction():
@@ -155,8 +156,8 @@ def test_linked_manager_cannot_review_their_group_and_alt_can_request_own_unlink
             service.store.conn.execute('SELECT solitary_athlete.mukmuk_ensure_person(%s,%s,%s)', (user, '가상', GUILD))
     link(service.store, '4', '1', 1)
     _, request = consenting(service)
-    forbidden = action(service, 109, '4', 'approve', request_id=str(request['id']), version=request['version'])
-    assert forbidden['error_code'] == 'independent_review_required'
+    own_group = action(service, 109, '4', 'approve', request_id=str(request['id']), version=request['version'])
+    assert own_group['error_code'] == 'preview_required'
     assert action(service, 110, '3', 'request', target_id='4')['error_code'] == 'group_merge_unsupported'
     action(service, 111, '1', 'cancel', request_id=str(request['id']), version=request['version'])
     link(service.store, '2', '1', 2)
@@ -256,7 +257,7 @@ def test_review_notice_identifies_action_consent_policy_and_rejection_reason(acc
     assert '신청 계정 동의' in link['content'] and '상대 계정 동의' in link['content']
     assert 'KST' in link['content']
     assert '추가 동의' in unlink['content']
-    assert '다른 관리자' in unlink['content']
+    assert '관리자가 검토' in unlink['content'] and '다른 관리자' not in unlink['content']
     reason = '계정 확인이 필요해요.'
     rejected = action(service, 300, '3', 'reject', request_id=str(request['id']), version=request['version'], payload={'reason':reason})
     assert rejected.get('status') == 'rejected'

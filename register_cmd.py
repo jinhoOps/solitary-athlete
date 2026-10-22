@@ -13,7 +13,7 @@ def account_commands():
                     sub('현황','내 계정과 요청을 확인하고 동의합니다.'),
                     sub('취소','승인 전 내 요청을 취소합니다.',[request]),
                     sub('해제','내 그룹의 보조 계정을 분리 요청합니다.',[user])]},
-        {'name':'계정검토','description':'다른 관리자가 계정 요청의 영향을 확인하고 검토합니다.','type':1,
+        {'name':'계정검토','description':'관리자가 계정 요청의 영향을 확인하고 검토합니다.','type':1,
          'default_member_permissions':'32','options':[sub('목록','검토 대기와 반영 대기 요청을 확인합니다.'),
                                                     sub('상세','영향을 확인하고 승인 또는 거절합니다.',[request])]},
     ]
