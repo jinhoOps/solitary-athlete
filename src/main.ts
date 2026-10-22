@@ -8,7 +8,7 @@ import {renderGrassCard} from './grass-card';
 import {renderDashboardControls, SERVICE_START_YEAR} from './dashboard-controls';
 import {grassParticipationView} from './grass-participation';
 import {memberMonthTitles} from './metrics';
-import type { DashboardData, WorkoutLog } from './types';
+import type { DashboardData, ViewWorkoutLog as WorkoutLog } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const config = __PUBLIC_CONFIG__;
@@ -16,6 +16,7 @@ let today = dayAt();
 let data: DashboardData | undefined;
 const currentYear = Number(today.slice(0, 4));
 let selectedYear = Math.max(SERVICE_START_YEAR, currentYear);
+let loadedYear=selectedYear;
 let currentKPIs: DashboardData['kpis'] | undefined;
 const knownMembers = new Map<string, string>();
 let selected: string | null = null;
@@ -163,14 +164,15 @@ function renderKPIs() {
 
 function renderCards() {
   if(!data)return;
+  const revision=data.identityRevision;
   todayCaption.textContent = `오늘 · ${today} KST`;
   cardOpeners.clear();cardReveals.clear();
-  const member=selected?(data.members.find(m=>m.id===selected)??{id:selected,name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
+  const member=selected?(data.members.find(m=>m.subject.id===selected)??{subject:{kind:data.subjectKind,id:selected},name:knownMembers.get(selected)??selected,dates:new Set<string>(),photos:new Set<string>()}):null;
   // Titles describe the current month, so they appear only beside this year's statistics.
   const progress=selected&&selectedYear===currentYear?memberMonthTitles(data.logs,selected,new Date()):null;
   const titles=progress?{month:Number(today.slice(5,7)),progress}:null;
   const card=renderGrassCard({heading:yearBar,year:selectedYear,today,member,roster:data.roster,logs:data.logs,currentStats:data.currentStats,titles,
-    photos:log=>photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,knownMembers.get(log.user_id)??log.username)});
+    photos:log=>photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.subject,log.log_date,knownMembers.get(log.subject.id)??log.username,revision,()=>void init(true))});
   cards.firstElementChild?.dispatchEvent(new Event('dispose'));
   cards.replaceChildren(card.element);
   cardOpeners.set(selected??'ALL',card.openDate);cardReveals.set(selected??'ALL',card.revealToday);
@@ -178,6 +180,7 @@ function renderCards() {
 }
 
 function renderTimeline(reset = true) {
+  const revision=data?.identityRevision;
   if(reset){
     logList.querySelectorAll('.photo-section').forEach(e=>e.dispatchEvent(new Event('dispose')));
     logList.replaceChildren();
@@ -190,7 +193,7 @@ function renderTimeline(reset = true) {
   if (!isMemberSelected) return;
 
   for (const log of timeline) {
-    const key = `${log.user_id}:${log.log_date}`;
+    const key = `${log.subject.id}:${log.log_date}`;
     if ([...logList.querySelectorAll<HTMLElement>('.timeline-item')].some(item=>item.dataset.key===key)) continue;
     const month = log.log_date.slice(0,7);
     let group = logList.querySelector<HTMLElement>(`[data-month="${month}"]`);
@@ -201,12 +204,12 @@ function renderTimeline(reset = true) {
       group.append(title,el('ol','month-records'));logList.append(group);
     }
     const item = el('li', 'timeline-item');item.dataset.key=key;
-    const name = knownMembers.get(log.user_id) ?? log.username;
-    const date = button(shortDate(log.log_date).replace(/^\d+월 /,''), () => cardOpeners.get(log.user_id)?.(log.log_date, log), 'date-button');
+    const name = knownMembers.get(log.subject.id) ?? log.username;
+    const date = button(shortDate(log.log_date).replace(/^\d+월 /,''), () => cardOpeners.get(log.subject.id)?.(log.log_date, log), 'date-button');
     date.setAttribute('aria-label',`${log.log_date.slice(0,4)}년 ${shortDate(log.log_date).replace(/\((.)\)/,'$1요일')}`);
     const message=el('div','timeline-message');
     if(log.memo)message.append(el('p','memo',log.memo));
-    if(log.has_photo)message.append(photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.user_id,log.log_date,name));
+    if(log.has_photo)message.append(photoSection(config,()=>localStorage.getItem('mukmuk_secret_code')??'',log.subject,log.log_date,name,revision,()=>void init(true)));
     else if(!log.memo)message.append(el('p','memo','텍스트 인증'));
     item.append(date,message);group.querySelector('ol')!.append(item);
   }
@@ -226,7 +229,7 @@ function fetchTimeline(append: boolean) {
   const offset = append ? timeline.length : 0;
   const rows = loadTimeline(data.logs, selected, offset, 30);
   timeline = append ? [...timeline, ...rows] : rows;
-  more = offset + rows.length < data.logs.filter(l => l.user_id === selected).length;
+  more = offset + rows.length < data.logs.filter(l => l.subject.id === selected).length;
   renderTimeline(!append);
   feedback.textContent = `${timeline.length}개의 기록일을 표시합니다.`;
 }
@@ -328,12 +331,13 @@ async function init(preserveSelection = false) {
     today = dayAt();
     const loaded = await loadDashboard(config, code, requestedYear);
     if (request !== generation) return;
-    data = loaded;
+    if(data?.subjectKind!==loaded.subjectKind||!loaded.roster.some(m=>m.subject.id===selected))selected=null;
+    data = loaded;loadedYear=requestedYear;
     dashboardReady = true;
     currentKPIs = data.kpis;
     knownMembers.clear();
     for (const member of data.roster) {
-      knownMembers.set(member.id, member.name);
+      knownMembers.set(member.subject.id, member.name);
     }
     if (!preserveSelection) selected = null;
     yearBar.hidden = false;
@@ -361,10 +365,16 @@ async function init(preserveSelection = false) {
       yearBar.hidden = true;
       yearFilters.replaceChildren();cards.replaceChildren();
       showAuthModal('시크릿 코드가 올바르지 않거나 만료되었습니다.');
+    } else if(data&&['identity_revision_changed','client_update_required'].includes(err?.message)){
+      selectedYear=loadedYear;dashboardReady=true;
+      renderFilters(focusedControl);renderKPIs();renderCards();fetchTimeline(false);
+      const notice=el('div','empty-card error-state');
+      notice.append(el('p','','계정 기준이 바뀌고 있어요. 이전 화면을 유지했어요. 새로 불러와 주세요.'),button('다시 불러오기',()=>void init(true),'button secondary'));
+      cards.append(notice);
     } else {
       const error = el('div', 'empty-card error-state');
       error.append(
-        el('p', '', '기록을 불러오지 못했어요.'),
+        el('p', '', err?.message==='client_update_required'?'화면을 새로고침해 주세요.':err?.message==='identity_revision_changed'?'계정 기준이 바뀌고 있어요. 잠시 뒤 다시 불러와 주세요.':'기록을 불러오지 못했어요.'),
         button('다시 불러오기', () => void init(true), 'button primary')
       );
       if(data){

@@ -1,8 +1,9 @@
+import {parseIdentity,legacyLog,personLog,subjectOf,type DashboardIdentity} from './identity';
 import { dayAt, sundayIndex, shiftDay, stats } from './dates';
 import { calculateMonthlyKPIs } from './metrics';
 import {parseGrassParticipation} from './grass-participation';
 import type {GrassParticipation} from './types';
-import type { DashboardData, Member, PublicConfig, WorkoutLog } from './types';
+import type { DashboardData, Member, PublicConfig, WorkoutLog,ViewWorkoutLog,WorkoutEntry,PersonWorkoutDTO,RosterMember } from './types';
 
 type Fetcher = typeof fetch;
 
@@ -27,6 +28,7 @@ async function rpc<T>(config: PublicConfig, func: string, body: Record<string, u
       const err = await res.json();
       errCode = err.message || err.details || err.code || '';
     } catch { /* empty */ }
+    if(['identity_revision_changed','client_update_required'].some(code=>errCode.includes(code)))throw new Error(errCode.includes('identity_revision_changed')?'identity_revision_changed':'client_update_required');
     if (errCode.includes('invalid_or_expired_secret') || (authErrors==='status-or-code' && [400,401,403].includes(res.status))) {
       throw new Error('invalid_or_expired_secret');
     }
@@ -51,50 +53,56 @@ async function read<T>(config: PublicConfig, table: string, params: Record<strin
   return body as T[];
 }
 
-export async function loadDashboard(
+async function loadDashboardOnce(
   config: PublicConfig,
   secretCode: string,
   year?: number,
   fetcher: Fetcher = fetch
 ): Promise<DashboardData> {
   const normalizedCode = secretCode.trim().toLowerCase();
-  async function annual(targetYear:number):Promise<WorkoutLog[]> {
-    const result:WorkoutLog[]=[];
-    let cursor:WorkoutLog|undefined;
+  const identity=parseIdentity(await rpc<DashboardIdentity[]>(config,'get_dashboard_identity',{p_secret_code:normalizedCode},fetcher,'code-only'));
+  const context=identity.enabled?{p_revision:identity.revision}:{};
+  const kind=identity.enabled?'person':'discord';
+  async function annual(targetYear:number):Promise<ViewWorkoutLog[]> {
+    const result:ViewWorkoutLog[]=[];
+    let cursor:ViewWorkoutLog|undefined;
     for (;;) {
-      const page=await rpc<WorkoutLog[]>(config,'get_workout_logs_page',{
-        p_secret_code:normalizedCode,p_year:targetYear,p_limit:500,
-        p_after_date:cursor?.log_date??null,p_after_user_id:cursor?.user_id??null,
-      },fetcher);
+      const dto=await rpc<(WorkoutLog|PersonWorkoutDTO)[]>(config,identity.enabled?'get_person_workout_logs_page':'get_workout_logs_page',{
+        p_secret_code:normalizedCode,p_year:targetYear,p_limit:500,...context,
+        p_after_date:cursor?.log_date??null,[identity.enabled?'p_after_person_id':'p_after_user_id']:cursor?.subject.id??null,
+      },fetcher,'code-only');
+      const page=dto.map(row=>identity.enabled?personLog(row as PersonWorkoutDTO,identity.revision):legacyLog(row as WorkoutLog));
       for(const row of page){
-        if(cursor && !(row.log_date<cursor.log_date || (row.log_date===cursor.log_date && row.user_id>cursor.user_id))) throw new Error('Non-progressing annual page');
+        if(cursor && !(row.log_date<cursor.log_date || (row.log_date===cursor.log_date && row.subject.id>cursor.subject.id))) throw new Error('Non-progressing annual page');
         cursor=row;
       }
       result.push(...page);
       if(page.length<500)return result;
     }
   }
-  async function allMembers():Promise<{id:string;name:string}[]> {
-    const result:{id:string;name:string}[]=[];let cursor:string|null=null;
+  async function allMembers():Promise<RosterMember[]> {
+    const result:RosterMember[]=[];let cursor:string|null=null;
     for(;;){
-      const page:{user_id:string;username:string}[]=await rpc<{user_id:string;username:string}[]>(config,'get_dashboard_members',{
-        p_secret_code:normalizedCode,p_after_user_id:cursor,p_limit:200,
-      },fetcher);
+      const page:{user_id?:string;person_id?:string;username:string;identity_revision?:number}[]=await rpc<{user_id?:string;person_id?:string;username:string;identity_revision?:number}[]>(config,identity.enabled?'get_dashboard_people':'get_dashboard_members',{
+        p_secret_code:normalizedCode,...context,[identity.enabled?'p_after_person_id':'p_after_user_id']:cursor,p_limit:200,
+      },fetcher,'code-only');
       for(const row of page){
-        if(cursor!==null && row.user_id<=cursor)throw new Error('Non-progressing member page');
-        cursor=row.user_id;result.push({id:row.user_id,name:row.username});
+        if(identity.enabled&&row.identity_revision!==identity.revision)throw new Error('identity_revision_changed');
+        const id:string|undefined=identity.enabled?row.person_id:row.user_id;
+        if(typeof id!=='string'||!id||(cursor!==null&&id<=cursor))throw new Error('Non-progressing member page');
+        cursor=id;result.push({subject:{kind,id},name:row.username});
       }
-      if(page.length<200)return result.sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
+      if(page.length<200)return result.sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.subject.id.localeCompare(b.subject.id));
     }
   }
   const now = new Date(), today = dayAt(now);
   const currentYear = Number(today.slice(0, 4));
   const targetYear=year??currentYear;
   const month=`${today.slice(0,7)}-01`;
-  const participation=rpc<unknown[]>(config,'get_monthly_grass_participation',{
-    p_secret_code:normalizedCode,p_month:month,
+  const participation=rpc<unknown[]>(config,identity.enabled?'get_person_grass_participation':'get_monthly_grass_participation',{
+    p_secret_code:normalizedCode,p_month:month,...context,
   },fetcher,'code-only').then(rows=>parseGrassParticipation(rows,month)).catch((error):GrassParticipation=>{
-    if(error instanceof Error&&error.message.includes('invalid_or_expired_secret'))throw error;
+    if(error instanceof Error&&['invalid_or_expired_secret','identity_revision_changed','client_update_required'].some(code=>error.message.includes(code)))throw error;
     return {status:'unavailable'};
   });
   const [logs, roster, status, currentLogs, grassParticipation] = await Promise.all([
@@ -106,26 +114,26 @@ export async function loadDashboard(
 
   const members = new Map<string, Member>();
   for (const row of logs) {
-    if (!members.has(row.user_id)) {
-      members.set(row.user_id, {
-        id: row.user_id,
+    if (!members.has(row.subject.id)) {
+      members.set(row.subject.id, {
+        subject: row.subject,
         name: row.username,
         dates: new Set(),
         photos: new Set(),
       });
     }
-    const member = members.get(row.user_id)!;
+    const member = members.get(row.subject.id)!;
     member.dates.add(row.log_date);
     if (row.has_photo) member.photos.add(row.log_date);
   }
 
   const sortedMembers = [...members.values()].sort(
-    (a, b) => a.name.localeCompare(b.name, 'ko') || a.id.localeCompare(b.id)
+    (a, b) => a.name.localeCompare(b.name, 'ko') || a.subject.id.localeCompare(b.subject.id)
   );
 
   const currentStats = new Map<string, ReturnType<typeof stats>>();
   if ((year ?? currentYear) === currentYear) {
-    const history = new Map(sortedMembers.map(m => [m.id, new Set(m.dates)]));
+    const history = new Map(sortedMembers.map(m => [m.subject.id, new Set(m.dates)]));
     let historyYear = currentYear;
     const sunday = shiftDay(today, -sundayIndex(today));
     // Extend only if this week or a continuous streak reaches an earlier year.
@@ -142,18 +150,19 @@ export async function loadDashboard(
       historyYear--;
       const earlier = await annual(historyYear);
       for (const row of earlier) {
-        if (!history.has(row.user_id)) history.set(row.user_id, new Set());
-        history.get(row.user_id)!.add(row.log_date);
+        if (!history.has(row.subject.id)) history.set(row.subject.id, new Set());
+        history.get(row.subject.id)!.add(row.log_date);
       }
     }
     for (const [id, dates] of history) currentStats.set(id, stats(dates, today));
   }
 
   const kpis = calculateMonthlyKPIs(currentLogs??logs, now);
-  for(const king of kpis.workoutKings)king.name=roster.find(m=>m.id===king.id)?.name??king.name;
+  for(const king of kpis.workoutKings)king.name=roster.find(m=>m.subject.id===king.id)?.name??king.name;
   kpis.workoutKings.sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
 
   return {
+    identityRevision:identity.revision,calculationVersion:identity.calculation_version,subjectKind:kind,
     roster,
     members: sortedMembers,
     logs,
@@ -164,12 +173,13 @@ export async function loadDashboard(
   };
 }
 
-export function loadTimeline(
-  logs: WorkoutLog[],
-  userId: string | null,
-  offset: number,
-  limit = 30
-): WorkoutLog[] {
-  const filtered = userId ? logs.filter(l => l.user_id === userId) : logs;
-  return filtered.slice(offset, offset + limit);
+export async function loadDashboard(config:PublicConfig,secretCode:string,year?:number,fetcher:Fetcher=fetch):Promise<DashboardData>{
+ for(let attempt=0;;attempt++){
+  try{return await loadDashboardOnce(config,secretCode,year,fetcher);}
+  catch(error){if(!(error instanceof Error)||error.message!=='identity_revision_changed'||attempt>=2)throw error;}
+ }
+}
+export function loadTimeline<T extends WorkoutEntry>(logs:T[],userId:string|null,offset:number,limit=30):T[]{
+ const filtered=userId?logs.filter(l=>subjectOf(l).id===userId):logs;
+ return filtered.slice(offset,offset+limit);
 }

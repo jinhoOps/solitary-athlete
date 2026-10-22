@@ -61,7 +61,7 @@ def reaction_emojis(settings):
             else settings.get('DISCORD_FLEX_EMOJI', '💪'))
     return check, flex
 
-def run_sync(api, store, settings, now=None, check_lock=lambda: None):
+def run_sync(api, store, settings, now=None, check_lock=lambda: None, account_context=None):
     now = now or datetime.now(timezone.utc)
     guild, channel = settings['DISCORD_GUILD_ID'], settings['DISCORD_AUTH_CHANNEL_ID']
     for cid in (channel, settings['DISCORD_BOARD_CHANNEL_ID']):
@@ -83,6 +83,23 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None):
         except DiscordError as e:
             if e.status != 404: raise
         store.reacted(pending['message_id'])
+    check_lock()
+    context=account_context() if account_context else None
+    success_at=datetime.now(timezone.utc)
+    try:
+        if context:
+            store.success(channel,ceiling,success_at,account_context=context)
+        else:
+            store.success(channel,ceiling,success_at)
+    except Exception as error:
+        from .accounts import AccountError
+        if isinstance(error,AccountError):
+            # Losing online eligibility holds only the identity change.
+            store.success(channel,ceiling,success_at)
+        else:
+            if context:
+                context.failed()
+            raise
     logs = store.logs()
     pages = build_board(logs,now,settings.get('DASHBOARD_URL',''),
         (settings.get('DISCORD_GRASS_RECORD_EMOJI_ID'),settings.get('DISCORD_GRASS_PHOTO_EMOJI_ID')),
@@ -92,5 +109,4 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None):
     image_bytes = render_grass_image(logs, now)
     update_board(api,store,settings,pages,bot['id'],check_lock=check_lock,file=('grass.png', image_bytes, 'image/png'))
     check_lock()
-    store.success(channel,ceiling,datetime.now(timezone.utc))
     return {'messages_scanned':len(rows),'board_pages':len(pages)}

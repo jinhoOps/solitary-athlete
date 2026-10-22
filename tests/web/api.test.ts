@@ -1,5 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import { loadDashboard, loadTimeline } from '../../src/api';
+import { loadDashboard as load, loadTimeline } from '../../src/api';
+
+const loadDashboard:typeof load=(config,code,year,fetcher=fetch)=>load(config,code,year,async(input,init)=>
+ String(input).endsWith('get_dashboard_identity')?Response.json([{enabled:false,revision:0,calculation_version:1}]):fetcher(input,init));
 
 const config = { url: 'https://example.supabase.co', key: 'sb_publishable_fixture' };
 const row = (n: number) => ({
@@ -114,7 +117,7 @@ it('loads a stable all-history roster and more than 1000 annual logs with keyset
  };
  const data=await loadDashboard(config,'fixture',2026,fetcher);
  expect(data.logs).toHaveLength(1001);
- expect(data.roster).toContainEqual({id:'past',name:'과거에만 운동'});
+ expect(data.roster).toContainEqual({subject:{kind:'discord',id:'past'},name:'과거에만 운동'});
 });
 
 it('rejects partial annual data if the second page fails', async()=>{

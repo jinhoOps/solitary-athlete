@@ -1,3 +1,4 @@
+import type {RosterMember} from './types';
 import {el,button} from './dom';
 import mukmukCharacterUrl from '../assets/brand/mukmuk/sprites/mukmuk-representative.png';
 
@@ -5,7 +6,7 @@ export const SERVICE_START_YEAR = 2026;
 export const CHANNEL_INCEPTION_DATE = '2026-10-14';
 
 interface Options {
- roster:{id:string;name:string}[];selectedMemberId:string|null;selectedYear:number;
+ roster:RosterMember[];selectedMemberId:string|null;selectedYear:number;
  onMemberChange:(id:string|null)=>void;onYearChange:(year:number)=>void;
 }
 export function renderDashboardControls(options:Options):HTMLElement {
@@ -35,12 +36,12 @@ export function renderDashboardControls(options:Options):HTMLElement {
  list.addEventListener('scroll',updateMemberFades,{passive:true});
  const onFocus=(event:FocusEvent)=>{if(matchMedia('(max-width:767px)').matches&&event.target instanceof HTMLButtonElement)revealMember(event.target);};
  list.addEventListener('focusin',onFocus);
- const roster=[...options.roster].sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.id.localeCompare(b.id));
+ const roster=[...options.roster].sort((a,b)=>a.name.localeCompare(b.name,'ko')||a.subject.id.localeCompare(b.subject.id));
  function updatePressed(){all.setAttribute('aria-pressed',String(selected===null));for(const b of personal)b.setAttribute('aria-pressed',String(b.dataset.memberId===selected));}
  function choose(id:string|null){selected=id;updatePressed();fit();options.onMemberChange(id);}
  for(const member of roster){
-  const b=button(member.name,()=>choose(member.id),'filter-button');b.dataset.memberId=member.id;b.dataset.control=`member-${member.id}`;
-  if(roster.filter(m=>m.name===member.name).length>1)b.setAttribute('aria-label',`${member.name} · ID: ${member.id}`);
+  const b=button(member.name,()=>choose(member.subject.id),'filter-button');b.dataset.memberId=member.subject.id;b.dataset.control=`member-${member.subject.id}`;
+  if(roster.filter(m=>m.name===member.name).length>1)b.setAttribute('aria-label',`${member.name} · ID: ${member.subject.id}`);
   personal.push(b);list.append(b);
  }
  const find=button('멤버 찾기',()=>{dialog.showModal();input.value='';results();input.focus();},'button secondary member-find');find.dataset.control='member-find';
@@ -53,7 +54,7 @@ export function renderDashboardControls(options:Options):HTMLElement {
  function results(){
   found.replaceChildren();const matches=roster.filter(m=>m.name.toLocaleLowerCase('ko').includes(input.value.trim().toLocaleLowerCase('ko')));
   if(!matches.length)found.append(el('p','caption','일치하는 멤버가 없어요.'));
-  for(const m of matches){const b=button(`${m.name} · ID: ${m.id}`,()=>{searchFocusTarget=personal.find(b=>b.dataset.memberId===m.id);dialog.close();choose(m.id);},'filter-button');found.append(b);}
+  for(const m of matches){const b=button(`${m.name} · ID: ${m.subject.id}`,()=>{searchFocusTarget=personal.find(b=>b.dataset.memberId===m.subject.id);dialog.close();choose(m.subject.id);},'filter-button');found.append(b);}
  }
  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();dialog.close();find.focus();}});
  input.oninput=results;dialog.addEventListener('close',()=>{(searchFocusTarget??find).focus({preventScroll:true});searchFocusTarget=undefined;});

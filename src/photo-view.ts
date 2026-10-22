@@ -1,14 +1,14 @@
 import {el,button} from './dom';
 import {requestPhotos} from './photo-request';
-import type {PublicConfig} from './types';
+import type {PublicConfig,WorkoutSubject} from './types';
 interface Photo {id:string;preview:string|null;url:string;original:string;width?:number;height?:number}
-interface PhotoPage {photos:Photo[];next:string|null}
+interface PhotoPage {revision?:number;photos:Photo[];next:string|null}
 const validImage=(value:unknown)=>{
  try {const u=new URL(String(value));return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&['cdn.discordapp.com','media.discordapp.net'].includes(u.hostname)&&/^\/attachments\/\d+\/\d+\//.test(u.pathname);}catch{return false;}
 };
 const validOriginal=(value:unknown)=>typeof value==='string'&&/^https:\/\/discord\.com\/channels\/\d+\/\d+\/\d+$/.test(value);
 
-export function photoSection(config:PublicConfig,code:()=>string,user:string,date:string,name:string){
+export function photoSection(config:PublicConfig,code:()=>string,subject:WorkoutSubject,date:string,name:string,revision?:number,onIdentityChanged?:()=>void){
  const section=el('section','photo-section');
  section.setAttribute('aria-label',`${name}님의 사진`);
  const items=el('div','photo-grid'),controls=el('div','photo-controls');
@@ -67,9 +67,11 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
   controls.replaceChildren(el('p','caption','사진을 불러오고 있어요.'));
   try{
    const r=await requestPhotos(`${config.url.replace(/\/+$/,'')}/functions/v1/mukmuk-discord-photos`,config.key,
-    JSON.stringify({code:code(),user_id:user,date,after:appendPage?next:null}),current.signal);
+    JSON.stringify({code:code(),...(subject.kind==='person'?{person_id:subject.id,revision}:{user_id:subject.id}),date,after:appendPage?next:null}),current.signal);
+   if(r.status===409){if(!disposed&&!current.signal.aborted&&section.isConnected)onIdentityChanged?.();throw new Error('identity');}
    if(!r.ok)throw new Error(r.status===401?'auth':r.status===429?'rate':'unavailable');
    const page=await r.json() as PhotoPage;
+   if(subject.kind==='person'&&page.revision!==revision)throw new Error('identity');
    if(!Array.isArray(page.photos)||page.photos.some(p=>!validImage(p.url)||(p.preview!==null&&!validImage(p.preview))||!validOriginal(p.original))||(page.next!==null&&!/^\d+$/.test(page.next)))throw new Error('invalid');
    if(disposed||current.signal.aborted||!section.isConnected)return;
    if(!appendPage){items.replaceChildren();count=0;observers.forEach(o=>o.disconnect());observers.length=0;}
@@ -80,7 +82,7 @@ export function photoSection(config:PublicConfig,code:()=>string,user:string,dat
   }catch(error){
    if(disposed||current.signal.aborted||!section.isConnected)return;
    const message=error instanceof Error?error.message:'';
-   controls.replaceChildren(el('p','caption',message==='auth'?'시크릿 코드가 만료되었어요. 웹보드를 새로 열어 주세요.':message==='rate'?'사진 요청이 많아요. 잠시 후 다시 시도해 주세요.':'사진을 불러오지 못했어요.'),button('다시 불러오기',()=>void load(appendPage)));
+   controls.replaceChildren(el('p','caption',message==='identity'?'계정 기준이 바뀌었어요. 웹보드를 다시 불러와 주세요.':message==='auth'?'시크릿 코드가 만료되었어요. 웹보드를 새로 열어 주세요.':message==='rate'?'사진 요청이 많아요. 잠시 후 다시 시도해 주세요.':'사진을 불러오지 못했어요.'),button('다시 불러오기',()=>void load(appendPage)));
   }
  }
  return section;

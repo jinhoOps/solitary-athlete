@@ -16,7 +16,10 @@ export function parseGrassParticipation(rows:unknown[],month:string):GrassPartic
    ||days>members*elapsedDays)throw new Error('Invalid participation sample');
   const date=dayAt(new Date(collectedAt));
   if(date.slice(0,7)!==month.slice(0,7)||Number(date.slice(8))!==elapsedDays)throw new Error('Invalid participation date');
-  return {collectedAt,members,days,elapsedDays};
+  const identityRevision=row[`${prefix}identity_revision`]??0,calculationVersion=row[`${prefix}calculation_version`]??1;
+  if(typeof identityRevision!=='number'||!Number.isSafeInteger(identityRevision)||identityRevision<0
+    ||typeof calculationVersion!=='number'||!Number.isSafeInteger(calculationVersion)||calculationVersion<1)throw new Error('Invalid participation version');
+  return {collectedAt,members,days,elapsedDays,identityRevision,calculationVersion};
  }
  const current=sample('');
  const previousKeys=['previous_collected_at','previous_member_count','previous_workout_days','previous_elapsed_days'];
@@ -35,7 +38,9 @@ export function grassParticipationView(state:GrassParticipation):{value:string;c
  if(state.status!=='ready')return {value:'—',change:state.status==='pending'?'수집 대기':'집계 불러오기 실패',description:'성공한 월간 수집 집계를 확인한 뒤 표시해요.'};
  const rate=grassParticipationRate(state.current);
  let change='비교 기록 없음';
- if(state.previous){
+ if(state.previous&&(state.current.identityRevision??0)!==(state.previous.identityRevision??0))change='계정 변경으로 비교 제외';
+ else if(state.previous&&(state.current.calculationVersion??1)!==(state.previous.calculationVersion??1))change='계산 기준 변경으로 비교 제외';
+ else if(state.previous){
   const delta=rate-grassParticipationRate(state.previous);
   change=delta===0?'전일 대비 변동 없음':Math.abs(delta)<.1
    ?`전일 대비 ${delta>0?'↑':'↓'} 0.1%p 미만`

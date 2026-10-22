@@ -1,12 +1,13 @@
-import postgres from 'npm:postgres@3.4.9';
+import type {AccountAction,AccountInbox} from './account-links.ts';
+import {BUSY,OFFLINE} from './account-links.ts';
+import {shortSQL,withShortDB} from './short-db.ts';
 import type { Reply, ReplyDB } from './interactions.ts';
 import type { CleanupDB, CleanupJob } from './cleanup.ts';
 import type { SecretDB } from './monthly_code.ts';
 import type { WorkoutLog } from '../../../src/types.ts';
 
 export function createDB(url:string, testOnlyNoTLS=false) {
-  const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,idle_timeout:20,max_lifetime:60,
-    ssl:testOnlyNoTLS?false:{rejectUnauthorized:true},onnotice:()=>{}});
+  const sql=shortSQL(url,testOnlyNoTLS);
   const db:ReplyDB & CleanupDB & SecretDB={
     async activeSecret(now) {
       const rows=await sql`SELECT secret_code FROM solitary_athlete.channel_access_secrets
@@ -37,14 +38,26 @@ export function createDB(url:string, testOnlyNoTLS=false) {
       return result.length===1;
     },
     async daily(userId:string) {
+      return await sql.begin(async tx=>{
+        await tx`SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))`;
+      const identity=await tx`SELECT enabled,revision FROM solitary_athlete.mukmuk_identity_state WHERE singleton`;
+      if(identity[0].enabled||Number(identity[0].revision)>0){
+        const rows=await tx`SELECT d.username,d.log_date::text,d.memo,d.has_photo,d.verification_count FROM
+          solitary_athlete.mukmuk_person_days(${identity[0].revision},NULL,NULL,
+            (SELECT person_id FROM solitary_athlete.mukmuk_person_accounts WHERE user_id=${userId} AND valid_until IS NULL)) d
+          WHERE EXISTS(SELECT 1 FROM solitary_athlete.mukmuk_person_accounts WHERE user_id=${userId} AND valid_until IS NULL)
+          ORDER BY d.log_date DESC`;
+        return rows.map(r=>({...r,user_id:userId})) as WorkoutLog[];
+      }
       const rows:WorkoutLog[]=[];
       for(let offset=0;;offset+=1000) {
-        const page=await sql`SELECT user_id,username,log_date::text,memo,has_photo,verification_count
+        const page=await tx`SELECT user_id,username,log_date::text,memo,has_photo,verification_count
           FROM solitary_athlete.workout_logs WHERE user_id=${userId}
           ORDER BY log_date DESC LIMIT 1000 OFFSET ${offset}`;
         rows.push(...page as unknown as WorkoutLog[]);
         if(page.length<1000)return rows;
       }
+      });
     },
     async reservePublish(id:string,now:Date,attempt?:number) {
       const rows=await sql`UPDATE solitary_athlete.reply_cleanup_jobs
@@ -99,5 +112,43 @@ export function createDB(url:string, testOnlyNoTLS=false) {
     const rows=await sql`SELECT * FROM solitary_athlete.enqueue_workout_refresh(${id},${requester},${target},${guild},${channel})`;
     return rows[0] as unknown as {id:string;status:string;total:number;checked:number;removed:number};
   }
-  return {db,sql,enqueueRefresh};
+  const accounts:AccountInbox={
+    async online(deadline){
+      return await withShortDB(url,async q=>{
+      const rows=await q`SELECT 1 FROM solitary_athlete.mukmuk_local_runtime r,solitary_athlete.mukmuk_identity_state s
+        WHERE r.singleton AND s.singleton AND s.enabled AND r.ready AND r.lease_until>clock_timestamp()`;
+      return rows.length===1;
+      },{deadline,testOnlyNoTLS});
+    },
+    async enqueue(action:AccountAction,deadline){
+      await withShortDB(url,async q=>await q.begin(async tx=>{
+        await tx`SELECT pg_advisory_xact_lock(hashtext('mukmuk-account-action'),hashtext(${action.actor_id}))`;
+        const prior=await tx`SELECT actor_id FROM solitary_athlete.mukmuk_account_link_actions WHERE interaction_id=${action.interaction_id}`;
+        if(prior.length){if(prior[0].actor_id!==action.actor_id)throw new Error(BUSY);return;}
+        const runtime=await tx`SELECT r.session_id,r.fence FROM solitary_athlete.mukmuk_local_runtime r,
+          solitary_athlete.mukmuk_identity_state s WHERE r.singleton AND s.singleton AND s.enabled
+          AND r.ready AND r.lease_until>clock_timestamp() FOR SHARE OF r,s`;
+        if(!runtime.length)throw new Error(OFFLINE);
+        await tx`UPDATE solitary_athlete.mukmuk_account_link_actions SET status='expired'
+          WHERE actor_id=${action.actor_id} AND status IN ('queued','processing') AND expires_at<=clock_timestamp()`;
+        await tx`INSERT INTO solitary_athlete.mukmuk_account_link_actions
+          (interaction_id,actor_id,kind,payload,runtime_session,runtime_fence)
+          VALUES(${action.interaction_id},${action.actor_id},${action.kind},${JSON.stringify(action)}::jsonb,
+          ${runtime[0].session_id},${runtime[0].fence}) ON CONFLICT(interaction_id) DO NOTHING`;
+      }),{deadline,testOnlyNoTLS});
+    },
+    async result(id,actor,deadline){
+      return await withShortDB(url,async q=>{
+      const rows=await q`SELECT a.status,a.result,a.expires_at>clock_timestamp() AND r.ready
+        AND r.lease_until>clock_timestamp() AND a.runtime_session=r.session_id AND a.runtime_fence=r.fence AS alive
+        FROM solitary_athlete.mukmuk_account_link_actions a CROSS JOIN solitary_athlete.mukmuk_local_runtime r
+        WHERE a.interaction_id=${id} AND a.actor_id=${actor} AND r.singleton`;
+      if(!rows.length)return null;
+      const row=rows[0];if(row.status==='done'&&row.result)return row.result;
+      if(!row.alive||['failed','expired'].includes(row.status))return {content:'처리 시간이 지났어요. 현황을 확인한 뒤 다시 이용해 주세요.'};
+      return null;
+      },{deadline,testOnlyNoTLS});
+    },
+  };
+  return {db,sql,enqueueRefresh,accounts};
 }

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import plistlib
 import shutil
+import shlex
 import subprocess
 import sys
 
@@ -32,7 +33,7 @@ def main():
     env_file = (root / '.env').resolve()
     if not env_file.is_file():
         raise SystemExit('Configure the project .env first')
-    sources = [root / name for name in ['main.py', 'pyproject.toml', 'uv.lock', 'scripts/macos_sync.py']]
+    sources = [root / name for name in ['main.py', 'pyproject.toml', 'uv.lock', 'scripts/macos_sync.py', 'scripts/macos_local.py']]
     sources.extend(sorted((root / 'mukmuk').glob('*.py')))
     if (root / '.python-version').exists():
         sources.append(root / '.python-version')
@@ -76,6 +77,8 @@ def main():
     subprocess.run(['plutil', '-lint', str(agent)], check=True)
     subprocess.run(['launchctl', 'bootstrap', f'gui/{os.getuid()}', str(agent)], check=True)
     print(f'Installed {LABEL}: every 5 minutes; runtime={runtime}; logs={logs}')
+    command=shlex.join([uv,'run','--locked','--no-sync','--project',str(runtime),'python',str(runtime/'scripts/macos_local.py')])
+    print('로컬 메인 시작: MUKMUK_ENV_FILE='+shlex.quote(str(env_file))+' '+command)
 
 
 if __name__ == '__main__':

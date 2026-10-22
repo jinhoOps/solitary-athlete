@@ -2,8 +2,13 @@ export interface WorkoutLog {
   user_id: string; username: string; log_date: string; memo: string;
   has_photo: boolean; verification_count: number;
 }
+export type WorkoutSubject={kind:'discord'|'person';id:string};
+export interface ViewWorkoutLog extends Omit<WorkoutLog,'user_id'> {subject:WorkoutSubject}
+export interface PersonWorkoutDTO extends Omit<WorkoutLog,'user_id'> {person_id:string;identity_revision:number}
+export type WorkoutEntry=WorkoutLog|ViewWorkoutLog;
+export interface RosterMember {subject:WorkoutSubject;name:string}
 export interface Member {
-  id: string; name: string; dates: Set<string>; photos: Set<string>;
+  subject: WorkoutSubject; name: string; dates: Set<string>; photos: Set<string>;
 }
 export interface PublicConfig { url: string; key: string }
 export interface MonthlyKPIs {
@@ -15,15 +20,17 @@ export interface MonthlyKPIs {
   averageDaysPerMember: number;
 }
 export interface GrassParticipationSample {
+  identityRevision?:number;calculationVersion?:number;
   collectedAt: string; members: number; days: number; elapsedDays: number;
 }
 export type GrassParticipation =
   | { status: 'ready'; month: string; current: GrassParticipationSample; previous: GrassParticipationSample | null }
   | { status: 'pending' | 'unavailable' };
 export interface DashboardData {
-  roster: {id:string;name:string}[];
+  identityRevision:number;calculationVersion:number;subjectKind:WorkoutSubject['kind'];
+  roster: RosterMember[];
   members: Member[];
-  logs: WorkoutLog[];
+  logs: ViewWorkoutLog[];
   lastSuccess: string | null;
   kpis: MonthlyKPIs;
   grassParticipation: GrassParticipation;

@@ -1,12 +1,12 @@
 import {el,button} from './dom';
 import {calendarYear,sundayIndex,stats} from './dates';
 import {aggregateDays,aggregateDisplayOpacity} from './aggregate';
-import type {Member,WorkoutLog,DashboardData} from './types';
+import type {Member,ViewWorkoutLog as WorkoutLog,DashboardData,RosterMember} from './types';
 import {renderTitleBadges} from './title-badges';
 import type {BranchProgress} from './titles';
 
 export function renderGrassCard(options: {
- heading?:HTMLElement;year:number;today:string;member:Member|null;roster:{id:string;name:string}[];
+ heading?:HTMLElement;year:number;today:string;member:Member|null;roster:RosterMember[];
  photos?:(log:WorkoutLog)=>HTMLElement;
  /** Selected member's title tree for the current month, with its month label. */
  titles?:{month:number;progress:BranchProgress[]}|null;
@@ -15,10 +15,10 @@ export function renderGrassCard(options: {
   const {year:selectedYear,today,roster}=options;
   const currentYear=Number(today.slice(0,4));
   const aggregate=options.member===null;
-  const names=new Map(roster.map(m=>[m.id,m.name]));
-  const logs=options.logs.map(l=>({...l,username:names.get(l.user_id)??l.username}));
+  const names=new Map(roster.map(m=>[m.subject.id,m.name]));
+  const logs=options.logs.map(l=>({...l,username:names.get(l.subject.id)??l.username}));
   const daily=aggregateDays(logs,roster.length);
-  const member=options.member??{id:'ALL',name:'전체 멤버',dates:new Set(daily.keys()),photos:new Set<string>()};
+  const member=options.member??{subject:{kind:'person' as const,id:'ALL'},name:'전체 멤버',dates:new Set(daily.keys()),photos:new Set<string>()};
   const data={logs,currentStats:options.currentStats};
   const card = el('article', 'workout-card');
   const top = options.heading ?? el('div', 'card-heading');
@@ -27,7 +27,7 @@ export function renderGrassCard(options: {
 
   const metrics = el('dl', 'metrics');
   const counts = stats(member.dates, today);
-  const currentCounts = data.currentStats?.get(member.id) ?? counts;
+  const currentCounts = data.currentStats?.get(member.subject.id) ?? counts;
   const metricsForYear = aggregate
     ? [['전체 멤버',roster.length,'명'],['누적',logs.filter(l=>l.log_date<=today).length,'일']] as const
     : selectedYear === currentYear
@@ -70,7 +70,7 @@ export function renderGrassCard(options: {
   let openedLog: WorkoutLog | undefined;
 
   const memoFor = (date: string) =>
-    openedLog?.log_date === date ? openedLog : data.logs.find(r => r.user_id === member.id && r.log_date === date);
+    openedLog?.log_date === date ? openedLog : data.logs.find(r => r.subject.id === member.subject.id && r.log_date === date);
   const levelFor = (date: string) => (!member.dates.has(date) ? 0 : member.photos.has(date) ? 2 : 1);
   const summary=(date:string)=>`전체 ${roster.length}명 중 ${daily.get(date)?.count??0}명 운동 · 사진 포함 ${daily.get(date)?.photoCount??0}명`;
   const description = (date: string, log = memoFor(date)) => aggregate

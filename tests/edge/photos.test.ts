@@ -78,3 +78,21 @@ it('caps each lookup at three messages to bound slow Discord requests',async()=>
  const body=await (await handler(request())).json();
  expect(call).toHaveBeenCalledTimes(3);expect(body.next).toBe('102');
 });
+
+it('person photos check each original author, revision, and retire all legacy requests',async()=>{
+ const {db,call}=setup();let revision=1;const person='00000000-0000-4000-8000-000000000001';
+ const personDB={...db,identity:async()=>({enabled:true,revision}),personEvents:vi.fn(async()=>[{user_id:'3',message_id:'100',guild_id:'10',channel_id:'20',attachments:[attachment]}])};
+ const handle=createPhotoHandler({db:personDB,discord:call,guild:'10',channel:'20',now});
+ const request=(extra={})=>new Request('https://fixture.test',{method:'POST',body:JSON.stringify({code:'test',person_id:person,date:'2026-10-14',revision:1,...extra})});
+ const good=await handle(request());expect(good.status).toBe(200);const result=await good.json();expect(result.revision).toBe(1);expect(result.photos[0].original).toBe('https://discord.com/channels/10/20/100');
+ expect((await handle(request({person_id:undefined,user_id:'3',revision:undefined}))).status).toBe(409);
+ revision=2;expect(await (await handle(request())).json()).toEqual({error:'identity_revision_changed'});
+ revision=1;personDB.personEvents.mockResolvedValue([{user_id:'4',message_id:'100',guild_id:'10',channel_id:'20',attachments:[attachment]}]);
+ expect((await handle(request())).status).toBe(502);
+});
+it('discards photos when identity changes during Discord HTTP',async()=>{
+ const {db,call}=setup();let revision=1;
+ const handle=createPhotoHandler({db:{...db,identity:async()=>({enabled:true,revision}),personEvents:async()=>[{user_id:'3',message_id:'100',guild_id:'10',channel_id:'20',attachments:[attachment]}]},discord:async(m,p)=>{const response=await call(m,p);revision=2;return response;},guild:'10',channel:'20',now});
+ const res=await handle(new Request('https://fixture.test',{method:'POST',body:JSON.stringify({code:'test',person_id:'00000000-0000-4000-8000-000000000001',revision:1,date:'2026-10-14'})}));
+ expect(res.status).toBe(409);expect(await res.json()).toEqual({error:'identity_revision_changed'});
+});

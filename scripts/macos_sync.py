@@ -52,6 +52,14 @@ def main():
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
     logger.propagate = False
+    # Import only local ownership helpers; no Gateway login or DB connection here.
+    source_root = str(Path(__file__).resolve().parents[1])
+    if source_root not in sys.path:
+        sys.path.insert(0, source_root)
+    from mukmuk.local_owner import managed_runtime_active
+    if managed_runtime_active():
+        logger.info('skip=managed_by_local_bot')
+        return 0
     result = run_once(Path(__file__).resolve().parents[1])
     logger.info('exit=%s stdout=%s stderr=%s', result.returncode, result.stdout.strip()[:2000], result.stderr.strip()[:2000])
     return result.returncode

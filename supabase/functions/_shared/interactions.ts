@@ -1,9 +1,12 @@
+import {accountRoute,OFFLINE,BUSY,type AccountAction} from './account-links.ts';
 import { dashboardLink } from './dashboard-link.ts';
 import { encryptToken } from './crypto.ts';
 import { formatGrass } from './grass.ts';
 import { dayAt } from '../../../src/dates.ts';
 import type { WorkoutLog } from '../../../src/types.ts';
 
+export interface ReplyActionRow {type:1;components:Record<string,unknown>[]}
+export interface ReplyContent {content:string;components?:ReplyActionRow[]}
 export interface Reply {
   id: string; token: string; application_id: string; targetId: string; targetName: string;
 }
@@ -21,6 +24,7 @@ function unhex(hex: string, size: number): Uint8Array<ArrayBuffer> | null {
   return Uint8Array.from(hex.match(/../g)!, b => parseInt(b,16));
 }
 export async function handleInteraction(req: Request, deps: { publicKey:string; guildId:string; appId:string;
+  account?:{online:(deadline?:number)=>Promise<boolean>;publish:(body:Reply,action:AccountAction)=>Promise<void>};
   memberRoleId?:string; refresh?:(body:Reply & {requesterId:string})=>Promise<void>;
   waitUntil:(p:Promise<unknown>)=>void; publish:(body:Reply)=>Promise<void> }): Promise<Response> {
   if (req.method !== 'POST') return new Response('Method not allowed', {status:405});
@@ -37,6 +41,21 @@ export async function handleInteraction(req: Request, deps: { publicKey:string; 
   try { body=JSON.parse(raw); } catch { return new Response('Invalid JSON',{status:400}); }
   if (body.type===1) return Response.json({type:1});
   if (body.guild_id!==deps.guildId || body.application_id!==deps.appId) return new Response('Unsupported guild',{status:403});
+  let manager=false;
+  try {manager=(BigInt(body.member?.permissions??'0')&40n)!==0n;}catch{/* deny through role check */}
+  const actor=body.member?.user;
+  const route=accountRoute(body,{actorId:actor?.id,manager,member:!!deps.memberRoleId&&Array.isArray(body.member?.roles)&&body.member.roles.includes(deps.memberRoleId)});
+  if(route){
+    const deny=(content:string)=>Response.json({type:4,data:{content,flags:64,allowed_mentions:{parse:[]}}});
+    if(actor?.bot||route.error)return deny(route.error??'일반 사용자 계정만 이용할 수 있어요.');
+    if(!deps.account)return deny(OFFLINE);
+    try {if(!await deps.account.online(Date.now()+1800))return deny(OFFLINE);}catch{if(route.modal)return deny(BUSY);}
+    // An unknown signal is deferred before Discord's deadline; inbox delivery checks it again.
+    if(route.modal)return Response.json(route.modal);
+    const reply:Reply={id:body.id,token:body.token,application_id:body.application_id,targetId:actor.id,targetName:'운동가'};
+    deps.waitUntil(deps.account.publish(reply,route.action!).catch(()=>console.error('mukmuk_account_reply_failed')));
+    return Response.json({type:5,data:{flags:64}});
+  }
   if (body.type!==2 || !['잔디','기록갱신'].includes(body.data?.name)) return new Response('Unsupported interaction',{status:400});
   const caller=body.member?.user;
   const option=body.data.options?.find((o:{name:string})=>o.name==='유저');
@@ -60,18 +79,19 @@ export async function handleInteraction(req: Request, deps: { publicKey:string; 
   deps.waitUntil(deps.publish(reply).catch(()=>console.error('mukmuk_publish_failed')));
   return Response.json({type:5});
 }
-export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;dashboardUrl:string;db:ReplyDB;discord:DiscordCall;emojis?:[string|undefined,string|undefined];sleep?:(ms:number)=>Promise<void>;render?:()=>Promise<string>}) {
+export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;dashboardUrl:string;db:ReplyDB;discord:DiscordCall;emojis?:[string|undefined,string|undefined];sleep?:(ms:number)=>Promise<void>;preparationFailure?:string;render?:()=>Promise<string|ReplyContent>}) {
   const path=`/webhooks/${body.application_id}/${body.token}/messages/@original`;
   try {
     const cipher=await encryptToken(body.token,deps.key,body.id);
     if (!await deps.db.prepare(body,cipher,new Date(deps.now().getTime()+900_000))) return;
   } catch {
-    await deps.discord('DELETE',path).catch(()=>{});
+    if(deps.preparationFailure)await deps.discord('PATCH',path,{content:deps.preparationFailure,allowed_mentions:{parse:[]}}).catch(()=>{});
+    else await deps.discord('DELETE',path).catch(()=>{});
     console.error('mukmuk_prepare_failed'); return;
   }
-  let content: string;
+  let content: string;let components:ReplyActionRow[]|undefined;
   try {
-    if(deps.render)content=await deps.render();
+    if(deps.render){const rendered=await deps.render();if(typeof rendered==='string')content=rendered;else {content=rendered.content;components=rendered.components;}}
     else {
     const [rows,lastSuccess,code]=await Promise.all([deps.db.daily(body.targetId),deps.db.lastSuccess(),
       deps.dashboardUrl ? deps.db.activeSecret?.(deps.now()) ?? null : null]);
@@ -89,7 +109,7 @@ export async function publishReply(body: Reply, deps: {key:string;now:()=>Date;d
     if(lease===null)return; // Recovery owns the loading response.
     ticket=lease;
     let res:Response|undefined;
-    try {res=await deps.discord('PATCH',path,{content,allowed_mentions:{parse:[]}});}
+    try {res=await deps.discord('PATCH',path,{content,...(components?{components}:{}),allowed_mentions:{parse:[]}});}
     catch { /* Retry transport failures without logging token-bearing request URLs. */ }
     if(res?.ok) {await deps.db.schedule(body.id,deps.now(),ticket);return;}
     if(res && res.status!==429 && res.status<500)throw new Error('Discord publish rejected');

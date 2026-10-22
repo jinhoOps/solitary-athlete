@@ -41,7 +41,7 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None, noti
     this_sunday = today - timedelta(days=(today.weekday()+1)%7)
     members = {}
     for row in rows:
-        uid = row['user_id']
+        uid = row.get('subject_id', row.get('user_id'))
         member = members.setdefault(uid, {'name': row['username'], 'dates': set(), 'photos': set()})
         d = str(row['log_date'])
         if d > today.isoformat(): continue

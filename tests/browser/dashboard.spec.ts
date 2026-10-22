@@ -26,6 +26,7 @@ async function fixture(
   }
   await page.route('**/rest/v1/**', async route => {
     const url = new URL(route.request().url());
+    if(url.pathname.endsWith('rpc/get_dashboard_identity')){await route.fulfill({json:[{enabled:false,revision:0,calculation_version:1}]});return;}
     if (url.pathname.endsWith('sync_status')) {
       await route.fulfill({ json: [{ last_success_at: '2026-10-14T08:17:00Z' }] });
       return;
@@ -141,6 +142,7 @@ test('URL code parameter automatically stores code and cleans URL', async ({ pag
   await page.clock.install({ time: new Date('2026-10-14T09:00:00Z') });
   await page.route('**/rest/v1/**', async route => {
     const url = new URL(route.request().url());
+    if(url.pathname.endsWith('rpc/get_dashboard_identity')){await route.fulfill({json:[{enabled:false,revision:0,calculation_version:1}]});return;}
     if (url.pathname.endsWith('sync_status')) {
       await route.fulfill({ json: [{ last_success_at: '2026-10-14T08:17:00Z' }] });
       return;
@@ -174,6 +176,7 @@ test('empty state and failure are distinct and retry succeeds', async ({ page })
   await page.unroute('**/rest/v1/**');
   await page.route('**/rest/v1/**', r => {
     const url = new URL(r.request().url());
+    if(url.pathname.endsWith('rpc/get_dashboard_identity'))return r.fulfill({json:[{enabled:false,revision:0,calculation_version:1}]});
     if (url.pathname.endsWith('rpc/get_workout_logs_page')) {
       return r.fulfill({ json: [] });
     }
@@ -1221,4 +1224,40 @@ test('mobile title badges sit below the statistics and tap opens the tree inside
   expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(360);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('.title-badges').click();await expect(tree).toBeHidden();
+});
+
+for(const width of [360,1280])test(`person dashboard preserves layout and explicit photo identity at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:1000});await fixture(page);
+ const first='00000000-0000-4000-8000-000000000001',second='00000000-0000-4000-8000-000000000002',past='00000000-0000-4000-8000-000000000003';
+ await page.route('**/rest/v1/rpc/get_dashboard_identity',r=>r.fulfill({json:[{enabled:true,revision:1,calculation_version:2}]}));
+ await page.route('**/rest/v1/rpc/get_dashboard_people',r=>{expect(r.request().postDataJSON().p_revision).toBe(1);return r.fulfill({json:[{person_id:first,username:'하루',identity_revision:1},{person_id:second,username:'바람',identity_revision:1},{person_id:past,username:'과거 전용',identity_revision:1}]});});
+ await page.route('**/rest/v1/rpc/get_person_workout_logs_page',r=>{expect(r.request().postDataJSON().p_revision).toBe(1);return r.fulfill({json:[first,second].flatMap((person_id,i)=>[14,13].map(day=>({person_id,username:i?'바람':'하루',log_date:`2026-10-${day}`,memo:'걷기',has_photo:day===14&&!i,verification_count:2,identity_revision:1}))).sort((a,b)=>b.log_date.localeCompare(a.log_date)||a.person_id.localeCompare(b.person_id))});});
+ await page.route('**/rest/v1/rpc/get_person_grass_participation',r=>r.fulfill({json:[{month_start:'2026-10-01',collected_at:'2026-10-14T08:17:00Z',member_count:2,workout_days:4,elapsed_days:14,identity_revision:1,calculation_version:2,previous_collected_at:'2026-10-13T14:55:00Z',previous_member_count:3,previous_workout_days:5,previous_elapsed_days:13,previous_identity_revision:0,previous_calculation_version:2}]}));
+ let photos=0;
+ await page.route('**/functions/v1/mukmuk-discord-photos',r=>{photos++;const body=r.request().postDataJSON();expect(body).toMatchObject({person_id:first,revision:1,date:today});expect(body).not.toHaveProperty('user_id');return r.fulfill({json:{revision:1,photos:[],next:null}});});
+ await page.reload();await expect(page.locator('.workout-card')).toHaveCount(1);
+ await expect(page.locator('.kpi-section')).toContainText('계정 변경으로 비교 제외');
+ await expect(page.locator('.kpi-card').first()).toContainText('하루');await expect(page.locator('.kpi-card').first()).toContainText('바람');
+ await expect(page.locator(`[data-date="${today}"]`)).toHaveAttribute('data-count','2');
+ expect(photos).toBe(0);
+ await page.evaluate(()=>document.documentElement.style.fontSize='200%');
+ await page.getByRole('button',{name:'하루',exact:true}).click();
+ await expect(page.locator(`[data-date="${today}"]`)).toHaveAttribute('data-level','2');
+  await expect(page.locator('.title-badges .title-badge')).toHaveText(['✨']);
+  await page.locator('.title-badges').click();await expect(page.locator('.title-tree')).toBeVisible();
+  await page.keyboard.press('Escape');await expect(page.locator('.title-tree')).toBeHidden();
+ await page.locator('.timeline-item').first().getByRole('button',{name:'사진 보기',exact:true}).click();
+ await expect(page.locator('.timeline-item').first()).toContainText('표시할 사진이 없어요');expect(photos).toBe(1);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.getByRole('button',{name:'과거 전용',exact:true}).click();await expect(page.locator(`[data-date="${today}"]`)).toHaveAttribute('data-level','0');await expect(page.locator('.timeline-item')).toHaveCount(0);
+});
+
+test('repeated revision changes keep the prior coherent dashboard and expose retry without auth modal',async({page})=>{
+ await fixture(page,'normal',true,false,'2027-10-14T09:00:00Z');let boots=0;
+ await page.route('**/rest/v1/rpc/get_dashboard_identity',r=>{boots++;return r.fulfill({json:[{enabled:true,revision:boots,calculation_version:2}]});});
+ for(const route of ['get_dashboard_people','get_person_workout_logs_page','get_person_grass_participation'])await page.route(`**/rest/v1/rpc/${route}`,r=>r.fulfill({status:409,json:{message:'identity_revision_changed'}}));
+ await page.getByRole('button',{name:'이전 연도',exact:true}).click();
+ await expect(page.locator('.error-state')).toContainText('이전 화면을 유지했어요');
+ expect(boots).toBe(3);await expect(page.locator('.workout-card')).toHaveCount(1);await expect(page.locator('.modal-backdrop')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'하루',exact:true})).toBeEnabled();
 });

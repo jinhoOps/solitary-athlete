@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest';
 import {titleProgress,earnedTitles,representativeTitle,DEFAULT_TITLE} from '../../src/titles';
 import {calculateMonthlyKPIs,memberMonthTitles} from '../../src/metrics';
-import type {WorkoutLog} from '../../src/types';
+import type {WorkoutLog,ViewWorkoutLog} from '../../src/types';
 
 // 2026-10-01 is a Thursday; 10-03/04, 10-10/11, 10-17/18 and 10-24/25 are weekends.
 const range=(from:number,to:number)=>Array.from({length:to-from+1},(_,i)=>`2026-10-${String(from+i).padStart(2,'0')}`);
@@ -55,4 +55,15 @@ it('derives king and member titles from deduplicated monthly records, ignoring b
  expect(calculateMonthlyKPIs(logs,now).workoutKings[0]).toMatchObject({days:3,title:'잔디에 쓴 일기'});
  expect(earnedTitles(memberMonthTitles(logs,'1',now)!).map(t=>t.name)).toEqual(['잔디에 쓴 일기','다시 돋은 새싹']);
  expect(memberMonthTitles(logs,'3',now)).toBeNull();
+});
+
+it('keeps title progress and KPI counts per person after the visual and identity changes combine',()=>{
+ const person='00000000-0000-4000-8000-000000000001';
+ const logs:ViewWorkoutLog[]=range(1,14).map(log_date=>({subject:{kind:'person',id:person},username:'하루',log_date,memo:'걷기',has_photo:true,verification_count:2}));
+ logs.push({...logs[0],memo:'',has_photo:false});
+ const now=new Date('2026-10-14T03:00:00Z');
+ const kpis=calculateMonthlyKPIs(logs,now);
+ expect(kpis).toMatchObject({activeMembers:1,totalWorkoutDays:14,mostActiveWeekdayDays:2});
+ expect(kpis.workoutKings).toEqual([{id:person,name:'하루',days:14,title:'빈틈없는 들판'}]);
+ expect(earnedTitles(memberMonthTitles(logs,person,now)!).map(t=>t.name)).toEqual(['곧게 뻗은 줄기','빈틈없는 들판','한 권의 그림일기','일곱 이랑의 농부']);
 });

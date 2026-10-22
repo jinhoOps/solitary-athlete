@@ -1,15 +1,24 @@
 from dataclasses import asdict
+from contextlib import contextmanager
+from threading import RLock
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 class Store:
-    def __init__(self, connection):
+    def __init__(self, connection, transaction_lock=None):
         self.conn = connection
+        self._transaction_lock = transaction_lock or RLock()
         self.conn.prepare_threshold = None  # Supavisor transaction pooler compatibility.
         self.conn.row_factory = dict_row
 
+    @contextmanager
+    def transaction(self):
+        with self._transaction_lock:
+            with self.conn.transaction():
+                yield self.conn
+
     def save(self, message_id, event):
-        with self.conn.transaction():
+        with self.transaction():
             self.conn.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
             previous = self.conn.execute('SELECT user_id, log_date FROM solitary_athlete.workout_events WHERE message_id=%s', (message_id,)).fetchone()
             affected = set()
@@ -36,62 +45,74 @@ class Store:
                     FROM solitary_athlete.workout_events WHERE user_id=%s AND log_date=%s GROUP BY user_id,log_date''', (user_id, log_date))
 
     def active_secret(self, now):
-        with self.conn.transaction():
+        with self.transaction():
             row = self.conn.execute('SELECT secret_code FROM solitary_athlete.channel_access_secrets WHERE expires_at>%s ORDER BY issued_at DESC LIMIT 1', (now,)).fetchone()
             return row['secret_code'] if row else None
 
     def logs(self):
-        with self.conn.transaction():
+        with self.transaction():
+            state=self.conn.execute('SELECT revision,enabled FROM solitary_athlete.mukmuk_identity_state WHERE singleton').fetchone()
             with self.conn.cursor() as cur:
-                cur.execute('SELECT * FROM solitary_athlete.workout_logs ORDER BY log_date DESC,updated_at DESC,user_id')
+                if state['enabled'] or state['revision']>0:
+                    cur.execute('SELECT person_id::text AS subject_id,username,log_date,memo,has_photo,verification_count FROM solitary_athlete.mukmuk_person_days(%s) ORDER BY log_date DESC,person_id',(state['revision'],))
+                else:
+                    cur.execute('SELECT * FROM solitary_athlete.workout_logs ORDER BY log_date DESC,updated_at DESC,user_id')
                 result = []
                 while page := cur.fetchmany(1000): result.extend(page)
                 return result
 
     def state(self, channel):
-        with self.conn.transaction():
+        with self.transaction():
             return self.conn.execute('SELECT * FROM solitary_athlete.sync_state WHERE channel_id=%s', (channel,)).fetchone() or {
                 'last_message_id': None, 'last_success_at': None, 'board_message_ids': []}
 
     def board_ids(self, channel, ids):
-        with self.conn.transaction():
+        with self.transaction():
             self.conn.execute('''INSERT INTO solitary_athlete.sync_state(channel_id,board_message_ids) VALUES(%s,%s)
                 ON CONFLICT(channel_id) DO UPDATE SET board_message_ids=EXCLUDED.board_message_ids''', (channel, ids))
 
     def pending_reactions(self):
-        with self.conn.transaction():
+        with self.transaction():
             return self.conn.execute('SELECT message_id,channel_id,has_photo FROM solitary_athlete.workout_events WHERE reacted_at IS NULL ORDER BY message_id::numeric').fetchall()
 
     def reacted(self, mid):
-        with self.conn.transaction():
+        with self.transaction():
             self.conn.execute('UPDATE solitary_athlete.workout_events SET reacted_at=now() WHERE message_id=%s', (mid,))
 
-    def success(self, channel, cursor, now):
-        with self.conn.transaction():
+    def success(self, channel, cursor, now, account_context=None):
+        with self.transaction():
             self.conn.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
             previous = self.conn.execute('SELECT last_success_at FROM solitary_athlete.sync_state WHERE channel_id=%s FOR UPDATE', (channel,)).fetchone()
             if previous and previous['last_success_at'] and previous['last_success_at'] >= now:
                 return
+            latest=self.conn.execute('SELECT max(collected_at) AS at FROM solitary_athlete.mukmuk_daily_grass_history').fetchone()['at']
+            if latest and latest>=now:
+                return
+            applied=False
+            if account_context:
+                applied=account_context.apply(self.conn,now)
             self.conn.execute('SELECT solitary_athlete.capture_monthly_grass_snapshot(%s)', (now,))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_state(channel_id,last_message_id,last_success_at) VALUES(%s,%s,%s)
                 ON CONFLICT(channel_id) DO UPDATE SET last_message_id=COALESCE(EXCLUDED.last_message_id,solitary_athlete.sync_state.last_message_id),last_success_at=EXCLUDED.last_success_at''', (channel, cursor, now))
             self.conn.execute('''INSERT INTO solitary_athlete.sync_status(singleton,last_success_at) VALUES(true,%s)
                 ON CONFLICT(singleton) DO UPDATE SET last_success_at=EXCLUDED.last_success_at''', (now,))
+            if applied:
+                account_context.guard(self.conn)
 
     def photo_events(self, after):
-        with self.conn.transaction():
+        with self.transaction():
             return self.conn.execute('''SELECT message_id,channel_id FROM solitary_athlete.workout_events
                 WHERE has_photo AND attachments='[]'::jsonb
                 AND (%s::text IS NULL OR message_id::numeric>%s::numeric)
                 ORDER BY message_id::numeric LIMIT 100''', (after, after)).fetchall()
 
     def photo_metadata(self, mid, attachments):
-        with self.conn.transaction():
+        with self.transaction():
             self.conn.execute('''UPDATE solitary_athlete.workout_events SET attachments=%s
                 WHERE message_id=%s AND attachments='[]'::jsonb''', (Jsonb(attachments), mid))
 
     def claim_refresh(self):
-        with self.conn.transaction():
+        with self.transaction():
             return self.conn.execute('''WITH due AS (
               SELECT id FROM solitary_athlete.workout_refresh_jobs
               WHERE status IN ('queued','running') AND next_attempt_at<=now()
@@ -102,7 +123,7 @@ class Store:
               FROM due WHERE j.id=due.id RETURNING j.*''').fetchone()
 
     def refresh_events(self, job):
-        with self.conn.transaction():
+        with self.transaction():
             return self.conn.execute('''SELECT message_id FROM solitary_athlete.workout_events
               WHERE user_id=%s AND guild_id=%s AND channel_id=%s
               AND message_id::numeric>%s::numeric AND message_id::numeric<=%s::numeric
@@ -118,7 +139,7 @@ class Store:
         return row
 
     def apply_refresh(self, job, mid, event):
-        with self.conn.transaction():
+        with self.transaction():
             row = self._refresh_owned(job)
             if int(mid)<=int(row['cursor_id']):
                 return
@@ -134,7 +155,7 @@ class Store:
             job['cursor_id']=mid
 
     def finish_refresh_batch(self, job):
-        with self.conn.transaction():
+        with self.transaction():
             self._refresh_owned(job)
             remains = bool(self.refresh_events(job))
             self.conn.execute('''UPDATE solitary_athlete.workout_refresh_jobs
@@ -142,7 +163,7 @@ class Store:
               WHERE id=%s''', ('queued' if remains else 'done',job['id']))
 
     def defer_refresh(self, job, code, delay, fatal=False, failure=True):
-        with self.conn.transaction():
+        with self.transaction():
             row = self._refresh_owned(job)
             failures = row['failures']+int(failure)
             self.conn.execute('''UPDATE solitary_athlete.workout_refresh_jobs
