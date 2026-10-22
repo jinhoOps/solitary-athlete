@@ -223,7 +223,7 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 2. 후보 커밋의 Checks 전체 성공과 마이그레이션 적용 현황을 확인한다. 이번 변경은 위 네 SQL 파일이며 각 파일은 자체 트랜잭션이다. 다른 앱의 스키마·키·프로젝트 전역 설정·worker 연결 제한을 바꾸지 않는다. 운영 DB에는 지금 이 문서에 따라 SQL을 실행하지 않는다.
 3. 로컬·Edge의 `MUKMUK_ACCOUNT_LINK_ENABLED=false`, DB `mukmuk_identity_state.enabled=false`를 준비값으로 둔다. DB 상태 조회는 해당 테이블을 만든 뒤에 가능하다. 계정 기능을 끈 상태에서 기존 기록 조회·갱신·삭제 Cron이 정상인지 확인한다.
 4. **첫 연결 적용 전에 모든 수집 경로가 사람 집계에 대응해야 한다.** 로컬 메인, 설치된 launchd fallback, GitHub 일일 보완 수집의 실제 실행 소스를 대조한다. main 병합 전의 기존 GitHub 수집 코드를 그대로 둔 채 운영 연결을 활성화하지 않는다.
-5. 네 마이그레이션을 순서대로 적용한 뒤 새 RPC와 이에 대응하는 Edge·웹·Python을 비활성 상태로 준비한다. 새 웹이 사용하는 `get_dashboard_identity`가 먼저 준비돼야 한다. 코드·역할·개인 테이블 비공개 권한과 `revision=0`에서의 기존 결과 일치를 확인한다.
+5. 네 마이그레이션을 순서대로 적용한 뒤 새 RPC와 이에 대응하는 Edge·웹·Python을 비활성 상태로 준비한다. 새 웹이 사용하는 `get_dashboard_identity`가 먼저 준비돼야 한다. 코드·역할·개인 테이블 비공개 권한과 `revision=0`에서의 기존 결과 일치를 확인한다. `.github/workflows/pages.yml`은 main의 웹 코드 변경을 자동 배포하므로, 향후 병합도 배포 단계로 취급한다. 운영 DB와 새 RPC가 준비되기 전에 이 PR을 main에 병합하지 않는다. 이 순서의 운영 작업은 각각 별도 승인 후 진행하며, 이번 PR 개설로 실행하지 않는다.
 
 ### 검증 항목과 통과 기준
 
