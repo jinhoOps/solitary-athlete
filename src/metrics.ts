@@ -47,6 +47,8 @@ export function calculateMonthlyKPIs(logs: WorkoutEntry[], now: Date): MonthlyKP
   }
 
   const activeMembers = memberDays.size;
+  const todayKST = dayAt(now);
+  const todayMembers = [...memberDays.values()].filter(days => days.has(todayKST)).length;
   let totalWorkoutDays = 0;
   for (const days of memberDays.values()) {
     totalWorkoutDays += days.size;
@@ -85,5 +87,6 @@ export function calculateMonthlyKPIs(logs: WorkoutEntry[], now: Date): MonthlyKP
     mostActiveWeekday,
     mostActiveWeekdayDays,
     averageDaysPerMember,
+    todayMembers,
   };
 }

@@ -18,6 +18,7 @@ export interface MonthlyKPIs {
   mostActiveWeekday: string;
   mostActiveWeekdayDays: number;
   averageDaysPerMember: number;
+  todayMembers: number;
 }
 export interface GrassParticipationSample {
   identityRevision?:number;calculationVersion?:number;
