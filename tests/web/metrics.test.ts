@@ -33,6 +33,18 @@ it('calculates 4 monthly KPIs accurately for current month', () => {
 
   // 4. 1인당 평균 일수: 4일 / 2명 = 2.0일
   expect(kpis.averageDaysPerMember).toBe(2);
+
+  // 오늘 고운: both members recorded on 10-14 KST.
+  expect(kpis.todayMembers).toBe(2);
+});
+
+it('counts today members by the KST date, not the UTC date', () => {
+  const row=(id:string,date:string):WorkoutLog=>({user_id:id,username:id,log_date:date,memo:'',has_photo:false,verification_count:1});
+  const logs=[row('1','2026-10-14'),row('1','2026-10-14'),row('2','2026-10-15')];
+  // 2026-10-14T15:30Z is 10-15 00:30 KST: only the 10-15 record is today.
+  expect(calculateMonthlyKPIs(logs,new Date('2026-10-14T15:30:00Z')).todayMembers).toBe(1);
+  // 2026-10-14T14:59Z is still 10-14 KST; the future 10-15 row is excluded and duplicates count once.
+  expect(calculateMonthlyKPIs(logs,new Date('2026-10-14T14:59:00Z')).todayMembers).toBe(1);
 });
 
 it('handles empty logs gracefully without NaN or errors', () => {
@@ -44,6 +56,7 @@ it('handles empty logs gracefully without NaN or errors', () => {
   expect(kpis.mostActiveWeekday).toBe('-');
   expect(kpis.mostActiveWeekdayDays).toBe(0);
   expect(kpis.averageDaysPerMember).toBe(0);
+  expect(kpis.todayMembers).toBe(0);
 });
 
 it('selects all tied kings by unique KST month days, excluding future records',()=>{

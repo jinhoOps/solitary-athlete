@@ -147,7 +147,7 @@ function renderKPIs() {
   const grass=grassParticipationView(data.grassParticipation);
   // Context lines explain each value's basis; they never rank anyone beyond the king card.
   const items: {title:string;value:string;change?:string;description?:string}[] = [
-    { title: '이번 달 고운', value: `${kpis.activeMembers}명`, change:`전체 ${data.roster.length}명 중` },
+    { title: '이번 달 고운', value: `${kpis.activeMembers}명`, change:kpis.todayMembers?`오늘 ${kpis.todayMembers}명`:undefined },
     { title: '함께 심은 잔디', value: grass.value, change:grass.change, description:grass.description },
     { title: '가장 푸른 요일', value: kpis.mostActiveWeekday, change:kpis.mostActiveWeekdayDays?`이번 달 ${kpis.mostActiveWeekdayDays}칸`:undefined },
     { title: '1인당 평균 일수', value: `${kpis.averageDaysPerMember}일`, change:`${Number(today.slice(8))}일 중` },

@@ -1145,9 +1145,19 @@ test('aggregate cells start at a visible minimum density and KPI cards each carr
   const cards=page.locator('.kpi-card');
   await expect(cards.locator('.kpi-change')).toHaveCount(4);
   await expect(cards.nth(0).locator('.king-title')).toHaveCount(1);
-  await expect(cards.nth(1)).toContainText('전체 3명 중');
+  await expect(cards.nth(1)).toContainText('오늘 1명');
+  await expect(cards.nth(1)).not.toContainText('전체');
   await expect(cards.nth(3)).toContainText(/이번 달 \d+칸/);
   await expect(cards.nth(4)).toContainText('14일 중');
+});
+
+test('active-members card omits its context line before anyone records today',async({page})=>{
+  // 10-15 09:30 KST: the fixture has October records but none dated today.
+  await fixture(page,'normal',true,false,'2026-10-15T00:30:00Z');
+  const cards=page.locator('.kpi-card');
+  await expect(cards.nth(1).locator('.kpi-value')).not.toHaveText('0명');
+  await expect(cards.nth(1).locator('.kpi-change')).toHaveCount(0);
+  await expect(cards.locator('.kpi-change')).toHaveCount(3);
 });
 
 test('status badge stays hidden until a collection time exists',async({page})=>{
