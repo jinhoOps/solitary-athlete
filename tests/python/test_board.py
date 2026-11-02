@@ -41,6 +41,38 @@ def test_empty_board_message():
     pages = build_board([], now, 'https://jinhoops.github.io/solitary-athlete/')
     assert '첫 잔디를 기다리고 있어요.' in pages[0]
 
+def test_board_hides_members_without_visible_grass_and_preserves_lifetime_count():
+    now = datetime(2026, 10, 14, 11, 28, tzinfo=timezone.utc)
+    rows = [
+        {'user_id': uid, 'username': name, 'log_date': day, 'has_photo': photo}
+        for uid, name, day, photo in [
+            ('1', '오래된멤버', '2026-10-03', True),
+            ('2', '경계멤버', '2026-01-01', False),
+            ('2', '경계멤버', '2026-10-04', False),
+            ('3', '오늘멤버', '2026-10-14', True),
+            ('4', '미래멤버', '2026-10-15', True),
+        ]
+    ]
+    content = build_board(rows, now)[0]
+    assert '오래된멤버' not in content
+    assert '미래멤버' not in content
+    assert '경계멤버 · 누적 2일' in content
+    assert '오늘멤버 · 누적 1일' in content
+    assert '🟩⬛⬛⬛⬛⬛⬛' in content
+
+def test_board_with_only_old_records_uses_empty_state():
+    rows = [{'user_id': '1', 'username': '과거멤버', 'log_date': '2026-10-03', 'has_photo': False}]
+    content = build_board(rows, datetime(2026, 10, 14, tzinfo=timezone.utc))[0]
+    assert '과거멤버' not in content
+    assert '첫 잔디를 기다리고 있어요.' in content
+
+def test_board_hides_member_when_visible_window_moves_on_kst_sunday():
+    rows = [{'user_id': '1', 'username': '경계멤버', 'log_date': '2026-09-27', 'has_photo': False}]
+    saturday = build_board(rows, datetime(2026, 10, 10, 14, 59, tzinfo=timezone.utc))[0]
+    sunday = build_board(rows, datetime(2026, 10, 10, 15, 0, tzinfo=timezone.utc))[0]
+    assert '경계멤버 · 누적 1일' in saturday
+    assert '경계멤버' not in sunday
+
 def test_board_link_contains_current_secret_and_preserves_query():
     now = datetime(2026,10,14,tzinfo=timezone.utc)
     content = build_board([],now,'https://example.com/board/?from=discord#grass',secret_code='mukmuk-fixture')[0]
