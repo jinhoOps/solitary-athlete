@@ -39,6 +39,7 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None, noti
     today = now.astimezone(KST).date()
     today_iso = today.isoformat()
     this_sunday = today - timedelta(days=(today.weekday()+1)%7)
+    visible_start = (this_sunday - timedelta(days=7)).isoformat()
     members = {}
     for row in rows:
         uid = row.get('subject_id', row.get('user_id'))
@@ -64,6 +65,8 @@ def build_board(rows, now, dashboard_url='', emojis=None, secret_code=None, noti
 
     pages, blocks = [], []
     for uid, m in sorted(members.items(), key=lambda p:(p[1]['name'],p[0])):
+        if not any(visible_start <= d <= today_iso for d in m['dates']):
+            continue
         block = f"{safe_name(m['name'])} · 누적 {len(m['dates'])}일\n" + '\n'.join(grass_lines(m['dates'], m['photos'], this_sunday, today, emojis))
         candidate = header + '\n\n' + '\n\n'.join(blocks+[block]) + footer
         if units(candidate) > 1970 and blocks:
