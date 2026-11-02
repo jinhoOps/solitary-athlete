@@ -73,6 +73,8 @@ class LocalBot(discord.Client):
                 result = await asyncio.to_thread(self.runtime.tick, self.account_ready())
                 if result.get('approved'):
                     self.collect_requested.set()
+                if result.get('ready'):
+                    await asyncio.to_thread(self._consume_identity_effect)
             except Exception:
                 # Do not log exceptions carrying query parameters, tokens or account IDs.
                 self.runtime.requested_ready = False
@@ -87,6 +89,14 @@ class LocalBot(discord.Client):
             self.owner.touch()
             await asyncio.sleep(5)
 
+    def _consume_identity_effect(self):
+        from .accounts import AccountService
+        from .collector_effects import consume_identity
+        fence = self.runtime.fence
+        def guard(conn):
+            self.runtime._guard(conn, fence)
+        return consume_identity(AccountService(self.database, self.api, self.settings), guard)
+
     def _application_context(self):
         from .accounts import AccountService
         fence=self.runtime.fence
@@ -97,6 +107,18 @@ class LocalBot(discord.Client):
     def _collect_once(self):
         try:
             with collector_watchdog():
+                with self.database.session() as store:
+                    mode = store.collector_mode()
+                    if mode == 'go':
+                        from .collector_effects import publish_board
+                        api = Discord(self.settings['DISCORD_BOT_TOKEN'])
+                        try:
+                            publish_board(store, api, self.settings)
+                        finally:
+                            api.client.close()
+                        return 'go'
+                    if mode != 'python':
+                        return mode
                 with sync_lock(self.settings['MUKMUK_DATABASE_URL'], self.settings['DISCORD_AUTH_CHANNEL_ID']) as lock:
                     if lock is None:
                         return
@@ -111,14 +133,16 @@ class LocalBot(discord.Client):
                                      account_context=self._application_context)
                         finally:
                             api.client.close()
+                return 'python'
 
         finally:
             self.collecting = False
 
     async def _collects(self):
+        interval = 300
         while not self.stopping:
             try:
-                await asyncio.wait_for(self.collect_requested.wait(), timeout=300)
+                await asyncio.wait_for(self.collect_requested.wait(), timeout=interval)
             except TimeoutError:
                 pass
             self.collect_requested.clear()
@@ -126,7 +150,8 @@ class LocalBot(discord.Client):
                 break
             self.collecting = True
             try:
-                await asyncio.to_thread(self._collect_once)
+                mode = await asyncio.to_thread(self._collect_once)
+                interval = 60 if mode == 'go' else 300
             except Exception:
                 print('mukmuk_local_collection_failed', flush=True)
 

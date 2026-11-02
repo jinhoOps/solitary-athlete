@@ -15,6 +15,9 @@ const row = (n: number) => ({
 });
 
 it('calls get_workout_logs RPC with normalized secret code and loads dashboard data', async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-10-14T11:00:00Z'));
+  try {
   const calls: { url: URL; body: Record<string, unknown> }[] = [];
   const fetcher: typeof fetch = async (input, init) => {
     const url = new URL(String(input));
@@ -47,6 +50,7 @@ it('calls get_workout_logs RPC with normalized secret code and loads dashboard d
   expect(data.members).toHaveLength(2);
   expect(data.lastSuccess).toBe('2026-10-14T11:00:00Z');
   expect(data.kpis.activeMembers).toBeGreaterThan(0);
+  } finally { vi.useRealTimers(); }
 });
 
 it('throws invalid_or_expired_secret when RPC fails', async () => {

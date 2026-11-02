@@ -61,6 +61,14 @@ class Store:
                 while page := cur.fetchmany(1000): result.extend(page)
                 return result
 
+    def collector_mode(self):
+        with self.transaction():
+            present = self.conn.execute("SELECT to_regclass('solitary_athlete.mukmuk_collector_control') IS NOT NULL AS value").fetchone()['value']
+            if not present:
+                return 'python'
+            row = self.conn.execute('SELECT writer_mode FROM solitary_athlete.mukmuk_collector_control WHERE singleton').fetchone()
+            return row['writer_mode'] if row else 'paused'
+
     def state(self, channel):
         with self.transaction():
             return self.conn.execute('SELECT * FROM solitary_athlete.sync_state WHERE channel_id=%s', (channel,)).fetchone() or {

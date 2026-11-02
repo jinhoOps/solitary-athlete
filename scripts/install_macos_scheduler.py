@@ -12,10 +12,15 @@ import sys
 LABEL = 'io.jinhoops.mukmuk.sync'
 
 
+def calendar_interval(go_mode):
+    return [{'Minute': minute} for minute in range(0, 60, 1 if go_mode else 5)]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--uninstall', action='store_true')
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--collector-go', action='store_true', help='Run the board fallback every minute for the Go collector')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         raise SystemExit('This installer requires macOS')
@@ -49,7 +54,7 @@ def main():
         'WorkingDirectory': str(runtime),
         'EnvironmentVariables': {'MUKMUK_ENV_FILE': str(env_file), 'MUKMUK_LOG_DIR': str(logs), 'PYTHONUNBUFFERED': '1'},
         'RunAtLoad': True,
-        'StartCalendarInterval': [{'Minute': minute} for minute in range(0, 60, 5)],
+        'StartCalendarInterval': calendar_interval(args.collector_go),
         'StandardOutPath': str(logs / 'launchd.log'),
         'StandardErrorPath': str(logs / 'launchd-error.log'),
         'Umask': 0o077,
@@ -76,7 +81,7 @@ def main():
     agent.chmod(0o600)
     subprocess.run(['plutil', '-lint', str(agent)], check=True)
     subprocess.run(['launchctl', 'bootstrap', f'gui/{os.getuid()}', str(agent)], check=True)
-    print(f'Installed {LABEL}: every 5 minutes; runtime={runtime}; logs={logs}')
+    print(f"Installed {LABEL}: every {1 if args.collector_go else 5} minutes; runtime={runtime}; logs={logs}")
     command=shlex.join([uv,'run','--locked','--no-sync','--project',str(runtime),'python',str(runtime/'scripts/macos_local.py')])
     print('로컬 메인 시작: MUKMUK_ENV_FILE='+shlex.quote(str(env_file))+' '+command)
 

@@ -280,3 +280,27 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 | 잘못 연결한 계정 정정 | 원인 확인 후 별도 승인으로 검증 창을 열어 당사자의 해제 요청과 관리자 승인을 거쳐 다음 성공 수집에서 정정 | 원본 작성자·메시지·닫힌 과거 관측. 새 revision으로 정정 이력 기록 |
 
 운영 스키마를 삭제하는 down migration은 제공하지 않는다. `revision` 감소, 소속 행 수동 교체, 지난 날짜 N/S/D 재계산, 공용 프로젝트 전체 복원으로 되돌리지 않는다. 재개 전 동일 후보 소스·DB 버전·TLS·권한·비활성 기본값을 재확인하고, 별도 승인을 받은 뒤에만 신규 기능을 다시 연다. 재개 시 보존된 승인 요청도 현재 자격·구성·세션을 다시 검증하며 수집당 최대 1건 적용한다.
+
+## Go Discord 수집기 전환 준비
+
+상태: **구현 브랜치 검증 단계, 운영 전환 전**. 현재 운영의 Python·5분 실행은 앞의 운영 이력을 따른다. Go로 전환한 뒤 목표 주기는 1분이고, 한 실행이 길어져도 다음 실행과 겹치지 않는다. Go가 내려가도 웹과 `/잔디`는 마지막 저장 결과를 기존 RPC에서 읽는다. 로컬 Gateway는 계정 요청을 담당하고, 현황판은 변경 시 또는 변경이 없으면 5분마다 Python이 게시한다.
+
+### 실행·설정
+
+- `services/collector`는 Go 1.25 이상이 필요하다. CI와 컨테이너 빌드는 1.27.3을 사용한다. `go test -race ./...`, `go vet ./...`, `go build ./cmd/mukmuk-collector`는 이 디렉터리에서 실행한다.
+- 개발용 컨테이너는 저장소 루트에서 `docker build -t mukmuk-collector services/collector`로 빌드한다. 실행에는 앱 전용 DB URL과 봇 설정을 환경변수 또는 외부 env 파일로 주며, 이미지에 `.env`를 넣지 않는다.
+- Go는 `MUKMUK_DATABASE_URL`의 `sslmode=verify-full`을 요구한다. 인증기관을 시스템 신뢰 저장소에서 찾을 수 없으면 `PGSSLROOTCERT`에 해당 CA 파일의 절대 경로를 지정한다. 로컬과 GitHub 각각 실제 접속 주소·CA를 사전 검증한다. 비밀값과 CA 파일 경로는 이미지나 plist에 직접 넣지 않는다.
+- 1회 실행은 `go run ./cmd/mukmuk-collector -once`, 사진 메타데이터 보완은 `go run ./cmd/mukmuk-collector -backfill-photos`다. 두 명령은 `services/collector`에서 실행한다. 정기 실행의 기본은 1분이며 `-interval`은 1분보다 짧게 설정할 수 없다. 보완은 계정·메모·일별 집계를 변경하지 않는다.
+- macOS의 `uv run python scripts/install_macos_go_collector.py --dry-run`은 수집 LaunchAgent 설정을 출력하고, `--dry-run`을 뺀 명령은 Go 실행본을 빌드해 별도 에이전트를 설치한다. DB writer mode는 바꾸지 않는다. `uv run python scripts/install_macos_scheduler.py --collector-go`는 기존 Python fallback을 1분마다 점검하도록 설치한다. 로컬 봇이 켜져 있으면 fallback은 DB에 접속하기 전에 건너뛴다. 이 설치 명령들은 **운영 전환 때만** 실행한다.
+- GitHub 일일 보완 워크플로는 변수 `MUKMUK_COLLECTOR_ENGINE=go`일 때 Go를 쓴다. Go 전용 Secret `MUKMUK_GO_DATABASE_URL`은 앱 전용 역할의 검증된 TLS URL, `MUKMUK_DB_CA_CERT`는 그 접속에 필요한 CA PEM이다. 기존 `MUKMUK_DATABASE_URL` Secret은 Python 현황판용으로 유지한다. 두 Go Secret과 변수를 전환 전에 준비하고 값은 로그에 내지 않는다.
+
+### 전환 및 롤백 순서
+
+1. 격리 DB에서 새 migration과 Go/Python/Edge 회귀 검증을 수행한다. 실제 transaction pooler의 TLS 검증과 Go 1개·Python 1개·Edge 동시 요청을 별도로 확인한다. `mukmuk_worker` 연결 제한 3은 바꾸지 않는다. 예산을 충족하지 못하면 전환하지 않는다.
+2. `20261102000001_mukmuk_collector_control.sql`은 앱 스키마에 control·실행/effect·현황판 상태만 추가하며 기본 mode는 `python`이다. 운영 적용 전 앱 범위 백업과 migration 이력을 확인한다. 원본·일별/월별 관측 및 다른 앱은 변경하지 않는다.
+3. writer mode 확인을 지원하는 Python 소스를 먼저 설치하고 로컬 메인을 새 런타임으로 재시작한다. GitHub 보완 경로도 같은 호환 버전이어야 한다. 기존 구버전 수집 프로세스·예약이 남아 있으면 Go로 바꾸지 않는다.
+4. control mode를 `paused`로 바꾸고 진행 중인 Python 수집의 채널 advisory lock과 Go lease가 해제됐는지 확인한다. 필요 시 해당 묵묵 프로세스만 종료한다. 준비된 Go 실행본과 CA를 점검한 뒤 `go` mode로 전환한다.
+5. Go LaunchAgent를 시작하고 Python fallback을 `--collector-go`로 설치한다. GitHub의 Go Secrets·변수를 설정한다. 단일 writer, 1분 성공 시각, 실패 후 재시도, 웹 RPC, 명시적 기록갱신과 현황판을 확인한다. 계정 연결은 실제 동의와 온라인 세션을 전제로 별도로 확인한다. 테스트 목적으로 운영 인증을 임의로 생성하지 않는다.
+6. 되돌릴 때는 mode를 `paused`로 바꾸고 Go를 중단해 lease와 진행 중 트랜잭션이 종료된 뒤, **새 control 계약을 지원하는 Python 버전**으로 mode를 `python`으로 바꾼다. 원본 기록·사람 revision·이미 확정된 통계 관측을 되감거나 공용 DB 전체를 복원하지 않는다. Go의 완료 이력은 보존하고 Python의 다음 수집에서 보류된 계정 요청을 다시 검증한다.
+
+새 인증이 없는 정상 주기의 예상 Discord 요청은 채널·권한 확인 4회와 새 메시지 유무 확인 1회다. 추가 인증·리액션·기록갱신·오류 재시도는 별도이며 실제 부하와 rate limit은 아직 운영에서 측정하지 않았다. 매분 생성되는 실행 메타데이터는 처리 완료 후 30일이 지난 것만 제한적으로 정리하며 운동 원본과 관측 이력은 보존한다.

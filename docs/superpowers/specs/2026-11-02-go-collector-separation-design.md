@@ -1,6 +1,6 @@
 # Discord 수집기 Go 서비스 분리 범위와 전환 계획
 
-상태: 검토용 설계 초안. 구현·운영 변경 전.
+상태: 이 브랜치에서 구현 중. 운영 전환 전. 실제 운영 상태는 운영 안내를 따른다.
 작성일: 2026-11-02. 조사 기준: main `d2dda54`.
 
 ## 1. 목표와 결정 범위
@@ -119,9 +119,9 @@ Go는 원본·일별 집계·갱신 작업과 수집 상태를 작성한다. Pyt
 
 ### 잠금과 연결 예산
 
-- 먼저 Python을 새 writer_mode/lease/fence 계약으로 바꾸고 모든 수집 경로에 배포한다. 구형 writer가 남아 있는 상태에서는 Go 쓰기를 켜지 않는다.
-- Go는 단일 활성 worker로 시작한다. lease 30초·5초 갱신, 모든 쓰기 트랜잭션에서 fence와 유효 임대를 검증한다. 네트워크 대기 중 장기 DB 잠금을 점유하지 않는다.
-- 잠금 순서를 전역 `mukmuk-workouts` → collector control 행 → run/effect·도메인 행으로 통일한다. claim/renew는 짧은 control 전용 트랜잭션으로 끝내며 다른 잠금을 뒤이어 잡지 않는다. 계정 코드의 기존 runtime/identity 잠금 순서까지 통합 검사한다.
+- 먼저 Python의 모든 수집 경로를 writer_mode 확인과 기존 채널 advisory lock 계약으로 갱신해 배포한다. Go는 쓰기 트랜잭션마다 동일한 채널 lock과 새 lease/fence를 확인한다. 구형 writer가 남아 있는 상태에서는 Go 쓰기를 켜지 않는다.
+- Go는 단일 활성 worker로 시작한다. lease는 30초이며 DB 작업 및 페이지 조회 전에 갱신한다. 모든 쓰기 트랜잭션에서 fence와 유효 임대를 검증한다. 네트워크 대기 중 장기 DB 잠금을 점유하지 않는다.
+- Go의 원본 쓰기 잠금 순서는 기존 Python의 채널 advisory lock → 전역 `mukmuk-workouts` → collector control 행 → run/effect·도메인 행이다. Python의 계정 적용은 전역 잠금 → control 행 → effect 순서다. claim/renew는 짧은 control 전용 트랜잭션으로 끝내며 다른 잠금을 뒤이어 잡지 않는다. 계정 코드의 기존 runtime/identity 잠금 순서까지 통합 검사한다.
 - 임대가 만료됐거나 writer_mode가 바뀌면 늦게 도착한 HTTP 결과도 저장하지 않는다. 커서·완료 처리도 같은 검사를 한다. HTTP/Discord 외부 부수 효과의 완전한 exactly-once는 보장하지 않고 멱등 요청·게시 복구로 처리한다.
 - 기존 `mukmuk_worker CONNECTION LIMIT 3`은 올리지 않는다. 1차 전환은 이 역할을 쓰되 Go 최대 동시 연결 1, Python 최대 1, Edge의 짧은 연결을 위한 1자리로 예산을 잡는다. 기존 수집 잠금 전용 연결은 새 계약 전환 후 제거한다.
 - DB 연결은 네트워크 대기 전 닫거나 pool에서 물리적으로 정리한다. 단순 pool.Release만으로 역할 연결이 반환됐다고 가정하지 않는다. 동시 Edge 요청은 한 자리를 초과할 수 있으므로 기존 bounded acquire/retry 동작과 과부하 응답도 검증한다.
@@ -131,7 +131,7 @@ pgx는 명시적으로 prepared statement cache를 쓰지 않는 실행 모드�
 
 ### 재시작·상태
 
-5분 수집과 1회 실행 모드, 사진 메타데이터 보완 모드를 제공한다. 바이너리·컨테이너는 같은 실행 코어를 사용한다. 첫 배포는 로컬 전용 supervision으로 시작하며 Kubernetes나 메시지 브로커는 도입하지 않는다.
+1분 수집과 1회 실행 모드, 사진 메타데이터 보완 모드를 제공한다. 한 실행이 길어지면 겹치지 않고 종료 후 다음 주기를 처리한다. 바이너리·컨테이너는 같은 실행 코어를 사용한다. 첫 배포는 로컬 전용 supervision으로 시작하며 Kubernetes나 메시지 브로커는 도입하지 않는다.
 
 운영 probe는 프로세스 생존, 설정/DB 사용 가능 여부, 마지막 성공·지연·실행 버전·큐 적체를 구분한다. 인증 원문·닉네임·ID·시크릿 코드를 로그에 남기지 않는다. 공개 HTTP 운영 API는 만들지 않는다. probe를 HTTP로 제공하면 기본 loopback 바인딩이며 외부 공개 전 인증과 네트워크 정책을 별도로 정한다.
 
@@ -199,3 +199,11 @@ Go 버전과 pgx 정확한 버전은 구현 시작 시 지원 상태를 확인�
 - 현재 계약: [시스템 설계](../../../ARCHITECTURE.md), [운영 안내](../../operations.md), 위 표의 소스/검증 파일.
 - [pgx 공식 문서](https://pkg.go.dev/github.com/jackc/pgx/v5#QueryExecMode): 연결 풀러와 prepared statement 실행 모드 검토 근거.
 - [Discord 공식 rate limit 문서](https://github.com/discord/discord-api-docs/blob/main/developers/topics/rate-limits.mdx): 응답 헤더·Retry-After/retry_after 기반 처리 근거.
+
+## 구현 브랜치의 조정 사항
+
+- 1분 주기에는 기존 28일 페이지를 반복 조회하지 않는다. 커서가 있으면 `after`와 `limit=1`로 새 메시지 유무를 확인하고, 있을 때만 최신 페이지부터 커서까지 빠짐없이 수집한다. 커서가 없으면 전체 이력을 페이지네이션한다. 기록 수정·삭제는 명시적 갱신에서 다룬다.
+- 봇의 채널 조회 권한이 없을 때 Discord가 빈 목록을 반환할 수 있으므로, 매 수집에서 채널·길드·역할·봇 멤버 권한을 확인한다. 변경이 없는 정상 주기는 Discord GET 약 5회이며 초기 봇 확인, 갱신·리액션·현황판·429 재시도는 별도다. 1분 간격은 기존 5분보다 요청 횟수가 늘 수 있으며 운영 부하의 실측이 아니다.
+- 현황판은 계정 처리 기회가 끝난 뒤 게시한다. 원본/계정 revision이 바뀌면 다음 점검에 게시하며 변화가 없으면 5분 간격이다. Gateway가 꺼져도 별도의 Python 현황판 fallback이 게시할 수 있고 계정 적용은 온라인에 한정된다.
+- 1분마다 생기는 비공개 실행/effect 행은 완료되었고 30일이 지난 항목만 시간당 최대 200건씩 정리한다. 진행 중인 후속 작업과 원본·계정 이력·일별/월별 관측은 삭제하지 않는다.
+- 이 구현은 Go와 Python의 공동 DB 전환 계약을 추가한다. 실제 운영 DB 적용, 기존 실행본 교체, 실제 pooler 동시 부하 측정과 1분 주기 활성화는 아직 확인되지 않았다.
