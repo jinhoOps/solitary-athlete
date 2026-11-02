@@ -5,6 +5,7 @@ import psycopg
 from dotenv import load_dotenv
 from mukmuk.discord import Discord
 from mukmuk.store import Store
+from mukmuk.db_session import SharedDB, TransientStore
 from mukmuk.sync import run_sync
 from mukmuk.scheduler import sync_lock
 
@@ -27,13 +28,13 @@ def main():
     missing = [key for key in required if not os.environ.get(key)]
     if missing: raise ValueError('Missing settings: '+', '.join(missing))
     if args.board_only:
-        with psycopg.connect(os.environ['MUKMUK_DATABASE_URL'], connect_timeout=10) as conn:
-            api = Discord(os.environ['DISCORD_BOT_TOKEN'])
-            try:
-                if not publish_go_board_if_enabled(Store(conn),api,dict(os.environ)):
-                    print({'skipped': 'go_collector_disabled'})
-            finally:
-                api.client.close()
+        store = TransientStore(SharedDB(os.environ['MUKMUK_DATABASE_URL']))
+        api = Discord(os.environ['DISCORD_BOT_TOKEN'])
+        try:
+            if not publish_go_board_if_enabled(store,api,dict(os.environ)):
+                print({'skipped': 'go_collector_disabled'})
+        finally:
+            api.client.close()
         return
     with sync_lock(os.environ['MUKMUK_DATABASE_URL'], os.environ['DISCORD_AUTH_CHANNEL_ID']) as lock:
         if lock is not None:
@@ -50,14 +51,14 @@ def main():
     # Release the old lock connection before opening the short board connection.
     # The board fallback does not create a Gateway session or process account requests.
     if not args.backfill_photos:
-        with psycopg.connect(os.environ['MUKMUK_DATABASE_URL'], connect_timeout=10) as conn:
-            api = Discord(os.environ['DISCORD_BOT_TOKEN'])
-            try:
-                if publish_go_board_if_enabled(Store(conn),api,dict(os.environ)):
-                    print({'board': 'checked'})
-                    return
-            finally:
-                api.client.close()
+        store = TransientStore(SharedDB(os.environ['MUKMUK_DATABASE_URL']))
+        api = Discord(os.environ['DISCORD_BOT_TOKEN'])
+        try:
+            if publish_go_board_if_enabled(store,api,dict(os.environ)):
+                print({'board': 'checked'})
+                return
+        finally:
+            api.client.close()
     print({'skipped': 'sync_already_running_or_disabled'})
 
 if __name__ == '__main__':

@@ -74,6 +74,7 @@ def test_board_failure_keeps_data_and_applied_request_committed(accounts):
     class API:
         def channel(self,cid):return {'guild_id':service.guild}
         def me(self):return {'id':'99'}
+        def application(self):return {'flags':1 << 19}
         def messages(self,cid,before=None):return []
         def write(self,*args,**kwargs):
             assert get_request(service,request['request_id'])['status']=='applied'

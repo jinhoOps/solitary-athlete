@@ -224,13 +224,25 @@ func (s *Store) Finish(ctx context.Context, owner string, fence int64, run, chan
 		if result.RowsAffected() != 1 {
 			return errors.New("run not active")
 		}
+		var currentCursor string
 		var previous *time.Time
-		err = tx.QueryRow(ctx, `SELECT last_success_at FROM solitary_athlete.sync_state WHERE channel_id=$1 FOR UPDATE`, channel).Scan(&previous)
+		err = tx.QueryRow(ctx, `SELECT last_success_at,coalesce(last_message_id,'') FROM solitary_athlete.sync_state WHERE channel_id=$1 FOR UPDATE`, channel).Scan(&previous, &currentCursor)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
 		if previous != nil && !now.After(*previous) {
 			return errors.New("non-monotonic collection")
+		}
+		var active, complete bool
+		var base, scanCeiling string
+		if err = tx.QueryRow(ctx, `SELECT active,completed,coalesce(base_cursor,''),coalesce(ceiling_id,'') FROM solitary_athlete.mukmuk_collection_scan WHERE singleton FOR UPDATE`).Scan(&active, &complete, &base, &scanCeiling); err != nil {
+			return err
+		}
+		if active && (!complete || base != currentCursor || scanCeiling != ceiling) {
+			return errors.New("incomplete or stale scan")
+		}
+		if !active && ceiling != currentCursor {
+			return errors.New("missing completed scan")
 		}
 		var latest *time.Time
 		if err = tx.QueryRow(ctx, `SELECT max(collected_at) FROM solitary_athlete.mukmuk_daily_grass_history`).Scan(&latest); err != nil {
@@ -249,8 +261,14 @@ func (s *Store) Finish(ctx context.Context, owner string, fence int64, run, chan
 		if _, err = tx.Exec(ctx, `INSERT INTO solitary_athlete.sync_status(singleton,last_success_at) VALUES(true,$1) ON CONFLICT(singleton) DO UPDATE SET last_success_at=EXCLUDED.last_success_at`, now); err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, `INSERT INTO solitary_athlete.mukmuk_collection_effects(run_id,kind,expires_at) VALUES($1::uuid,'identity',$2::timestamptz+interval '30 seconds'),($1::uuid,'board',NULL)`, run, now)
-		return err
+		if _, err = tx.Exec(ctx, `INSERT INTO solitary_athlete.mukmuk_collection_effects(run_id,kind,expires_at) VALUES($1::uuid,'identity',$2::timestamptz+interval '30 seconds'),($1::uuid,'board',NULL)`, run, now); err != nil {
+			return err
+		}
+		if active {
+			_, err = tx.Exec(ctx, `UPDATE solitary_athlete.mukmuk_collection_scan SET active=false WHERE singleton`)
+			return err
+		}
+		return nil
 	})
 }
 func (s *Store) FailRun(ctx context.Context, owner string, fence int64, run string) error {

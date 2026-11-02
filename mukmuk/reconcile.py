@@ -95,6 +95,8 @@ def process_refresh(api, store, settings, bot_id, check_lock=lambda: None, clock
                 if msg.get('id') != row['message_id'] or msg.get('author', {}).get('id') != job['target_id']:
                     raise PermissionError('message_scope')
                 event = event_from_message(msg, job['guild_id'], job['channel_id'])
+                if event is None:
+                    raise ValueError('ambiguous_source_response')
             except DiscordError as error:
                 if source_result(error) != 'deleted':
                     raise

@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var ErrMessageContent = errors.New("message content intent unavailable")
+
 type Settings struct{ Guild, Channel, MemberRole, CheckEmoji, FlexEmoji string }
 type Collector struct {
 	Store     *Store
@@ -28,19 +30,33 @@ func newID() (string, error) {
 	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:], nil
 }
 
-type guardedMessages struct {
+type guardedAPI struct {
 	api   *Discord
 	store *Store
 	owner string
 	fence int64
 }
 
-func (g guardedMessages) Messages(ctx context.Context, channel, before string) ([]Message, error) {
+func (g guardedAPI) Get(ctx context.Context, path string, out any) error {
 	if err := g.store.Renew(ctx, g.owner, g.fence); err != nil {
-		return nil, err
+		return err
 	}
-	return g.api.Messages(ctx, channel, before)
+	return g.api.Get(ctx, path, out)
 }
+func verifyContentIntent(ctx context.Context, api refreshAPI) error {
+	var application struct {
+		ID    string  `json:"id"`
+		Flags *uint64 `json:"flags"`
+	}
+	if err := api.Get(ctx, "/applications/@me", &application); err != nil {
+		return err
+	}
+	if !numeric(application.ID) || application.Flags == nil || (*application.Flags&((1<<18)|(1<<19))) == 0 {
+		return ErrMessageContent
+	}
+	return nil
+}
+
 func (c *Collector) Run(ctx context.Context) (err error) {
 	if c.Store == nil || c.Discord == nil || !numeric(c.Settings.Guild) || !numeric(c.Settings.Channel) {
 		return errors.New("invalid collector settings")
@@ -68,8 +84,9 @@ func (c *Collector) Run(ctx context.Context) (err error) {
 	if err = c.Store.StartRun(ctx, owner, fence, run); err != nil {
 		return err
 	}
+	api := guardedAPI{c.Discord, c.Store, owner, fence}
 	var channel Channel
-	if err = c.Discord.Get(ctx, "/channels/"+c.Settings.Channel, &channel); err != nil {
+	if err = api.Get(ctx, "/channels/"+c.Settings.Channel, &channel); err != nil {
 		return err
 	}
 	if channel.ID != c.Settings.Channel || channel.GuildID != c.Settings.Guild {
@@ -77,7 +94,7 @@ func (c *Collector) Run(ctx context.Context) (err error) {
 	}
 	if c.botID == "" {
 		var me User
-		if err = c.Discord.Get(ctx, "/users/@me", &me); err != nil {
+		if err = api.Get(ctx, "/users/@me", &me); err != nil {
 			return err
 		}
 		if !numeric(me.ID) {
@@ -88,41 +105,47 @@ func (c *Collector) Run(ctx context.Context) (err error) {
 	if err = c.Store.Renew(ctx, owner, fence); err != nil {
 		return err
 	}
-	if err = verifyBotRead(ctx, c.Discord, c.Settings.Guild, c.botID, channel); err != nil {
+	if err = verifyBotRead(ctx, api, c.Settings.Guild, c.botID, channel); err != nil {
+		return err
+	}
+	if err = verifyContentIntent(ctx, api); err != nil {
 		return err
 	}
 	cursor, e := c.Store.Cursor(ctx, owner, fence, c.Settings.Channel)
 	if e != nil {
 		return e
 	}
-	var rows []Message
-	ceiling := cursor
-	hasNew := true
-	if cursor != "" {
-		if err = c.Store.Renew(ctx, owner, fence); err != nil {
-			return err
+	scan, e := c.Store.LoadScan(ctx, owner, fence, cursor)
+	if e != nil {
+		return e
+	}
+	if scan == nil {
+		hasNew := true
+		if cursor != "" {
+			if err = c.Store.Renew(ctx, owner, fence); err != nil {
+				return err
+			}
+			hasNew, e = c.Discord.HasNew(ctx, c.Settings.Channel, cursor)
+			if e != nil {
+				return e
+			}
 		}
-		hasNew, e = c.Discord.HasNew(ctx, c.Settings.Channel, cursor)
+		if hasNew {
+			if err = c.Store.BeginScan(ctx, owner, fence, c.Settings.Channel, cursor); err != nil {
+				return err
+			}
+			scan = &Scan{Base: cursor}
+		}
+	}
+	ceiling, count := cursor, 0
+	if scan != nil {
+		result, e := c.scanMessages(ctx, api, owner, fence, *scan)
 		if e != nil {
 			return e
 		}
+		ceiling, count = result.Ceiling, result.Count
 	}
-	if hasNew {
-		rows, ceiling, e = NewMessages(ctx, guardedMessages{c.Discord, c.Store, owner, fence}, c.Settings.Channel, cursor)
-		if e != nil {
-			return e
-		}
-	}
-	for _, m := range rows {
-		event, e := EventFromMessage(m, c.Settings.Guild, c.Settings.Channel)
-		if e != nil {
-			return e
-		}
-		if e = c.Store.SaveNew(ctx, owner, fence, event); e != nil {
-			return e
-		}
-	}
-	if err = processRefresh(ctx, c.Store, c.Discord, owner, fence, RefreshSettings{c.Settings.Guild, c.Settings.Channel, c.Settings.MemberRole, c.botID}); err != nil {
+	if err = processRefresh(ctx, c.Store, api, owner, fence, RefreshSettings{c.Settings.Guild, c.Settings.Channel, c.Settings.MemberRole, c.botID}); err != nil {
 		return err
 	}
 	pending, e := c.Store.Pending(ctx, owner, fence)
@@ -142,6 +165,9 @@ func (c *Collector) Run(ctx context.Context) (err error) {
 		}
 		e = c.Discord.React(ctx, p.Channel, p.ID, check)
 		if e == nil && p.Photo {
+			if err = c.Store.Renew(ctx, owner, fence); err != nil {
+				return err
+			}
 			e = c.Discord.React(ctx, p.Channel, p.ID, flex)
 		}
 		if e != nil && !isDeleted(e) {
@@ -151,7 +177,7 @@ func (c *Collector) Run(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	if err = c.Store.Finish(ctx, owner, fence, run, c.Settings.Channel, ceiling, len(rows)); err != nil {
+	if err = c.Store.Finish(ctx, owner, fence, run, c.Settings.Channel, ceiling, count); err != nil {
 		return err
 	}
 	if time.Since(c.lastPrune) >= time.Hour {

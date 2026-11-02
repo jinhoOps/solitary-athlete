@@ -118,3 +118,19 @@ def test_incomplete_200_source_is_never_treated_as_deletion(monkeypatch):
     monkeypatch.setattr(reconcile,'verify_permissions',lambda *args:None)
     reconcile.process_refresh(API(),Store(),{},'bot')
     assert deferred==['invalid_source_response']
+
+
+def test_empty_http_200_is_deferred_instead_of_deleting_a_saved_event(monkeypatch):
+    from mukmuk import reconcile
+    from test_collector import message
+    deferred=[]
+    class Store:
+        def claim_refresh(self):return {'id':'1','target_id':'123','guild_id':'1','channel_id':'2'}
+        def refresh_events(self,j):return [{'message_id':'100'}]
+        def apply_refresh(self,*args):pytest.fail('empty 200 is not proof of deletion')
+        def defer_refresh(self,*args,**kwargs):deferred.append(args[1])
+    class API:
+        def once(self,*args):return message('100','',False)
+    monkeypatch.setattr(reconcile,'verify_permissions',lambda *args:None)
+    reconcile.process_refresh(API(),Store(),{},'bot')
+    assert deferred==['invalid_source_response']

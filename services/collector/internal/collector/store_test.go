@@ -23,7 +23,7 @@ func fixtureStore(t *testing.T) (*Store, *pgx.Conn) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = conn.Exec(ctx, `TRUNCATE solitary_athlete.mukmuk_board_publication,solitary_athlete.mukmuk_collection_effects,solitary_athlete.mukmuk_collection_runs,solitary_athlete.mukmuk_identity_changes,solitary_athlete.mukmuk_account_reviews,solitary_athlete.mukmuk_account_link_actions,solitary_athlete.mukmuk_account_link_requests,solitary_athlete.mukmuk_person_accounts,solitary_athlete.mukmuk_people,solitary_athlete.mukmuk_daily_grass_history,solitary_athlete.mukmuk_monthly_grass_snapshots,solitary_athlete.workout_events,solitary_athlete.workout_logs,solitary_athlete.sync_state,solitary_athlete.sync_status,solitary_athlete.workout_refresh_jobs; INSERT INTO solitary_athlete.mukmuk_board_publication DEFAULT VALUES; UPDATE solitary_athlete.mukmuk_identity_state SET enabled=false,revision=0,source_revision=0; UPDATE solitary_athlete.mukmuk_collector_control SET writer_mode='go',owner_id=NULL,lease_until='-infinity',fence=0`)
+	_, err = conn.Exec(ctx, `TRUNCATE solitary_athlete.mukmuk_collection_scan,solitary_athlete.mukmuk_board_publication,solitary_athlete.mukmuk_collection_effects,solitary_athlete.mukmuk_collection_runs,solitary_athlete.mukmuk_identity_changes,solitary_athlete.mukmuk_account_reviews,solitary_athlete.mukmuk_account_link_actions,solitary_athlete.mukmuk_account_link_requests,solitary_athlete.mukmuk_person_accounts,solitary_athlete.mukmuk_people,solitary_athlete.mukmuk_daily_grass_history,solitary_athlete.mukmuk_monthly_grass_snapshots,solitary_athlete.workout_events,solitary_athlete.workout_logs,solitary_athlete.sync_state,solitary_athlete.sync_status,solitary_athlete.workout_refresh_jobs; INSERT INTO solitary_athlete.mukmuk_board_publication DEFAULT VALUES; INSERT INTO solitary_athlete.mukmuk_collection_scan DEFAULT VALUES; UPDATE solitary_athlete.mukmuk_identity_state SET enabled=false,revision=0,source_revision=0; UPDATE solitary_athlete.mukmuk_collector_control SET writer_mode='go',owner_id=NULL,lease_until='-infinity',fence=0`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,6 +87,12 @@ func TestFinishPublishesCursorSnapshotAndEffectsTogether(t *testing.T) {
 	}
 	run := "33333333-3333-4333-8333-333333333333"
 	if err = s.StartRun(ctx, owner, f, run); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.BeginScan(ctx, owner, f, "1559804769327910932", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SaveScanPage(ctx, owner, f, "1559804769327910932", Scan{}, Scan{Ceiling: "100", Complete: true, Count: 1}); err != nil {
 		t.Fatal(err)
 	}
 	if err = s.Finish(ctx, owner, f, run, "1559804769327910932", "100", 1); err != nil {
@@ -251,6 +257,12 @@ func TestFinishDoesNotPublishWhenLatestObservationIsInFuture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err = s.BeginScan(ctx, owner, f, "1559804769327910932", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SaveScanPage(ctx, owner, f, "1559804769327910932", Scan{}, Scan{Ceiling: "100", Complete: true}); err != nil {
+		t.Fatal(err)
+	}
 	if err = s.Finish(ctx, owner, f, run, "1559804769327910932", "100", 0); err == nil {
 		t.Fatal("future snapshot accepted")
 	}
@@ -366,7 +378,7 @@ func TestCollectorBookkeepingIsNotReadableByPublicRoles(t *testing.T) {
 	ctx := context.Background()
 	_, db := fixtureStore(t)
 	var exposed bool
-	err := db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM unnest(ARRAY['mukmuk_collector_control','mukmuk_collection_runs','mukmuk_collection_effects','mukmuk_board_publication']) AS t(name) CROSS JOIN unnest(ARRAY['anon','authenticated','service_role']) AS r(role) WHERE has_table_privilege(r.role,'solitary_athlete.'||t.name,'SELECT'))`).Scan(&exposed)
+	err := db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM unnest(ARRAY['mukmuk_collector_control','mukmuk_collection_scan','mukmuk_collection_runs','mukmuk_collection_effects','mukmuk_board_publication']) AS t(name) CROSS JOIN unnest(ARRAY['anon','authenticated','service_role']) AS r(role) WHERE has_table_privilege(r.role,'solitary_athlete.'||t.name,'SELECT'))`).Scan(&exposed)
 	if err != nil || exposed {
 		t.Fatalf("public access=%v err=%v", exposed, err)
 	}

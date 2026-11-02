@@ -27,6 +27,9 @@ func TestErrorClassificationDoesNotExposeMessages(t *testing.T) {
 	if got := errorLabel(collector.ErrDatabase); got != "database" {
 		t.Fatalf("database = %q", got)
 	}
+	if got := errorLabel(collector.ErrMessageContent); got != "message_content" {
+		t.Fatalf("message content = %q", got)
+	}
 	if got := errorLabel(collector.ErrMode); got != "mode" {
 		t.Fatalf("mode = %q", got)
 	}

@@ -14,6 +14,8 @@ from .local_runtime import LocalRuntime
 from .scheduler import sync_lock
 from .sync import run_sync
 
+TICK_SECONDS = 5
+
 
 @contextmanager
 def collector_watchdog(seconds=240):
@@ -38,6 +40,7 @@ class LocalBot(discord.Client):
         self.background = []
         self.stopping = False
         self.collecting = False
+        self.identity_processing = False
         self.gateway_connected = False
 
     def account_ready(self):
@@ -47,7 +50,7 @@ class LocalBot(discord.Client):
     async def setup_hook(self):
         self.collect_requested.set()
         self.background = [asyncio.create_task(self._ticks()), asyncio.create_task(self._collects()),
-                           asyncio.create_task(self._ownership())]
+                           asyncio.create_task(self._identity_effects()), asyncio.create_task(self._ownership())]
 
     async def on_ready(self):
         expected = self.settings.get('DISCORD_APP_ID')
@@ -73,17 +76,26 @@ class LocalBot(discord.Client):
                 result = await asyncio.to_thread(self.runtime.tick, self.account_ready())
                 if result.get('approved'):
                     self.collect_requested.set()
-                if result.get('ready'):
-                    await asyncio.to_thread(self._consume_identity_effect)
             except Exception:
                 # Do not log exceptions carrying query parameters, tokens or account IDs.
                 self.runtime.requested_ready = False
                 print('mukmuk_local_tick_deferred', flush=True)
-            await asyncio.sleep(5)
+            await asyncio.sleep(TICK_SECONDS)
+
+    async def _identity_effects(self):
+        # REST revalidation can take longer than the 15-second online lease.
+        # Keep a single effect worker separate so tick can renew concurrently.
+        while not self.stopping:
+            try:
+                if self.account_ready() and self.runtime.requested_ready and self.runtime.fence is not None:
+                    await asyncio.to_thread(self._consume_identity_effect)
+            except Exception:
+                print('mukmuk_identity_effect_deferred', flush=True)
+            await asyncio.sleep(TICK_SECONDS)
 
     async def _ownership(self):
         while not self.stopping:
-            if any(task.done() for task in self.background[:2]):
+            if any(task.done() for task in self.background[:3]):
                 await self.close()
                 return
             self.owner.touch()
@@ -95,7 +107,11 @@ class LocalBot(discord.Client):
         fence = self.runtime.fence
         def guard(conn):
             self.runtime._guard(conn, fence)
-        return consume_identity(AccountService(self.database, self.api, self.settings), guard)
+        self.identity_processing = True
+        try:
+            return consume_identity(AccountService(self.database, self.api, self.settings), guard)
+        finally:
+            self.identity_processing = False
 
     def _application_context(self):
         from .accounts import AccountService
@@ -161,7 +177,7 @@ class LocalBot(discord.Client):
         self.stopping = True
         self.runtime.requested_ready = False
         # Closing the CLI has the same bounded grace as the existing macOS runner.
-        shutdown_timer = Timer(5, lambda: os._exit(130)) if self.collecting else None
+        shutdown_timer = Timer(5, lambda: os._exit(130)) if self.collecting or self.identity_processing else None
         if shutdown_timer:
             shutdown_timer.daemon = True
             shutdown_timer.start()
@@ -178,7 +194,7 @@ class LocalBot(discord.Client):
             await super().close()
             self.api.client.close()
         finally:
-            if shutdown_timer and not self.collecting:
+            if shutdown_timer and not self.collecting and not self.identity_processing:
                 shutdown_timer.cancel()
 
 

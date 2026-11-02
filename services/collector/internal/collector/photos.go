@@ -68,6 +68,10 @@ func (c *Collector) BackfillPhotos(ctx context.Context) (err error) {
 		return e
 	}
 	defer func() { _ = c.Store.Release(context.Background(), owner, f) }()
+	api := guardedAPI{c.Discord, c.Store, owner, f}
+	if err = verifyContentIntent(ctx, api); err != nil {
+		return err
+	}
 	after := ""
 	for {
 		rows, e := c.Store.PhotoEvents(ctx, owner, f, after)
@@ -85,7 +89,7 @@ func (c *Collector) BackfillPhotos(ctx context.Context) (err error) {
 				return err
 			}
 			var msg Message
-			e = c.Discord.Get(ctx, "/channels/"+row.Channel+"/messages/"+row.ID, &msg)
+			e = api.Get(ctx, "/channels/"+row.Channel+"/messages/"+row.ID, &msg)
 			var images []Image
 			if e != nil {
 				if !isDeleted(e) {

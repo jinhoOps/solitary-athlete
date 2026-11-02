@@ -103,3 +103,32 @@ func TestRefreshDefersIncompleteResponseAndOnlyDeletesConfirmedMissingMessage(t 
 		t.Fatalf("n=%d checked=%d calls=%d err=%v", n, checked, api.permissionCalls, err)
 	}
 }
+func TestRefreshDefersEmptyContentWithoutDeletingRecordedWorkout(t *testing.T) {
+	ctx := context.Background()
+	s, db := fixtureStore(t)
+	owner := "11111111-1111-4111-8111-111111111111"
+	f, err := s.Claim(ctx, owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, _ := EventFromMessage(fixtureMessage("100"), "1559802401802952706", "1559804769327910932")
+	if err = s.SaveNew(ctx, owner, f, e); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec(ctx, `SELECT * FROM solitary_athlete.enqueue_workout_refresh('900','42','42','1559802401802952706','1559804769327910932')`); err != nil {
+		t.Fatal(err)
+	}
+	empty := fixtureMessage("100")
+	blank := ""
+	empty.Content = &blank
+	api := &refreshFixture{message: empty}
+	settings := RefreshSettings{"1559802401802952706", "1559804769327910932", "50", "99"}
+	if err = processRefresh(ctx, s, api, owner, f, settings); err != nil {
+		t.Fatal(err)
+	}
+	var n, checked int
+	err = db.QueryRow(ctx, `SELECT (SELECT count(*) FROM solitary_athlete.workout_events),checked FROM solitary_athlete.workout_refresh_jobs`).Scan(&n, &checked)
+	if err != nil || n != 1 || checked != 0 {
+		t.Fatalf("deleted or advanced: n=%d checked=%d err=%v", n, checked, err)
+	}
+}

@@ -13,6 +13,8 @@ def store():
     url=os.environ.get('TEST_DATABASE_URL')
     if not url: pytest.skip('Use scripts/test-db.sh for the isolated PostgreSQL integration suite')
     with psycopg.connect(url, autocommit=True) as admin:
+        if admin.execute("SELECT to_regclass('solitary_athlete.mukmuk_collector_control')").fetchone()[0]:
+            admin.execute("UPDATE solitary_athlete.mukmuk_collector_control SET writer_mode='python',owner_id=NULL,lease_until='-infinity'")
         extra = [name for name in ('mukmuk_identity_changes', 'mukmuk_account_reviews', 'mukmuk_account_link_actions', 'mukmuk_account_link_requests', 'mukmuk_local_runtime', 'mukmuk_person_accounts', 'mukmuk_people', 'mukmuk_identity_state')
                  if admin.execute('SELECT to_regclass(%s)', ('solitary_athlete.'+name,)).fetchone()[0]]
         if extra:
@@ -62,6 +64,7 @@ def test_sync_reaction_failure_restarts_without_duplicate_memo_or_cursor_advance
         reactions=[]
         def channel(self,cid): return {'guild_id':'1559802401802952706'}
         def me(self): return {'id':'42'}
+        def application(self): return {'flags': 1 << 19}
         def messages(self,cid,before=None):
             if cid=='1559804769327910932': return [message('100')]
             return [{'id':'200','author':{'id':'42'},'content':'개인 메시지'},
@@ -187,3 +190,11 @@ def test_refresh_retry_limit_lease_expiry_and_private_queue(store):
     with psycopg.connect(os.environ['TEST_DATABASE_URL']) as anon:
         anon.execute('SET ROLE anon')
         with pytest.raises(psycopg.errors.InsufficientPrivilege):anon.execute('SELECT * FROM solitary_athlete.workout_refresh_jobs')
+
+def test_regular_collection_never_rewrites_existing_saved_message(store):
+    store.save('100',event('100','기존 기록'))
+    store.save_new('100',event('100','수정된 기록'))
+    store.save_new('100',None)
+    assert store.logs()[0]['memo']=='기존 기록'
+    store.save_new('101',event('101','새 기록'))
+    assert store.logs()[0]['memo']=='기존 기록\n새 기록'

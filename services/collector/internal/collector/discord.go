@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +42,8 @@ func sleep(ctx context.Context, d time.Duration) error {
 	}
 }
 func (d *Discord) request(ctx context.Context, method, path string, out any) error {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
 	for attempt := 0; attempt < 4; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, method, d.base+path, nil)
 		if err != nil {
@@ -152,66 +153,4 @@ func (d *Discord) HasNew(ctx context.Context, channel, cursor string) (bool, err
 
 func (d *Discord) React(ctx context.Context, channel, id, emoji string) error {
 	return d.request(ctx, "PUT", "/channels/"+url.PathEscape(channel)+"/messages/"+url.PathEscape(id)+"/reactions/"+url.PathEscape(emoji)+"/@me", nil)
-}
-
-type messageAPI interface {
-	Messages(context.Context, string, string) ([]Message, error)
-}
-
-func NewMessages(ctx context.Context, api messageAPI, channel, cursor string) ([]Message, string, error) {
-	var rows []Message
-	before, ceiling := "", cursor
-	var threshold uint64
-	var err error
-	if cursor != "" {
-		threshold, err = strconv.ParseUint(cursor, 10, 64)
-		if err != nil {
-			return nil, "", errors.New("invalid cursor")
-		}
-	}
-	for {
-		page, err := api.Messages(ctx, channel, before)
-		if err != nil {
-			return nil, "", err
-		}
-		if len(page) == 0 {
-			break
-		}
-		stop := false
-		var previous uint64
-		for i, m := range page {
-			id, err := strconv.ParseUint(m.ID, 10, 64)
-			if err != nil || id == 0 {
-				return nil, "", errors.New("invalid message id")
-			}
-			if i > 0 && id >= previous {
-				return nil, "", errors.New("non-progressing message page")
-			}
-			if before != "" {
-				last, _ := strconv.ParseUint(before, 10, 64)
-				if id >= last {
-					return nil, "", errors.New("non-progressing message cursor")
-				}
-			}
-			previous = id
-			if before == "" && i == 0 {
-				ceiling = m.ID
-			}
-			if cursor != "" && id <= threshold {
-				stop = true
-				break
-			}
-			rows = append(rows, m)
-		}
-		if stop || len(page) < 100 {
-			break
-		}
-		before = page[len(page)-1].ID
-	}
-	sort.Slice(rows, func(i, j int) bool {
-		a, _ := strconv.ParseUint(rows[i].ID, 10, 64)
-		b, _ := strconv.ParseUint(rows[j].ID, 10, 64)
-		return a < b
-	})
-	return rows, ceiling, nil
 }

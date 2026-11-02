@@ -252,6 +252,10 @@ func processRefresh(ctx context.Context, store *Store, api refreshAPI, owner str
 				if err != nil {
 					return err
 				}
+				// A redacted or no-longer-qualifying HTTP 200 is not proof of deletion.
+				if e == nil {
+					return errors.New("ambiguous_source_response")
+				}
 			}
 			if e == nil {
 				if err = verifyRefresh(work, api, *j, s); err != nil {

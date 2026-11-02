@@ -296,11 +296,13 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 
 ### 전환 및 롤백 순서
 
-1. 격리 DB에서 새 migration과 Go/Python/Edge 회귀 검증을 수행한다. 실제 transaction pooler의 TLS 검증과 Go 1개·Python 1개·Edge 동시 요청을 별도로 확인한다. `mukmuk_worker` 연결 제한 3은 바꾸지 않는다. 예산을 충족하지 못하면 전환하지 않는다.
-2. `20261102000001_mukmuk_collector_control.sql`은 앱 스키마에 control·실행/effect·현황판 상태만 추가하며 기본 mode는 `python`이다. 운영 적용 전 앱 범위 백업과 migration 이력을 확인한다. 원본·일별/월별 관측 및 다른 앱은 변경하지 않는다.
+1. 격리 DB에서 새 migration과 Go/Python/Edge 회귀 검증을 수행한다. Discord 앱의 MESSAGE_CONTENT 접근 설정과 실제 transaction pooler의 TLS 검증, Go 1개·Python 1개·Edge 동시 요청을 별도로 확인한다. `mukmuk_worker` 연결 제한 3은 바꾸지 않는다. 예산을 충족하지 못하면 전환하지 않는다.
+2. `20261102000001_mukmuk_collector_control.sql`은 앱 스키마에 control·스캔 checkpoint·실행/effect·현황판 상태만 추가하며 기본 mode는 `python`이다. 운영 적용 전 앱 범위 백업과 migration 이력을 확인한다. 원본·일별/월별 관측 및 다른 앱은 변경하지 않는다.
 3. writer mode 확인을 지원하는 Python 소스를 먼저 설치하고 로컬 메인을 새 런타임으로 재시작한다. GitHub 보완 경로도 같은 호환 버전이어야 한다. 기존 구버전 수집 프로세스·예약이 남아 있으면 Go로 바꾸지 않는다.
 4. control mode를 `paused`로 바꾸고 진행 중인 Python 수집의 채널 advisory lock과 Go lease가 해제됐는지 확인한다. 필요 시 해당 묵묵 프로세스만 종료한다. 준비된 Go 실행본과 CA를 점검한 뒤 `go` mode로 전환한다.
 5. Go LaunchAgent를 시작하고 Python fallback을 `--collector-go`로 설치한다. GitHub의 Go Secrets·변수를 설정한다. 단일 writer, 1분 성공 시각, 실패 후 재시도, 웹 RPC, 명시적 기록갱신과 현황판을 확인한다. 계정 연결은 실제 동의와 온라인 세션을 전제로 별도로 확인한다. 테스트 목적으로 운영 인증을 임의로 생성하지 않는다.
 6. 되돌릴 때는 mode를 `paused`로 바꾸고 Go를 중단해 lease와 진행 중 트랜잭션이 종료된 뒤, **새 control 계약을 지원하는 Python 버전**으로 mode를 `python`으로 바꾼다. 원본 기록·사람 revision·이미 확정된 통계 관측을 되감거나 공용 DB 전체를 복원하지 않는다. Go의 완료 이력은 보존하고 Python의 다음 수집에서 보류된 계정 요청을 다시 검증한다.
 
-새 인증이 없는 정상 주기의 예상 Discord 요청은 채널·권한 확인 4회와 새 메시지 유무 확인 1회다. 추가 인증·리액션·기록갱신·오류 재시도는 별도이며 실제 부하와 rate limit은 아직 운영에서 측정하지 않았다. 매분 생성되는 실행 메타데이터는 처리 완료 후 30일이 지난 것만 제한적으로 정리하며 운동 원본과 관측 이력은 보존한다.
+새 인증이 없는 정상 주기의 예상 Discord 요청은 채널·권한 확인 4회, MESSAGE_CONTENT 설정 확인 1회와 새 메시지 유무 확인 1회다. 새 페이지를 읽을 때는 본문 접근 설정을 전후로 다시 확인한다. 추가 인증·리액션·기록갱신·오류 재시도는 별도이며 실제 부하와 rate limit은 아직 운영에서 측정하지 않았다. 매분 생성되는 실행 메타데이터는 처리 완료 후 30일이 지난 것만 제한적으로 정리하며 운동 원본과 관측 이력은 보존한다.
+
+스캔 중 중단된 경우 저장된 페이지 checkpoint에서 이어간다. 스캔 완료 전에 공개 수집 커서를 전진하지 않는다. `/기록갱신`에서 HTTP 200의 빈 본문·빈 사진 목록은 숨겨진 내용과 구분할 수 없어 기존 기록을 지우지 않고 보류한다.

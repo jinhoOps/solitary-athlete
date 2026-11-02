@@ -10,6 +10,16 @@ CREATE TABLE solitary_athlete.mukmuk_collector_control (
  lease_until timestamptz NOT NULL DEFAULT '-infinity'
 );
 INSERT INTO solitary_athlete.mukmuk_collector_control DEFAULT VALUES;
+CREATE TABLE solitary_athlete.mukmuk_collection_scan (
+ singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
+ active boolean NOT NULL DEFAULT false,
+ base_cursor text CHECK(base_cursor IS NULL OR base_cursor ~ '^[0-9]+$'),
+ ceiling_id text CHECK(ceiling_id IS NULL OR ceiling_id ~ '^[0-9]+$'),
+ before_id text CHECK(before_id IS NULL OR before_id ~ '^[0-9]+$'),
+ completed boolean NOT NULL DEFAULT false,
+ message_count integer NOT NULL DEFAULT 0 CHECK(message_count>=0)
+);
+INSERT INTO solitary_athlete.mukmuk_collection_scan DEFAULT VALUES;
 CREATE TABLE solitary_athlete.mukmuk_collection_runs (
  id uuid PRIMARY KEY,
  fence bigint NOT NULL,
@@ -44,7 +54,7 @@ CREATE INDEX mukmuk_effects_pending ON solitary_athlete.mukmuk_collection_effect
 DO $$
 DECLARE n text;
 BEGIN
- FOREACH n IN ARRAY ARRAY['mukmuk_collector_control','mukmuk_collection_runs','mukmuk_collection_effects','mukmuk_board_publication'] LOOP
+ FOREACH n IN ARRAY ARRAY['mukmuk_collector_control','mukmuk_collection_scan','mukmuk_collection_runs','mukmuk_collection_effects','mukmuk_board_publication'] LOOP
   EXECUTE format('ALTER TABLE solitary_athlete.%I ENABLE ROW LEVEL SECURITY',n);
   EXECUTE format('REVOKE ALL ON solitary_athlete.%I FROM PUBLIC,anon,authenticated,service_role',n);
   EXECUTE format('GRANT SELECT,INSERT,UPDATE ON solitary_athlete.%I TO mukmuk_worker',n);

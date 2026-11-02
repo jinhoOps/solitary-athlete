@@ -30,3 +30,27 @@ class SharedDB:
                 if self._references == 0:
                     store.conn.close()
                     self._store = None
+
+
+class TransientStore:
+    """Board access that returns its physical connection before Discord HTTP."""
+    def __init__(self, database):
+        self.database = database
+
+    @contextmanager
+    def transaction(self):
+        with self.database.session() as store:
+            with store.transaction() as conn:
+                yield conn
+
+    def collector_mode(self):
+        with self.database.session() as store:
+            return store.collector_mode()
+
+    def logs(self):
+        with self.database.session() as store:
+            return store.logs()
+
+    def active_secret(self, now):
+        with self.database.session() as store:
+            return store.active_secret(now)

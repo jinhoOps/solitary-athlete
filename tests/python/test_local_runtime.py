@@ -193,3 +193,62 @@ def test_launchd_runner_skips_before_db_when_a_local_owner_is_fresh(tmp_path):
                                   'MUKMUK_LOG_DIR':str(tmp_path/'logs')},timeout=5)
     assert child.returncode==0, child.stderr
     assert 'skip=managed_by_local_bot' in (tmp_path/'logs/sync.log').read_text()
+
+def test_online_lease_ticks_continue_while_identity_permission_checks_block(monkeypatch):
+    import asyncio
+    import threading
+    from types import SimpleNamespace
+    import mukmuk.local_bot as module
+    started, release = threading.Event(), threading.Event()
+    ticks=[]
+    class Runtime:
+        requested_ready=True
+        fence=1
+        def tick(self, ready):
+            ticks.append(ready)
+            return {'ready':True,'handled':False}
+    def blocked_effect():
+        started.set()
+        release.wait(3)
+    async def run():
+        monkeypatch.setattr(module,'TICK_SECONDS',.02,raising=False)
+        bot=SimpleNamespace(stopping=False,runtime=Runtime(),collect_requested=asyncio.Event(),
+                            account_ready=lambda:True,_consume_identity_effect=blocked_effect)
+        tasks=[asyncio.create_task(module.LocalBot._ticks(bot)),
+               asyncio.create_task(module.LocalBot._identity_effects(bot))]
+        try:
+            assert await asyncio.to_thread(started.wait,1)
+            await asyncio.sleep(.12)
+            assert len(ticks)>=2
+        finally:
+            bot.stopping=True
+            release.set()
+            await asyncio.gather(*tasks)
+    asyncio.run(run())
+
+def test_identity_worker_remains_marked_active_until_rest_call_returns(monkeypatch):
+    import asyncio
+    import threading
+    from types import SimpleNamespace
+    import mukmuk.collector_effects as effects
+    from mukmuk.local_bot import LocalBot
+    started,release=threading.Event(),threading.Event()
+    def blocked(*args):
+        started.set();release.wait(3)
+    monkeypatch.setattr(effects,'consume_identity',blocked)
+    async def run():
+        bot=SimpleNamespace(database=object(),api=object(),settings={'DISCORD_GUILD_ID':'1'},
+          runtime=SimpleNamespace(fence=1,_guard=lambda *args:None),identity_processing=False)
+        task=asyncio.create_task(asyncio.to_thread(LocalBot._consume_identity_effect,bot))
+        try:
+            assert await asyncio.to_thread(started.wait,1)
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
+            assert bot.identity_processing is True
+        finally:
+            release.set()
+            for _ in range(50):
+                if not bot.identity_processing:break
+                await asyncio.sleep(.01)
+        assert bot.identity_processing is False
+    asyncio.run(run())

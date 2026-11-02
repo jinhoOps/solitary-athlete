@@ -32,6 +32,8 @@ func errorLabel(err error) string {
 		return "mode"
 	case errors.Is(err, collector.ErrDatabase):
 		return "database"
+	case errors.Is(err, collector.ErrMessageContent):
+		return "message_content"
 	case errors.Is(err, context.DeadlineExceeded):
 		return "deadline"
 	}

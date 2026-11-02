@@ -141,3 +141,38 @@ def test_failed_board_post_is_retried_without_changing_collection(go_run):
         assert db.execute('SELECT status FROM solitary_athlete.mukmuk_collection_runs').fetchone()['status']=='completed'
     api.write=original
     assert publish_board(store,api,settings) is True
+
+def test_offline_board_fallback_releases_database_connection_during_http(go_run):
+    from mukmuk.collector_effects import publish_board
+    from mukmuk.db_session import SharedDB, TransientStore
+    service=go_run;store=service.store
+    settings={'DISCORD_GUILD_ID':service.guild,'DISCORD_AUTH_CHANNEL_ID':CHANNEL,'DISCORD_BOARD_CHANNEL_ID':'board'}
+    with store.transaction() as db:db.execute("UPDATE solitary_athlete.mukmuk_collection_effects SET status='done' WHERE kind='identity'")
+    class API(BoardAPI):
+        def check_connections(self):
+            with psycopg.connect(os.environ['TEST_DATABASE_URL'],autocommit=True) as db:
+                n=db.execute("SELECT count(*) FROM pg_stat_activity WHERE application_name='mukmuk-local-data'").fetchone()[0]
+                assert n==0
+        def channel(self,cid):self.check_connections();return super().channel(cid)
+        def messages(self,cid,before=None):self.check_connections();return []
+        def write(self,*args,**kwargs):self.check_connections();return super().write(*args,**kwargs)
+    assert publish_board(TransientStore(SharedDB(os.environ['TEST_DATABASE_URL'])),API(),settings)
+
+def test_board_http_allows_edge_connection_at_role_limit(go_run):
+    from contextlib import ExitStack
+    from mukmuk.collector_effects import publish_board
+    from mukmuk.db_session import SharedDB, TransientStore
+    url=os.environ.get('TEST_WORKER_DATABASE_URL')
+    if not url: pytest.skip('worker-role fixture required')
+    service=go_run;store=service.store
+    settings={'DISCORD_GUILD_ID':service.guild,'DISCORD_AUTH_CHANNEL_ID':CHANNEL,'DISCORD_BOARD_CHANNEL_ID':'board'}
+    with store.transaction() as db:db.execute("UPDATE solitary_athlete.mukmuk_collection_effects SET status='done' WHERE kind='identity'")
+    class API(BoardAPI):
+        def channel(self,cid):
+            with psycopg.connect(url,connect_timeout=2) as edge:
+                assert edge.execute('SELECT 1').fetchone()[0]==1
+            return super().channel(cid)
+    with ExitStack() as stack:
+        stack.enter_context(psycopg.connect(url,connect_timeout=2))
+        stack.enter_context(psycopg.connect(url,connect_timeout=2))
+        assert publish_board(TransientStore(SharedDB(url)),API(),settings)
