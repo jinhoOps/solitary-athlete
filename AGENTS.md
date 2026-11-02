@@ -11,7 +11,7 @@
 
 ## 현재 단계와 읽는 순서
 
-현재는 **기능 구현·배포 검증 단계**다. Python 수집기, 서명 검증 슬래시·삭제 워커, 바닐라 TypeScript 웹보드와 CI/배포 워크플로우가 구현됐다. Pages·Edge·삭제 Cron은 배포됐고 로컬 수집·명령어 등록은 확인됐다. PR #1이 main에 병합됐고 수집 워크플로우 수동 실행이 성공했다. 정기 수집은 로그인된 개발 맥북의 launchd에서 5분마다 실행하며 GitHub Actions는 매일 06:00 KST 보완 수집을 예약한다. 수집기 변경을 배포할 때는 `uv run python scripts/install_macos_scheduler.py`로 검증한 로컬 런타임도 갱신한다. 실행·상태는 [운영 안내](docs/operations.md), 실제 ID·권한·이력은 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)를 따른다.
+현재는 **기능 구현·배포 검증 단계**다. Python 수집기, 서명 검증 슬래시·삭제 워커, 바닐라 TypeScript 웹보드와 CI/배포 워크플로우가 구현됐다. Pages·Edge·삭제 Cron은 배포됐고 로컬 수집·명령어 등록은 확인됐다. PR #1이 main에 병합됐고 수집 워크플로우 수동 실행이 성공했다. 정기 수집은 Mac의 Go Docker 컨테이너 `mukmuk-collector`에서 1분마다 실행하며 GitHub Actions는 매일 06:00 KST Go 보완 수집을 예약한다. Python은 Gateway 계정 업무와 launchd 현황판 fallback을 맡는다. 수집기 배포는 검증된 Go 이미지를 갱신하고, Python 변경 시 `uv run python scripts/install_macos_scheduler.py --collector-go`로 호환 런타임도 갱신한다. 운영 전환은 앱 DB의 writer mode·임대·잠금 계약을 따른다. 실행·상태는 [운영 안내](docs/operations.md), 실제 ID·권한·이력은 [ARCHITECTURE.md](ARCHITECTURE.md#17-discord-초기-설정-현황)를 따른다.
 
 1. [README](README.md): 목적, 범위, 진행 상태.
 2. [DESIGN.md](DESIGN.md): YAML 디자인 토큰, 브랜드·타이포그래피·레이아웃·컴포넌트·반응형의 단일 기준.
@@ -42,7 +42,7 @@
 
 ## 구현 원칙
 
-- 수집은 Python + `uv`, 실시간 응답·삭제는 Supabase Edge Functions, 웹은 GitHub Pages용 정적 페이지를 기본으로 한다.
+- 수집은 독립 Go 서비스, 로컬 Gateway·현황판은 Python + `uv`, 실시간 응답·삭제는 Supabase Edge Functions, 웹은 GitHub Pages용 정적 페이지를 기본으로 한다.
 - 웹 코드는 **TypeScript**를 사용한다. 현재의 단일 대시보드는 바닐라 TypeScript로 시작하고, 여러 화면·복잡한 폼·공유 상태로 DOM 관리가 복잡해지면 React + TypeScript를 선택한다. 전환 이유는 `ARCHITECTURE.md`에 기록한다.
 - 단순함은 재처리 안전성과 기록 보존을 포함한다. `message_id`로 중복을 방지하고, 같은 날의 메모는 원본 기록에서 원자적으로 집계한다.
 - ✅는 저장 성공을 알리는 표시다. 중복 판정이나 수집 위치의 유일한 근거로 사용하지 않는다.

@@ -283,7 +283,7 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 
 ## Go Discord 수집기 전환 준비
 
-상태: **구현 브랜치 검증 단계, 운영 전환 전**. 현재 운영의 Python·5분 실행은 앞의 운영 이력을 따른다. Go로 전환한 뒤 목표 주기는 1분이고, 한 실행이 길어져도 다음 실행과 겹치지 않는다. Go가 내려가도 웹과 `/잔디`는 마지막 저장 결과를 기존 RPC에서 읽는다. 로컬 Gateway는 계정 요청을 담당하고, 현황판은 변경 시 또는 변경이 없으면 5분마다 Python이 게시한다.
+상태: **2026-11-02 Go 로컬 컨테이너 운영 전환 완료**. 현재 원본 수집은 Go 컨테이너가 1분 간격으로 실행한다. Python은 현황판 fallback과 별도 Gateway 계정 업무를 담당한다. 한 실행이 길어져도 다음 실행과 겹치지 않는다. Go가 내려가도 웹과 `/잔디`는 마지막 저장 결과를 기존 RPC에서 읽는다. 로컬 Gateway는 계정 요청을 담당하고, 현황판은 변경 시 또는 변경이 없으면 5분마다 Python이 게시한다.
 
 ### 실행·설정
 
@@ -306,3 +306,21 @@ launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync
 새 인증이 없는 정상 주기의 예상 Discord 요청은 채널·권한 확인 4회, MESSAGE_CONTENT 설정 확인 1회와 새 메시지 유무 확인 1회다. 새 페이지를 읽을 때는 본문 접근 설정을 전후로 다시 확인한다. 추가 인증·리액션·기록갱신·오류 재시도는 별도이며 실제 부하와 rate limit은 아직 운영에서 측정하지 않았다. 매분 생성되는 실행 메타데이터는 처리 완료 후 30일이 지난 것만 제한적으로 정리하며 운동 원본과 관측 이력은 보존한다.
 
 스캔 중 중단된 경우 저장된 페이지 checkpoint에서 이어간다. 스캔 완료 전에 공개 수집 커서를 전진하지 않는다. `/기록갱신`에서 HTTP 200의 빈 본문·빈 사진 목록은 숨겨진 내용과 구분할 수 없어 기존 기록을 지우지 않고 보류한다.
+
+### 2026-11-02 운영 전환 이력
+
+- [PR #40](https://github.com/jinhoOps/solitary-athlete/pull/40)을 CI 통과 후 main `777ebc483e1b4fc30f632412fc8601f07b20da7c`로 병합했다. [main Checks](https://github.com/jinhoOps/solitary-athlete/actions/runs/41400223089)와 [Pages](https://github.com/jinhoOps/solitary-athlete/actions/runs/41400223139)가 성공했다.
+- 앱 전용 역할로 데이터 17개 테이블의 비공개 압축 JSON과 앱 schema-only 백업, 이전 `.env`·LaunchAgent plist를 `~/Library/Application Support/mukmuk/backups/20261102-go-collector/`에 보관했다. sequence 값은 변경하지 않았다. 전체 프로젝트 복원용 백업은 아니며 다른 앱은 포함하지 않는다.
+- 로그인된 Supabase SQL Editor에서 `20261102000001_mukmuk_collector_control.sql`을 적용했다. 공용 CLI migration 이력에는 다른 앱 변경을 섞지 않았다. 5개 새 테이블의 RLS와 anon/authenticated/service_role 직접 조회 차단을 확인했다. 기존 worker 연결 제한 3은 유지했다.
+- 기존 Python LaunchAgent를 중단하고 채널 advisory lock 해제를 확인했다. `paused` 상태에서 Python 호환 런타임 `2b6cde11ba599623`을 설치한 뒤 `writer_mode=go`로 전환했다. 기존 `bc837fa94eb27374` 실행본은 복구 참고용으로 보존하되, control 계약을 무시하는 구버전을 그대로 재시작하지 않는다.
+- Go는 Mac의 Docker 컨테이너 `mukmuk-collector`, 이미지 `mukmuk-collector:777ebc4`로 실행한다. `restart=unless-stopped`, read-only filesystem, non-root, capabilities 제거, CPU 0.5·메모리 128MiB·PID 64 제한, 로그 10MiB×3개를 적용했다. 공개 포트는 열지 않았다. 불변 이미지 digest와 실행 설정은 비공개 rollout receipt에 기록했다.
+- 전용 설정 파일은 `~/Library/Application Support/mukmuk/collector.env`(0600), 읽기 전용 CA는 `~/Library/Application Support/mukmuk/certs/supabase-prod-ca.crt`다. 컨테이너 DB URL은 `sslmode=verify-full`이며 CA를 `/run/mukmuk/supabase-prod-ca.crt`로 바인드했다. 기존 프로젝트 `.env` 값과 다른 앱 설정은 바꾸지 않았다.
+- 실제 첫 성공은 2026-11-02 06:32 UTC다. 이후 1분 간격 성공과 수동 컨테이너 재시작 후 성공을 확인했다. 전환 검증 당시 로컬·GitHub 합계 완료 7건, 실패 0건이었다. `docker stats`의 유휴 시점 표본은 약 11~14MiB·CPU 0%였으며 장시간 부하 측정값은 아니다.
+- Python `io.jinhoops.mukmuk.sync`는 `--collector-go`로 재설치해 매분 현황판 후속 작업만 점검한다. 정상 종료 코드 0과 현황판 게시 시각을 확인했다. 계정용 Gateway는 전환 전과 같이 실행하지 않았으므로 온라인 계정 신청·승인은 꺼진 상태이며, 정기 수집·웹·기존 Edge 명령은 독립 동작한다.
+- GitHub의 Go 전용 DB/CA Secrets와 `MUKMUK_COLLECTOR_ENGINE=go`를 설정했다. [실제 수동 보완 실행](https://github.com/jinhoOps/solitary-athlete/actions/runs/41400856970)이 Go 수집과 Python 현황판 경로로 성공했다. 일일 06:00 KST 보완 예약은 유지한다.
+- 원본 38건·일별 31건의 의미 있는 내용과 닫힌 날짜의 관측값이 전환 전 백업과 일치했다. identity revision 0을 유지했다. 실제 대시보드 RPC 4종 HTTP200, 운영 브라우저 1280/360px에서 KPI 5개·오류 0·첫 화면 사진 요청 0·가로 넘침 없음을 확인했다.
+- 실제 transaction pooler에 검증된 TLS worker 연결 2개를 유지한 동안 기존 사진 Edge 조회가 세 번째 연결로 HTTP200(사진 없는 기존 날짜의 빈 결과)을 반환했다. 실제 신규 인증·계정 연결 요청은 검증 목적으로 생성하지 않았다. Edge 함수 재배포는 필요하지 않았다.
+
+현재 실행 확인은 `docker logs --tail 20 mukmuk-collector`, `docker stats --no-stream mukmuk-collector`, `launchctl print gui/$(id -u)/io.jinhoops.mukmuk.sync`로 한다. 컨테이너는 Docker 엔진이 실행 중일 때 동작하며 Mac 절전·종료 중에는 수집하지 않는다.
+
+운영 복귀는 앞의 `paused → Go 중단·임대 종료 → 호환 Python mode` 순서를 따른다. 컨테이너를 중단할 때는 `docker stop mukmuk-collector`를 사용하고, Python 호환 소스의 기본 스케줄러를 다시 설치한다. 원본·계정 관계·과거 관측은 유지한다.

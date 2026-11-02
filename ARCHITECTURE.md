@@ -515,10 +515,10 @@ Orca의 로그인된 Supabase SQL Editor에서 `20261020000001_mukmuk_monthly_gr
 
 같은 날 사용자 요청으로 별도 수용 검사 없이 기능을 켰다. 로컬 `.env`·Edge Secret의 `MUKMUK_ACCOUNT_LINK_ENABLED=true`와 DB `enabled=true`를 적용하고 `/계정연결`·`/계정검토`를 길드 명령으로 등록했다. 로컬 메인은 설치 런타임 `c9798e0dbd5d27f8`로 Orca 터미널에서 실행 중이다. 활성화 시점 revision은 0이며 실제 신청·승인·적용은 첫 실사용에서 확인한다. 상세는 [활성화 이력](docs/operations.md#2026-10-22-운영-활성화-이력)을 따른다.
 
-### 2026-11-02 Go 수집기 분리 구현 (운영 전환 전)
+### 2026-11-02 Go 수집기 분리와 로컬 컨테이너 운영 전환
 
 Discord의 신규 인증 수집·원본/일별 저장·명시적 기록갱신·리액션을 Go 실행 단위로 분리한다. 신규 메시지는 1분 간격으로 점검하며, 기존 메시지 수정·삭제는 명시적 `/기록갱신`에서 다룬다. Discord HTTP의 MESSAGE_CONTENT 접근 설정이 없으면 빈 응답으로 수집을 성공 처리하지 않는다. 웹과 Edge는 기존 `solitary_athlete` RPC·사람 revision·사진 조회 계약을 유지한다.
 
 Python Gateway는 온라인 계정 연결을 계속 담당한다. Go 수집 완료와 계정 관계 적용은 별도 확정이며, 관계 변경·revision·통계 관측은 하나의 트랜잭션이다. 이 사이에는 이전 관계가 잠시 보일 수 있다. 현황판은 수집 실패와 독립적으로 재시도하고, 변경이 없는 경우 게시를 5분으로 제한한다. 앱 전용 DB의 writer mode·임대·fence와 기존 채널 잠금으로 전환 중 중복 쓰기를 막는다. 상세 범위·전환·롤백과 실측 전제는 [운영 안내](docs/operations.md#go-discord-수집기-전환-준비)와 [분리 설계](docs/superpowers/specs/2026-11-02-go-collector-separation-design.md)를 따른다.
 
-이는 구현 브랜치 기준이며 운영 DB·실행본·GitHub 설정에 적용했다고 뜻하지 않는다. 운영 수집 주기는 실제 전환 이력으로 확인한다.
+PR #40 main `777ebc4` 병합 후 앱 범위 migration을 적용하고 로컬 Docker 컨테이너로 1분 수집을 전환했다. Python은 호환 런타임의 현황판 fallback을 매분 점검하고 GitHub도 Go 일일 보완을 사용한다. 원본·닫힌 관측 보존, 실제 조회·TLS/연결 예산 및 재시작 성공은 운영 안내의 2026-11-02 이력에 기록했다. 계정용 Gateway는 별도 온라인 프로세스 정책을 유지한다.
