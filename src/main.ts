@@ -101,7 +101,7 @@ main.append(kpiSection, filters, cards, heading, logList, moreArea, feedback);
 const footer = el('footer', 'footer');
 footer.append(
   el('p', 'caption', '공지 채널 시크릿 코드로 인증된 멤버만 열람할 수 있습니다. 표시명·운동 날짜·텍스트 메모와 선택한 기록의 사진을 볼 수 있습니다. 사진은 Discord에서 불러오며, 원본 삭제 시 표시가 중단될 수 있어요.'),
-  el('p', 'caption', '인증은 약 5분 간격으로 수집됩니다. 쉬어 간 날도 그대로 둡니다.')
+  el('p', 'caption', '인증은 주기적으로 수집됩니다. 쉬어 간 날도 그대로 둡니다.')
 );
 
 app.replaceChildren(header, main, footer);

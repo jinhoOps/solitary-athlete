@@ -61,16 +61,24 @@ def reaction_emojis(settings):
             else settings.get('DISCORD_FLEX_EMOJI', '💪'))
     return check, flex
 
+def verify_message_content(api):
+    app = api.application()
+    flags = app.get('flags') if isinstance(app, dict) else None
+    if type(flags) is not int or not flags & ((1 << 18) | (1 << 19)):
+        raise RuntimeError('message_content_unavailable')
+
 def run_sync(api, store, settings, now=None, check_lock=lambda: None, account_context=None):
     now = now or datetime.now(timezone.utc)
     guild, channel = settings['DISCORD_GUILD_ID'], settings['DISCORD_AUTH_CHANNEL_ID']
     for cid in (channel, settings['DISCORD_BOARD_CHANNEL_ID']):
         if api.channel(cid).get('guild_id')!=guild: raise ValueError('Channel does not belong to the configured guild')
     bot = api.me()
+    verify_message_content(api)
     rows, ceiling = collect_messages(api,channel,store.state(channel)['last_message_id'],now)
+    verify_message_content(api)
     for msg in rows:
         check_lock()
-        store.save(msg['id'], event_from_message(msg,guild,channel))
+        store.save_new(msg['id'], event_from_message(msg,guild,channel))
     check_emoji, flex_emoji = reaction_emojis(settings)
     from .reconcile import process_refresh
     process_refresh(api, store, settings, bot['id'], check_lock=check_lock)
@@ -84,6 +92,7 @@ def run_sync(api, store, settings, now=None, check_lock=lambda: None, account_co
             if e.status != 404: raise
         store.reacted(pending['message_id'])
     check_lock()
+    verify_message_content(api)
     context=account_context() if account_context else None
     success_at=datetime.now(timezone.utc)
     try:

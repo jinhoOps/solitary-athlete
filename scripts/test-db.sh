@@ -33,10 +33,18 @@ for file in supabase/migrations/20261021*.sql; do
     docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < "$file" >/dev/null
   fi
 done
-TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" uv run pytest
+docker exec -i "$container" psql -X -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261102000001_mukmuk_collector_control.sql >/dev/null
+TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" TEST_WORKER_DATABASE_URL="postgresql://mukmuk_worker@127.0.0.1:$port/postgres" uv run pytest
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/cleanup_queue_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/secrets_rpc_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/dashboard_rpc_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/short_db_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/account_inbox_test.ts
 TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres" deno test --allow-env --allow-net=127.0.0.1 supabase/tests/person_dashboard_rpc_test.ts
+
+(
+  cd services/collector
+  TEST_DATABASE_URL="postgresql://postgres@127.0.0.1:$port/postgres?sslmode=disable" \
+  TEST_WORKER_DATABASE_URL="postgresql://mukmuk_worker@127.0.0.1:$port/postgres?sslmode=disable" \
+  go test -race ./...
+)

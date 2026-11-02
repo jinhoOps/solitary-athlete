@@ -19,7 +19,13 @@ jobs:
         with:
           version: '0.11.32'
           python-version: '3.13'
-      - name: Collect proof and edit board
+      - uses: actions/setup-go@v6
+        if: vars.MUKMUK_COLLECTOR_ENGINE == 'go'
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: services/collector/go.sum
+      - name: Collect proof and edit board (Python fallback)
+        if: vars.MUKMUK_COLLECTOR_ENGINE != 'go'
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           MUKMUK_DATABASE_URL: ${{ secrets.MUKMUK_DATABASE_URL }}
@@ -33,3 +39,35 @@ jobs:
           DISCORD_FLEX_EMOJI_ID: ${{ vars.DISCORD_FLEX_EMOJI_ID }}
           DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
         run: uv run --locked main.py
+      - name: Collect proof (Go fallback)
+        if: vars.MUKMUK_COLLECTOR_ENGINE == 'go'
+        working-directory: services/collector
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          MUKMUK_DATABASE_URL: ${{ secrets.MUKMUK_GO_DATABASE_URL }}
+          PGSSLROOTCERT: ${{ runner.temp }}/mukmuk-ca.crt
+          MUKMUK_DB_CA_CERT: ${{ secrets.MUKMUK_DB_CA_CERT }}
+          DISCORD_ROLE_MEMBER_ID: ${{ vars.DISCORD_ROLE_MEMBER_ID }}
+          DISCORD_GUILD_ID: ${{ vars.DISCORD_GUILD_ID }}
+          DISCORD_AUTH_CHANNEL_ID: ${{ vars.DISCORD_AUTH_CHANNEL_ID }}
+          DISCORD_CHECK_EMOJI_ID: ${{ vars.DISCORD_CHECK_EMOJI_ID }}
+          DISCORD_FLEX_EMOJI_ID: ${{ vars.DISCORD_FLEX_EMOJI_ID }}
+        run: |
+          umask 077
+          printf '%s\n' "$MUKMUK_DB_CA_CERT" > "$PGSSLROOTCERT"
+          go run ./cmd/mukmuk-collector -once
+      - name: Publish due board if local bot is offline
+        if: vars.MUKMUK_COLLECTOR_ENGINE == 'go'
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          MUKMUK_DATABASE_URL: ${{ secrets.MUKMUK_DATABASE_URL }}
+          DISCORD_GUILD_ID: ${{ vars.DISCORD_GUILD_ID }}
+          DISCORD_AUTH_CHANNEL_ID: ${{ vars.DISCORD_AUTH_CHANNEL_ID }}
+          DISCORD_BOARD_CHANNEL_ID: ${{ vars.DISCORD_BOARD_CHANNEL_ID }}
+          DISCORD_GRASS_RECORD_EMOJI_ID: ${{ vars.DISCORD_GRASS_RECORD_EMOJI_ID }}
+          DISCORD_GRASS_PHOTO_EMOJI_ID: ${{ vars.DISCORD_GRASS_PHOTO_EMOJI_ID }}
+          DISCORD_NOTICE_CHANNEL_ID: ${{ vars.DISCORD_NOTICE_CHANNEL_ID }}
+          DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
+        run: |
+          sleep 35
+          uv run --locked main.py --board-only

@@ -17,10 +17,16 @@ class Store:
             with self.conn.transaction():
                 yield self.conn
 
-    def save(self, message_id, event):
+    def save_new(self, message_id, event):
+        if event is not None:
+            self.save(message_id, event, only_new=True)
+
+    def save(self, message_id, event, only_new=False):
         with self.transaction():
             self.conn.execute("SELECT pg_advisory_xact_lock(hashtext('mukmuk-workouts'))")
             previous = self.conn.execute('SELECT user_id, log_date FROM solitary_athlete.workout_events WHERE message_id=%s', (message_id,)).fetchone()
+            if only_new and previous:
+                return
             affected = set()
             if previous: affected.add((previous['user_id'], previous['log_date']))
             if event is None:
@@ -60,6 +66,14 @@ class Store:
                 result = []
                 while page := cur.fetchmany(1000): result.extend(page)
                 return result
+
+    def collector_mode(self):
+        with self.transaction():
+            present = self.conn.execute("SELECT to_regclass('solitary_athlete.mukmuk_collector_control') IS NOT NULL AS value").fetchone()['value']
+            if not present:
+                return 'python'
+            row = self.conn.execute('SELECT writer_mode FROM solitary_athlete.mukmuk_collector_control WHERE singleton').fetchone()
+            return row['writer_mode'] if row else 'paused'
 
     def state(self, channel):
         with self.transaction():

@@ -53,6 +53,7 @@ class Discord:
         return response.json()
 
     def me(self): return self.request('GET', '/users/@me')
+    def application(self): return self.request('GET', '/applications/@me')
     def channel(self, channel): return self.request('GET', f'/channels/{channel}')
     def messages(self, channel, before=None):
         return self.request('GET', f'/channels/{channel}/messages', params={'limit': 100, **({'before': before} if before else {})})

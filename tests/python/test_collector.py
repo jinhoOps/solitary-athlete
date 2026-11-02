@@ -53,6 +53,7 @@ def test_sync_stops_board_publish_if_lock_lost_during_board_history():
     class API:
         def channel(self, cid): return {'guild_id': 'guild'}
         def me(self): return {'id': 'bot'}
+        def application(self): return {'flags': 1 << 19}
         def messages(self, cid, before=None):
             if cid == 'board': alive[0] = False
             return []
@@ -104,6 +105,7 @@ def test_sync_reactions_custom_and_fallback_emojis():
     class API:
         def channel(self, cid): return {'guild_id': 'guild-1'}
         def me(self): return {'id': 'bot-1'}
+        def application(self): return {'flags': 1 << 19}
         def messages(self, cid, before=None): return []
         def react(self, cid, mid, emoji='✅'):
             reactions.append((cid, mid, emoji))
@@ -153,3 +155,15 @@ def test_sync_reactions_custom_and_fallback_emojis():
     ]
     assert reacted_ids == ['101', '102']
 
+
+def test_collection_rejects_missing_message_content_access_before_advancing():
+    from mukmuk.sync import run_sync
+    class API:
+        def channel(self,cid):return {'guild_id':'guild'}
+        def me(self):return {'id':'bot'}
+        def application(self):return {'flags':0}
+        def messages(self,*args):pytest.fail('must not read redacted messages')
+    class Store:
+        def state(self,cid):return {'last_message_id':None}
+    with pytest.raises(RuntimeError,match='message_content_unavailable'):
+        run_sync(API(),Store(),{'DISCORD_GUILD_ID':'guild','DISCORD_AUTH_CHANNEL_ID':'1','DISCORD_BOARD_CHANNEL_ID':'2'})
